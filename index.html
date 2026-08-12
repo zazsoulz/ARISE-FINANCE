@@ -348,6 +348,7 @@ function bootstrap(){
 }
 window.addEventListener("error",e=>renderFatalError(e.error||e.message));
 window.addEventListener("unhandledrejection",e=>renderFatalError(e.reason||"Unhandled promise rejection"));
-bootstrap()
+document.getElementById("root").innerHTML =
+  '<div style="padding:40px;color:white;font-family:sans-serif">JS WORKS</div>';
 </script>
 </body></html>
