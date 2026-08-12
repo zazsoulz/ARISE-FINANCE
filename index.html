@@ -1150,47 +1150,26 @@ remaining-=reserve;
 `;
    function getEditedPlan(){
 
-  const edited={
-    ...plan,
+  const editedValues={
     basic:num(document.getElementById("editBasic").value),
     family:num(document.getElementById("editFamily").value),
     creative:num(document.getElementById("editCreative").value),
     free:num(document.getElementById("editFree").value),
-    reserve:num(document.getElementById("editReserve").value),
-    goals:[]
+    reserve:num(document.getElementById("editReserve").value)
   };
 
-  document.querySelectorAll(".goal-input")
-    .forEach(input=>{
-      const id=input.dataset.goalId;
+  const editedPlan=rebalanceFinancialPlan(
+    plan,
+    editedValues,
+    A
+  );
 
-      const original=plan.goals.find(
-        g=>g.id===id
-      );
+  /*
+   * Сохраняем пользовательские значения
+   * и пересчитываем цели автоматически.
+   */
 
-      if(!original)return;
-
-      edited.goals.push({
-        ...original,
-        amount:num(input.value)
-      });
-    });
-
-  edited.distributed=
-    edited.basic+
-    edited.family+
-    edited.creative+
-    edited.free+
-    edited.reserve+
-    edited.goals.reduce(
-      (sum,g)=>sum+num(g.amount),
-      0
-    );
-
-  edited.remaining=
-    income-edited.distributed;
-
-  return edited;
+  return editedPlan;
 }
 
 function renderEditedSummary(){
