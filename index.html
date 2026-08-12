@@ -74,12 +74,14 @@ try {
   const DEFAULT = {
     profile:{id:"local",name:"Мой профиль",baseCurrency:"RUB",hidden:false},
     settings:{
-      family:20000,
-      creativeMin:5000,
-      creativeTarget:12500,
-      freeMin:20000,
-      reserveTarget:300000
-    },
+      settings:{
+  basicNeeds:35700,
+  family:20000,
+  creativeMin:5000,
+  creativeTarget:12500,
+  freeMin:20000,
+  reserveTarget:300000
+},
     goals:[
       {id:"reserve",name:"Финансовый резерв",type:"reserve",target:300000,current:0,deadline:"",priority:5,status:"active"},
       {id:"turkey",name:"Турция",type:"goal",target:125000,current:0,deadline:"",priority:4,status:"active"},
