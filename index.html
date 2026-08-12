@@ -55,13 +55,7 @@ h1{font-size:28px;letter-spacing:-.04em;margin:0 0 5px}h2{font-size:17px;margin:
 <body><div id="root"><div class="auth"><div class="auth-card"><div class="auth-logo">ARISE FINANCE</div><div class="auth-title">Запуск ARISE…</div><div class="auth-copy">Подготавливаем финансовую систему.</div></div></div></div><div id="toast" class="toast"></div>
 <script>
 window.onerror = function(message, source, line, column) {
-  document.body.innerHTML =
-    '<pre style="white-space:pre-wrap;background:#000;color:#fff;padding:20px;font:16px monospace">' +
-    'JS ERROR\n\n' +
-    message +
-    '\n\nLINE: ' + line +
-    '\nCOLUMN: ' + column +
-    '</pre>';
+  console.error("ARISE JS ERROR:", message, source, line, column);
 };
 </script>
 
@@ -158,28 +152,41 @@ try {
   }
 
   function loadLocal(){
-    try{
-      const raw=localStorage.getItem(LOCAL_KEY);
-      return normalizeState(raw?JSON.parse(raw):null);
-    }catch(e){
-      try{
-        localStorage.removeItem(LOCAL_KEY);
-      }catch(_){}
+  try{
+    const raw=window.localStorage
+      ? window.localStorage.getItem(LOCAL_KEY)
+      : null;
+
+    if(!raw){
       return clone(DEFAULT);
     }
+
+    return normalizeState(JSON.parse(raw));
+
+  }catch(e){
+    console.error("ARISE loadLocal error:", e);
+    return clone(DEFAULT);
   }
+}
 
   function saveLocal(){
-    try{
-      localStorage.setItem(
-        LOCAL_KEY,
-        JSON.stringify(normalizeState(A))
-      );
-      return true;
-    }catch(e){
+  try{
+    if(!window.localStorage){
       return false;
     }
+
+    window.localStorage.setItem(
+      LOCAL_KEY,
+      JSON.stringify(normalizeState(A))
+    );
+
+    return true;
+
+  }catch(e){
+    console.error("ARISE saveLocal error:", e);
+    return false;
   }
+}
 
   let A=loadLocal();
   // =========================
