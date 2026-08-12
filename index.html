@@ -239,9 +239,10 @@ const family=Math.min(remaining,familyMin);
 remaining-=family;
 
 const creative=Math.min(remaining,creativeTarget);
+remaining-=creative;
 
-    const free=Math.min(remaining,freeMin);
-    remaining-=free;
+const free=Math.min(remaining,freeMin);
+remaining-=free;
 
     const currentReserve=sum(
       state.goals||[],
