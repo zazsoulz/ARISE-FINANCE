@@ -1123,8 +1123,62 @@ function distributeGoalBudget(
     function money(v){
       return formatMoney(v);
     }
+function getMonthlyStats(state=A,month=""){
 
+  const currentMonth=
+    month ||
+    new Date().toISOString().slice(0,7);
+
+  const plans=(state.monthlyPlans||[])
+    .filter(p=>{
+      if(!p)return false;
+
+      if(p.month){
+        return p.month===currentMonth;
+      }
+
+      if(p.date){
+        return String(p.date).slice(0,7)===currentMonth;
+      }
+
+      return false;
+    });
+
+  const stats={
+    month:currentMonth,
+    income:0,
+    basic:0,
+    family:0,
+    creative:0,
+    free:0,
+    reserve:0,
+    goals:0,
+    operations:plans.length
+  };
+
+  plans.forEach(p=>{
+
+    stats.income+=num(p.income);
+
+    stats.basic+=num(p.basic);
+    stats.family+=num(p.family);
+    stats.creative+=num(p.creative);
+    stats.free+=num(p.free);
+    stats.reserve+=num(p.reserve);
+
+    if(Array.isArray(p.goals)){
+      stats.goals+=p.goals.reduce(
+        (sum,g)=>sum+num(g.amount),
+        0
+      );
+    }
+
+  });
+
+  return stats;
+}
     function renderHome(){
+      const monthStats=getMonthlyStats(A);
       const income=A.monthlyPlans?.length
         ? A.monthlyPlans[A.monthlyPlans.length-1].income
         : 0;
@@ -1184,7 +1238,79 @@ function distributeGoalBudget(
               <div class="sub">Активных целей</div>
             </div>
           </div>
+<div class="col-12">
+  <div class="card">
 
+    <div class="kicker">СТАТИСТИКА</div>
+
+    <h2>Этот месяц</h2>
+
+    <div class="sub">
+      ${monthStats.operations} ${
+        monthStats.operations===1
+          ? "поступление"
+          : "поступлений"
+      } · ${monthStats.month}
+    </div>
+
+    <div
+      class="alloc-grid"
+      style="margin-top:14px"
+    >
+
+      <div class="alloc">
+        <div class="kicker">ДОХОД</div>
+        <div class="amount">
+          ${money(monthStats.income)}
+        </div>
+      </div>
+
+      <div class="alloc">
+        <div class="kicker">БАЗОВЫЕ</div>
+        <div class="amount">
+          ${money(monthStats.basic)}
+        </div>
+      </div>
+
+      <div class="alloc">
+        <div class="kicker">СЕМЬЯ</div>
+        <div class="amount">
+          ${money(monthStats.family)}
+        </div>
+      </div>
+
+      <div class="alloc">
+        <div class="kicker">ТВОРЧЕСТВО</div>
+        <div class="amount">
+          ${money(monthStats.creative)}
+        </div>
+      </div>
+
+      <div class="alloc">
+        <div class="kicker">СВОБОДНЫЕ</div>
+        <div class="amount">
+          ${money(monthStats.free)}
+        </div>
+      </div>
+
+      <div class="alloc">
+        <div class="kicker">РЕЗЕРВ</div>
+        <div class="amount">
+          ${money(monthStats.reserve)}
+        </div>
+      </div>
+
+      <div class="alloc">
+        <div class="kicker">ЦЕЛИ</div>
+        <div class="amount">
+          ${money(monthStats.goals)}
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
           <div class="col-12">
             <div class="card">
               <h2>Активные цели</h2>
