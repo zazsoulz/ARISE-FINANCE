@@ -241,8 +241,13 @@ try {
     );
 
     const reserveNeed=Math.max(0,reserveTarget-currentReserve);
-    const reserve=Math.min(remaining,reserveNeed);
-    remaining-=reserve;
+const reserveMonthlyLimit=30000;
+const reserve=Math.min(
+  remaining,
+  reserveNeed,
+  reserveMonthlyLimit
+);
+remaining-=reserve;
 
     const goals=[];
     const activeGoals=getActiveGoals(state);
