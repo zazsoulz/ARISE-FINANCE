@@ -1164,10 +1164,55 @@ remaining-=reserve;
     A
   );
 
-  /*
-   * Сохраняем пользовательские значения
-   * и пересчитываем цели автоматически.
-   */
+  const manualGoals=[];
+
+  document.querySelectorAll(".goal-input")
+    .forEach(input=>{
+
+      const id=input.dataset.goalId;
+      const amount=num(input.value);
+
+      manualGoals.push({
+        id,
+        amount
+      });
+
+    });
+
+  editedPlan.goals=editedPlan.goals.map(goal=>{
+
+    const manual=manualGoals.find(
+      item=>item.id===goal.id
+    );
+
+    if(!manual){
+      return goal;
+    }
+
+    return {
+      ...goal,
+      amount:manual.amount,
+      needAfter:Math.max(
+        0,
+        goal.needBefore-manual.amount
+      )
+    };
+
+  });
+
+  editedPlan.distributed=
+    editedPlan.basic+
+    editedPlan.family+
+    editedPlan.creative+
+    editedPlan.free+
+    editedPlan.reserve+
+    editedPlan.goals.reduce(
+      (sum,goal)=>sum+num(goal.amount),
+      0
+    );
+
+  editedPlan.remaining=
+    editedPlan.income-editedPlan.distributed;
 
   return editedPlan;
 }
