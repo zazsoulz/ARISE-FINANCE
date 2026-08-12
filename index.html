@@ -1285,9 +1285,52 @@ function renderEditedSummary(){
   summary.innerHTML=status;
 }
 
-document.querySelectorAll(".plan-input,.goal-input")
+function updatePlanFromInputs(){
+
+  const editedValues={
+    basic:num(document.getElementById("editBasic").value),
+    family:num(document.getElementById("editFamily").value),
+    creative:num(document.getElementById("editCreative").value),
+    free:num(document.getElementById("editFree").value),
+    reserve:num(document.getElementById("editReserve").value)
+  };
+
+  const recalculated=rebalanceFinancialPlan(
+    plan,
+    editedValues,
+    A
+  );
+
+  document.querySelectorAll(".goal-input")
+    .forEach(input=>{
+
+      const goal=recalculated.goals.find(
+        g=>g.id===input.dataset.goalId
+      );
+
+      if(goal){
+        input.value=goal.amount;
+      }
+
+    });
+
+  renderEditedSummary();
+}
+
+document.querySelectorAll(".plan-input")
   .forEach(input=>{
-    input.addEventListener("input",renderEditedSummary);
+    input.addEventListener(
+      "input",
+      updatePlanFromInputs
+    );
+  });
+
+document.querySelectorAll(".goal-input")
+  .forEach(input=>{
+    input.addEventListener(
+      "input",
+      renderEditedSummary
+    );
   });
 
 renderEditedSummary();
