@@ -2128,7 +2128,7 @@ if(!validation.valid || validation.remaining!==0){
     }
 
     function renderHistory(){
-     alert("HISTORY V2");
+     alert(JSON.stringify(A.monthlyPlans,null,2));
   const plans=A.monthlyPlans||[];
 
   // Собираем доступные месяцы из истории
