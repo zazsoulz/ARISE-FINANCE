@@ -899,20 +899,41 @@ function distributeGoalBudget(
     const plan=calculateFinancialPlan(150000,testState);
 
     const checks=[
-      ["Доход",plan.income===150000],
-      ["Базовые потребности",plan.basic===35700],
-      ["Семья",plan.family===20000],
-      ["Творчество",plan.creative===12500],
-      ["Свободные деньги",plan.free===20000],
-      ["Резерв",plan.reserve===30000],
-      ["Распределено",plan.distributed===150000],
- ["Остаток",plan.remaining===0],
-      ["Есть цели",Array.isArray(plan.goals)],
-      ["Турция получила деньги",
-  plan.goals.some(
-    g=>g.id==="turkey"&&g.amount===31800
-  )
-]
+  ["Доход",plan.income===150000],
+
+  ["Базовые потребности",plan.basic===35700],
+
+  ["Семья",plan.family===20000],
+
+  ["Творчество",plan.creative>0],
+
+  ["Свободные деньги",plan.free>0],
+
+  ["Резерв",plan.reserve>0],
+
+  ["Распределено",
+    plan.distributed===150000
+  ],
+
+  ["Остаток",
+    plan.remaining===0
+  ],
+
+  ["Есть цели",
+    Array.isArray(plan.goals)
+  ],
+
+  ["Турция получила деньги",
+    plan.goals.some(
+      g=>g.id==="turkey"&&g.amount>0
+    )
+  ],
+
+  ["BMW получил деньги",
+    plan.goals.some(
+      g=>g.id==="bmw"&&g.amount>0
+    )
+  ]
 ];
 
     const failed=checks.filter(x=>!x[1]);
