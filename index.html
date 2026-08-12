@@ -181,7 +181,301 @@ try {
   }
 
   let A=loadLocal();
+  // =========================
+  // JS TEST 4 — FINANCIAL ENGINE
+  // =========================
 
+  function num(v){
+    const n=Number(v);
+    return Number.isFinite(n)?n:0;
+  }
+
+  function sum(arr,fn){
+    return arr.reduce((s,x)=>s+num(fn(x)),0);
+  }
+
+  function getActiveGoals(state){
+    return (state.goals||[])
+      .filter(g=>g && g.status!=="completed")
+      .sort((a,b)=>num(b.priority)-num(a.priority));
+  }
+
+  function calculateFinancialPlan(income,state=A){
+    const total=num(income);
+
+    if(total<=0){
+      return {
+        income:0,
+        family:0,
+        creative:0,
+        free:0,
+        reserve:0,
+        goals:[],
+        distributed:0,
+        remaining:0
+      };
+    }
+
+    const settings=state.settings||{};
+
+    const familyMin=Math.max(0,num(settings.family));
+    const creativeMin=Math.max(0,num(settings.creativeMin));
+    const creativeTarget=Math.max(creativeMin,num(settings.creativeTarget));
+    const freeMin=Math.max(0,num(settings.freeMin));
+    const reserveTarget=Math.max(0,num(settings.reserveTarget));
+
+    let remaining=total;
+
+    const family=Math.min(remaining,familyMin);
+    remaining-=family;
+
+    const creative=Math.min(remaining,creativeTarget);
+    remaining-=creative;
+
+    const free=Math.min(remaining,freeMin);
+    remaining-=free;
+
+    const currentReserve=sum(
+      state.goals||[],
+      g=>g.type==="reserve"?g.current:0
+    );
+
+    const reserveNeed=Math.max(0,reserveTarget-currentReserve);
+    const reserve=Math.min(remaining,reserveNeed);
+    remaining-=reserve;
+
+    const goals=[];
+    const activeGoals=getActiveGoals(state);
+
+    activeGoals.forEach(goal=>{
+      if(remaining<=0)return;
+
+      const target=num(goal.target);
+      const current=num(goal.current);
+      const need=Math.max(0,target-current);
+
+      if(need<=0)return;
+
+      const amount=Math.min(remaining,need);
+
+      goals.push({
+        id:goal.id,
+        name:goal.name,
+        amount,
+        needBefore:need,
+        needAfter:need-amount
+      });
+
+      remaining-=amount;
+    });
+
+    return {
+      income:total,
+      family,
+      creative,
+      free,
+      reserve,
+      goals,
+      distributed:total-remaining,
+      remaining
+    };
+  }
+
+  function applyFinancialPlan(plan,state=A){
+    if(!plan||!state)return false;
+
+    const now=new Date();
+    const month=now.toISOString().slice(0,7);
+
+    state.monthlyPlans=Array.isArray(state.monthlyPlans)
+      ? state.monthlyPlans
+      : [];
+
+    state.allocations=Array.isArray(state.allocations)
+      ? state.allocations
+      : [];
+
+    const planRecord={
+      id:safeId(),
+      month,
+      income:plan.income,
+      family:plan.family,
+      creative:plan.creative,
+      free:plan.free,
+      reserve:plan.reserve,
+      goals:clone(plan.goals),
+      distributed:plan.distributed,
+      remaining:plan.remaining,
+      createdAt:now.toISOString()
+    };
+
+    state.monthlyPlans.push(planRecord);
+
+    if(plan.reserve>0){
+      const reserveGoal=state.goals.find(
+        g=>g.type==="reserve"
+      );
+
+      if(reserveGoal){
+        reserveGoal.current=
+          num(reserveGoal.current)+plan.reserve;
+      }
+    }
+
+    plan.goals.forEach(item=>{
+      const goal=state.goals.find(
+        g=>g.id===item.id
+      );
+
+      if(goal){
+        goal.current=
+          num(goal.current)+num(item.amount);
+
+        if(num(goal.current)>=num(goal.target)){
+          goal.current=num(goal.target);
+          goal.status="completed";
+        }
+      }
+    });
+
+    saveLocal();
+    return true;
+  }
+
+  function runFinancialEngineTest(){
+    const testState=normalizeState({
+      profile:{name:"TEST"},
+      settings:{
+        family:20000,
+        creativeMin:5000,
+        creativeTarget:12500,
+        freeMin:20000,
+        reserveTarget:300000
+      },
+      goals:[
+        {
+          id:"reserve",
+          name:"Финансовый резерв",
+          type:"reserve",
+          target:300000,
+          current:0,
+          priority:5,
+          status:"active"
+        },
+        {
+          id:"turkey",
+          name:"Турция",
+          type:"goal",
+          target:125000,
+          current:0,
+          priority:4,
+          status:"active"
+        },
+        {
+          id:"bmw",
+          name:"BMW G20",
+          type:"goal",
+          target:2000000,
+          current:0,
+          priority:2,
+          status:"active"
+        }
+      ]
+    });
+
+    const plan=calculateFinancialPlan(150000,testState);
+
+    const checks=[
+      ["Доход",plan.income===150000],
+      ["Семья",plan.family===20000],
+      ["Творчество",plan.creative===12500],
+      ["Свободные деньги",plan.free===20000],
+      ["Резерв",plan.reserve===30000],
+      ["Распределено",plan.distributed===82500],
+      ["Остаток",plan.remaining===67500],
+      ["Есть цели",Array.isArray(plan.goals)],
+      ["Турция получила деньги",
+        plan.goals.some(
+          g=>g.id==="turkey"&&g.amount===67500
+        )
+      ]
+    ];
+
+    const failed=checks.filter(x=>!x[1]);
+
+    return {
+      ok:failed.length===0,
+      plan,
+      checks,
+      failed
+    };
+  }
+
+  const ENGINE_TEST=runFinancialEngineTest();
+
+  document.getElementById("root").innerHTML=`
+    <div style="
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:20px;
+      color:white;
+      font-family:Arial,sans-serif;
+      background:#090c11;
+    ">
+      <div style="
+        width:min(700px,100%);
+        padding:30px;
+        border:1px solid #333;
+        border-radius:20px;
+        background:#111;
+      ">
+        <div style="
+          font-size:28px;
+          font-weight:bold;
+        ">
+          JS TEST 4
+        </div>
+
+        <div style="
+          margin-top:10px;
+          color:${ENGINE_TEST.ok?"#9bbfae":"#d59a9a"};
+        ">
+          ${ENGINE_TEST.ok
+            ?"Финансовый движок работает"
+            :"Финансовый движок содержит ошибку"}
+        </div>
+
+        <div style="
+          margin-top:20px;
+          padding:16px;
+          background:#090c11;
+          border-radius:14px;
+          font-family:monospace;
+          font-size:13px;
+          line-height:1.8;
+        ">
+          ${ENGINE_TEST.checks.map(
+            x=>`${x[1]?"✓":"✗"} ${x[0]}`
+          ).join("<br>")}
+        </div>
+
+        <div style="
+          margin-top:20px;
+          color:#999;
+          font-size:12px;
+          line-height:1.6;
+        ">
+          Тестовый доход: 150 000 ₽<br>
+          Семья: ${ENGINE_TEST.plan.family.toLocaleString("ru-RU")} ₽<br>
+          Творчество: ${ENGINE_TEST.plan.creative.toLocaleString("ru-RU")} ₽<br>
+          Свободные: ${ENGINE_TEST.plan.free.toLocaleString("ru-RU")} ₽<br>
+          Резерв: ${ENGINE_TEST.plan.reserve.toLocaleString("ru-RU")} ₽<br>
+          Остаток: ${ENGINE_TEST.plan.remaining.toLocaleString("ru-RU")} ₽
+        </div>
+      </div>
+    </div>
+  `;
   document.getElementById("root").innerHTML=`
     <div style="
       min-height:100vh;
