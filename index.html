@@ -393,126 +393,125 @@ remaining-=reserve;
 
   function rebalanceFinancialPlan(basePlan,editedValues,state=A){
 
-    if(!basePlan || !editedValues){
-      return basePlan;
-    }
+  if(!basePlan || !editedValues){
+    return basePlan;
+  }
 
-    const income=num(basePlan.income);
+  const income=num(basePlan.income);
 
-    const result={
-      ...clone(basePlan),
-      goals:[],
-      distributed:0,
-      remaining:0
-    };
+  const result={
+    ...clone(basePlan),
+    goals:[],
+    distributed:0,
+    remaining:0
+  };
 
-    // ---------------------------------
-    // 1. Фиксированные категории
-    // ---------------------------------
+  // =================================
+  // 1. Фиксированные категории
+  // =================================
 
-    result.basic=num(basePlan.basic);
-    result.family=num(basePlan.family);
+  result.basic=Math.max(
+    0,
+    num(editedValues.basic)
+  );
 
-    // ---------------------------------
-    // 2. Пользовательские категории
-    // ---------------------------------
+  result.family=Math.max(
+    0,
+    num(editedValues.family)
+  );
 
-    result.creative=Math.max(
-      0,
-      num(editedValues.creative)
+  // =================================
+  // 2. Редактируемые категории
+  // =================================
+
+  result.creative=Math.max(
+    0,
+    num(editedValues.creative)
+  );
+
+  result.free=Math.max(
+    0,
+    num(editedValues.free)
+  );
+
+  result.reserve=Math.max(
+    0,
+    num(editedValues.reserve)
+  );
+
+  // =================================
+  // 3. Ручные значения целей
+  // =================================
+
+  const editedGoals=Array.isArray(editedValues.goals)
+    ? editedValues.goals
+    : [];
+
+  // =================================
+  // 4. Считаем общую сумму категорий
+  // =================================
+
+  let allocated=
+    result.basic+
+    result.family+
+    result.creative+
+    result.free+
+    result.reserve;
+
+  // =================================
+  // 5. Добавляем цели
+  // =================================
+
+  const activeGoals=getActiveGoals(state);
+
+  activeGoals.forEach(goal=>{
+
+    const edited=editedGoals.find(
+      g=>g.id===goal.id
     );
 
-    result.free=Math.max(
+    const amount=edited
+      ? Math.max(0,num(edited.amount))
+      : 0;
+
+    const target=num(goal.target);
+    const current=num(goal.current);
+
+    const need=Math.max(
       0,
-      num(editedValues.free)
+      target-current
     );
 
-    result.reserve=Math.max(
-      0,
-      num(editedValues.reserve)
+    const finalAmount=Math.min(
+      amount,
+      need
     );
 
-    // ---------------------------------
-    // 3. Сколько осталось после категорий
-    // ---------------------------------
-
-    let remaining=
-      income
-      -result.basic
-      -result.family
-      -result.creative
-      -result.free
-      -result.reserve;
-
-    // ---------------------------------
-    // 4. Если категорий стало больше
-    //    чем весь доход — уменьшаем
-    //    цели до нуля
-    // ---------------------------------
-
-    const activeGoals=getActiveGoals(state);
-
-    if(remaining<0){
-
-      result.goals=[];
-
-      result.distributed=income;
-      result.remaining=0;
-
-      return result;
-    }
-
-    // ---------------------------------
-    // 5. Распределяем остаток по целям
-    //    согласно приоритету
-    // ---------------------------------
-
-    activeGoals.forEach(goal=>{
-
-      if(remaining<=0){
-        return;
-      }
-
-      const target=num(goal.target);
-      const current=num(goal.current);
-
-      const need=Math.max(
-        0,
-        target-current
-      );
-
-      if(need<=0){
-        return;
-      }
-
-      const amount=Math.min(
-        remaining,
-        need
-      );
+    if(finalAmount>0){
 
       result.goals.push({
         id:goal.id,
         name:goal.name,
-        amount,
+        amount:finalAmount,
         needBefore:need,
-        needAfter:need-amount
+        needAfter:need-finalAmount
       });
 
-      remaining-=amount;
-    });
+      allocated+=finalAmount;
+    }
+  });
 
-    // ---------------------------------
-    // 6. Итог
-    // ---------------------------------
+  // =================================
+  // 6. Проверяем баланс
+  // =================================
 
-    result.distributed=
-      income-remaining;
+  result.distributed=allocated;
 
-    result.remaining=
-      remaining;
+  result.remaining=
+    income-allocated;
 
-    return result;
-  }
+  return result;
+}
   function runFinancialEngineTest(){
     const testState=normalizeState({
       profile:{name:"TEST"},
