@@ -1216,6 +1216,48 @@ remaining-=reserve;
 
   return editedPlan;
 }
+function validateEditedPlan(plan){
+
+  if(!plan){
+    return {
+      valid:false,
+      reason:"План отсутствует."
+    };
+  }
+
+  const income=num(plan.income);
+  const distributed=num(plan.distributed);
+  const remaining=income-distributed;
+
+  if(income<=0){
+    return {
+      valid:false,
+      reason:"Доход должен быть больше 0 ₽."
+    };
+  }
+
+  if(distributed<0){
+    return {
+      valid:false,
+      reason:"Распределение не может быть отрицательным."
+    };
+  }
+
+  if(remaining<0){
+    return {
+      valid:false,
+      reason:"Распределено больше, чем доступный доход."
+    };
+  }
+
+  return {
+    valid:true,
+    reason:"",
+    income,
+    distributed,
+    remaining
+  };
+}
 
 function renderEditedSummary(){
 
