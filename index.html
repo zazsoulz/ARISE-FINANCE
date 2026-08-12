@@ -1023,16 +1023,213 @@ remaining-=reserve;
 
   </div>
 `;
+   function getEditedPlan(){
+
+  const edited={
+    ...plan,
+    basic:num(document.getElementById("editBasic").value),
+    family:num(document.getElementById("editFamily").value),
+    creative:num(document.getElementById("editCreative").value),
+    free:num(document.getElementById("editFree").value),
+    reserve:num(document.getElementById("editReserve").value),
+    goals:[]
+  };
+
+  document.querySelectorAll(".goal-input")
+    .forEach(input=>{
+      const id=input.dataset.goalId;
+
+      const original=plan.goals.find(
+        g=>g.id===id
+      );
+
+      if(!original)return;
+
+      edited.goals.push({
+        ...original,
+        amount:num(input.value)
+      });
+    });
+
+  edited.distributed=
+    edited.basic+
+    edited.family+
+    edited.creative+
+    edited.free+
+    edited.reserve+
+    edited.goals.reduce(
+      (sum,g)=>sum+num(g.amount),
+      0
+    );
+
+  edited.remaining=
+    income-edited.distributed;
+
+  return edited;
+}
+
+function renderEditedSummary(){
+
+  const edited=getEditedPlan();
+
+  const summary=document.getElementById("planSummary");
+
+  const difference=edited.remaining;
+
+  let status="";
+
+  if(difference===0){
+
+    status=`
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+      ">
+        <span class="muted">
+          Распределено
+        </span>
+
+        <strong>
+          ${money(edited.distributed)}
+        </strong>
+      </div>
+
+      <div style="
+        margin-top:7px;
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+      ">
+        <span class="muted">
+          Остаток
+        </span>
+
+        <strong class="positive">
+          0 ₽
+        </strong>
+      </div>
+    `;
+
+  }else if(difference>0){
+
+    status=`
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+      ">
+        <span class="muted">
+          Распределено
+        </span>
+
+        <strong>
+          ${money(edited.distributed)}
+        </strong>
+      </div>
+
+      <div style="
+        margin-top:7px;
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+      ">
+        <span class="muted">
+          Осталось распределить
+        </span>
+
+        <strong class="warning">
+          ${money(difference)}
+        </strong>
+      </div>
+    `;
+
+  }else{
+
+    status=`
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+      ">
+        <span class="muted">
+          Распределено
+        </span>
+
+        <strong>
+          ${money(edited.distributed)}
+        </strong>
+      </div>
+
+      <div style="
+        margin-top:7px;
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+      ">
+        <span class="muted">
+          Перераспределено сверх дохода
+        </span>
+
+        <strong class="negative">
+          ${money(Math.abs(difference))}
+        </strong>
+      </div>
+    `;
+  }
+
+  summary.innerHTML=status;
+}
+
+document.querySelectorAll(".plan-input,.goal-input")
+  .forEach(input=>{
+    input.addEventListener("input",renderEditedSummary);
+  });
+
+renderEditedSummary();
 
     document.getElementById("recalculate")
       .addEventListener("click",calculate);
 
     document.getElementById("applyPlan")
-      .addEventListener("click",()=>{
-        applyFinancialPlan(plan,A,{
-          source,
-          date
-        });
+  .addEventListener("click",()=>{
+
+    const editedPlan=getEditedPlan();
+
+    if(editedPlan.remaining!==0){
+
+      result.insertAdjacentHTML(
+        "afterbegin",
+        `
+          <div class="notice" style="
+            margin-top:16px;
+            border-color:rgba(212,183,140,.25);
+          ">
+            Нельзя применить план:
+            доход должен быть распределён полностью.
+            <br>
+            Остаток:
+            <strong>${money(editedPlan.remaining)}</strong>
+          </div>
+        `
+      );
+
+      return;
+    }
+
+    applyFinancialPlan(editedPlan,A,{
+      source,
+      date
+    });
+
+    result.innerHTML=`
+      <div class="notice" style="margin-top:16px">
+        ✓ Доход сохранён и распределён.
+      </div>
+    `;
+
+    setTimeout(renderHome,700);
+  });
 
         result.innerHTML=`
           <div class="notice" style="margin-top:16px">
