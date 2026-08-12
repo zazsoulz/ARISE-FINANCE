@@ -380,12 +380,9 @@ function distributeGoalBudget(
     g=>g.amount>0
   );
 }
-  function calculateFinancialPlan(income,state=A){
+  function calculateFinancialPlan(income,state=A,planDate=""){
 
-  const total=Math.max(
-    0,
-    Math.round(num(income))
-  );
+  const total=num(income);
 
   if(total<=0){
     return {
@@ -403,91 +400,120 @@ function distributeGoalBudget(
 
   const settings=state.settings||{};
 
-  /*
-   * =================================
-   * 1. ФИКСИРОВАННЫЕ РАСХОДЫ
-   * =================================
-   */
+  // =================================
+  // 1. ОПРЕДЕЛЯЕМ МЕСЯЦ
+  // =================================
 
-  const basicNeeds=Math.max(
-    0,
-    Math.round(num(settings.basicNeeds))
+  const date=planDate ||
+    new Date().toISOString().slice(0,10);
+
+  const month=date.slice(0,7);
+
+  // =================================
+  // 2. СКОЛЬКО ФИКСИРОВАННЫХ
+  //    РАСХОДОВ УЖЕ ПОКРЫТО В МЕСЯЦЕ
+  // =================================
+
+  const monthPlans=(state.monthlyPlans||[])
+    .filter(p=>
+      p &&
+      (p.month===month ||
+       (p.date&&String(p.date).slice(0,7)===month))
+    );
+
+  const alreadyBasic=sum(
+    monthPlans,
+    p=>p.basic
   );
 
-  const familyMin=Math.max(
-    0,
-    Math.round(num(settings.family))
+  const alreadyFamily=sum(
+    monthPlans,
+    p=>p.family
   );
+
+  // =================================
+  // 3. МЕСЯЧНЫЕ ЛИМИТЫ
+  // =================================
+
+  const basicTarget=Math.max(
+    0,
+    num(settings.basicNeeds)
+  );
+
+  const familyTarget=Math.max(
+    0,
+    num(settings.family)
+  );
+
+  // Сколько ещё реально нужно
+  // покрыть фиксированным категориям.
+
+  const basicNeed=Math.max(
+    0,
+    basicTarget-alreadyBasic
+  );
+
+  const familyNeed=Math.max(
+    0,
+    familyTarget-alreadyFamily
+  );
+
+  // =================================
+  // 4. ПОКРЫВАЕМ ФИКСИРОВАННЫЕ
+  // =================================
 
   let remaining=total;
 
   const basic=Math.min(
     remaining,
-    basicNeeds
+    basicNeed
   );
 
   remaining-=basic;
 
   const family=Math.min(
     remaining,
-    familyMin
+    familyNeed
   );
 
   remaining-=family;
 
-
-  /*
-   * =================================
-   * 2. ПРОЦЕНТНОЕ РАСПРЕДЕЛЕНИЕ
-   * =================================
-   *
-   * Остаток после фиксированных
-   * расходов:
-   *
-   * Резерв     30%
-   * Цели       40%
-   * Творчество 10%
-   * Свободные  20%
-   */
+  // =================================
+  // 5. ПРОЦЕНТЫ ОТ ОСТАТКА
+  // =================================
 
   const reservePercent=0.30;
   const goalsPercent=0.40;
   const creativePercent=0.10;
   const freePercent=0.20;
 
-  const reserveBudget=Math.round(
-    remaining*reservePercent
-  );
+  const reserveRaw=remaining*reservePercent;
+  const goalsRaw=remaining*goalsPercent;
+  const creativeRaw=remaining*creativePercent;
+  const freeRaw=remaining*freePercent;
 
-  const goalsBudget=Math.round(
-    remaining*goalsPercent
-  );
+  // =================================
+  // 6. ОКРУГЛЕНИЕ
+  // =================================
 
-  const creative=Math.round(
-    remaining*creativePercent
-  );
+  let reserve=Math.round(reserveRaw);
+  let creative=Math.round(creativeRaw);
+  let free=Math.round(freeRaw);
 
-  const freeBase=Math.round(
-    remaining*freePercent
-  );
+  // =================================
+  // 7. РЕЗЕРВ
+  // =================================
 
-
-  /*
-   * =================================
-   * 3. РЕЗЕРВ
-   * =================================
-   */
+  const activeGoals=getActiveGoals(state);
 
   const currentReserve=sum(
     state.goals||[],
-    g=>g.type==="reserve"
-      ? g.current
-      : 0
+    g=>g.type==="reserve"?g.current:0
   );
 
   const reserveTarget=Math.max(
     0,
-    Math.round(num(settings.reserveTarget))
+    num(settings.reserveTarget)
   );
 
   const reserveNeed=Math.max(
@@ -495,134 +521,101 @@ function distributeGoalBudget(
     reserveTarget-currentReserve
   );
 
-  /*
-   * В резерв отправляем не больше,
-   * чем ему реально нужно.
-   */
-
-  const reserve=Math.min(
-    reserveBudget,
+  reserve=Math.min(
+    reserve,
     reserveNeed
   );
 
+  // =================================
+  // 8. ЦЕЛИ
+  // =================================
 
-  /*
-   * =================================
-   * 4. ЦЕЛИ
-   * =================================
-   */
-
-  const activeGoals=getActiveGoals(state);
+  const goalBudget=Math.round(
+    goalsRaw
+  );
 
   const goals=distributeGoalBudget(
-    goalsBudget,
+    goalBudget,
     activeGoals
   );
 
-
-  /*
-   * =================================
-   * 5. СЧИТАЕМ ФАКТИЧЕСКОЕ
-   * РАСПРЕДЕЛЕНИЕ
-   * =================================
-   */
+  // =================================
+  // 9. БАЛАНС
+  // =================================
 
   let distributed=
     basic+
     family+
-    creative+
-    freeBase+
     reserve+
+    creative+
+    free+
     goals.reduce(
       (s,g)=>s+num(g.amount),
       0
     );
 
+  let difference=total-distributed;
 
-  /*
-   * =================================
-   * 6. ЕСЛИ РЕЗЕРВ ДОСТИГНУТ
-   * =================================
-   *
-   * Его неиспользованная часть
-   * возвращается в свободные деньги,
-   * а не автоматически в цели.
-   */
+  // =================================
+  // 10. ЕСЛИ РЕЗЕРВ ДОСТИГНУТ —
+  //     ОСВОБОДИВШИЕСЯ ДЕНЬГИ В ЦЕЛИ
+  // =================================
 
-  let reserveReleased=
-    Math.max(
-      0,
-      reserveBudget-reserve
+  if(difference>0){
+
+    const extraGoals=distributeGoalBudget(
+      difference,
+      activeGoals,
+      goals
     );
 
+    extraGoals.forEach(extra=>{
 
-  /*
-   * =================================
-   * 7. ЕСЛИ ЦЕЛИ НЕ СМОГЛИ
-   * ПОЛУЧИТЬ ВЕСЬ СВОЙ БЮДЖЕТ
-   * =================================
-   *
-   * Например, цель почти завершена.
-   * Остаток также возвращаем
-   * в свободные деньги.
-   */
+      const existing=goals.find(
+        g=>g.id===extra.id
+      );
 
-  const goalsUsed=goals.reduce(
-    (s,g)=>s+num(g.amount),
-    0
-  );
+      if(existing){
 
-  const goalsReleased=Math.max(
-    0,
-    goalsBudget-goalsUsed
-  );
+        existing.amount+=extra.amount;
 
+        existing.needAfter=Math.max(
+          0,
+          existing.needAfter-extra.amount
+        );
 
-  /*
-   * =================================
-   * 8. ФИНАЛЬНЫЕ СВОБОДНЫЕ
-   * =================================
-   */
+      }else{
 
-  let free=
-    freeBase+
-    reserveReleased+
-    goalsReleased;
+        goals.push(extra);
 
+      }
 
-  /*
-   * =================================
-   * 9. ПОСЛЕДНИЙ БАЛАНС
-   * =================================
-   *
-   * Никаких потерянных рублей.
-   */
+    });
 
-  distributed=
-    basic+
-    family+
-    creative+
-    free+
-    reserve+
-    goalsUsed;
+    distributed=
+      basic+
+      family+
+      reserve+
+      creative+
+      free+
+      goals.reduce(
+        (s,g)=>s+num(g.amount),
+        0
+      );
 
-  let difference=
-    total-distributed;
+    difference=total-distributed;
+  }
 
-
-  /*
-   * Последние несколько рублей
-   * всегда отправляем в свободные.
-   */
+  // =================================
+  // 11. ПОСЛЕДНИЕ РУБЛИ → СВОБОДНЫЕ
+  // =================================
 
   if(difference!==0){
 
     free+=difference;
-
     distributed+=difference;
 
   }
-
 
   return {
 
@@ -639,8 +632,7 @@ function distributeGoalBudget(
 
     distributed,
 
-    remaining:
-      total-distributed
+    remaining:total-distributed
 
   };
 }
