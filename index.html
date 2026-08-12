@@ -1401,27 +1401,28 @@ renderEditedSummary();
   .addEventListener("click",()=>{
 
     const editedPlan=getEditedPlan();
+const validation=validateEditedPlan(editedPlan);
 
-    if(editedPlan.remaining!==0){
+if(!validation.valid || validation.remaining!==0){
 
-      result.insertAdjacentHTML(
-        "afterbegin",
-        `
-          <div class="notice" style="
-            margin-top:16px;
-            border-color:rgba(212,183,140,.25);
-          ">
-            Нельзя применить план:
-            доход должен быть распределён полностью.
-            <br>
-            Остаток:
-            <strong>${money(editedPlan.remaining)}</strong>
-          </div>
-        `
-      );
+  result.insertAdjacentHTML(
+    "afterbegin",
+    `
+      <div class="notice" style="
+        margin-top:16px;
+        border-color:rgba(212,183,140,.25);
+      ">
+        Нельзя применить план:
+        ${validation.reason || "доход должен быть распределён полностью."}
+        <br>
+        Остаток:
+        <strong>${money(validation.remaining)}</strong>
+      </div>
+    `
+  );
 
-      return;
-    }
+  return;
+}
 
     applyFinancialPlan(editedPlan,A,{
       source,
