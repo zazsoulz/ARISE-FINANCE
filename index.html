@@ -290,66 +290,89 @@ remaining-=reserve;
     };
   }
 
-  function applyFinancialPlan(plan,state=A){
-    if(!plan||!state)return false;
+  function applyFinancialPlan(plan,state=A,meta={}){
+  if(!plan||!state)return false;
 
-    const now=new Date();
-    const month=now.toISOString().slice(0,7);
+  const now=new Date();
+  const month=now.toISOString().slice(0,7);
 
-    state.monthlyPlans=Array.isArray(state.monthlyPlans)
-      ? state.monthlyPlans
-      : [];
+  state.monthlyPlans=Array.isArray(state.monthlyPlans)
+    ? state.monthlyPlans
+    : [];
 
-    state.allocations=Array.isArray(state.allocations)
-      ? state.allocations
-      : [];
+  state.allocations=Array.isArray(state.allocations)
+    ? state.allocations
+    : [];
 
-    const planRecord={
-      id:safeId(),
-      month,
-      income:plan.income,
-      family:plan.family,
-      creative:plan.creative,
-      free:plan.free,
-      reserve:plan.reserve,
-      goals:clone(plan.goals),
-      distributed:plan.distributed,
-      remaining:plan.remaining,
-      createdAt:now.toISOString()
-    };
+  state.transactions=Array.isArray(state.transactions)
+    ? state.transactions
+    : [];
 
-    state.monthlyPlans.push(planRecord);
+  const source=(meta.source||"Без источника").trim();
+  const date=meta.date||now.toISOString().slice(0,10);
 
-    if(plan.reserve>0){
-      const reserveGoal=state.goals.find(
-        g=>g.type==="reserve"
-      );
+  // Записываем сам доход
+  state.transactions.push({
+    id:safeId(),
+    type:"income",
+    amount:plan.income,
+    source,
+    date,
+    month,
+    createdAt:now.toISOString()
+  });
 
-      if(reserveGoal){
-        reserveGoal.current=
-          num(reserveGoal.current)+plan.reserve;
+  // Сохраняем рассчитанный план
+  const planRecord={
+    id:safeId(),
+    month,
+    income:plan.income,
+    source,
+    date,
+    family:plan.family,
+    creative:plan.creative,
+    free:plan.free,
+    reserve:plan.reserve,
+    goals:clone(plan.goals),
+    distributed:plan.distributed,
+    remaining:plan.remaining,
+    createdAt:now.toISOString()
+  };
+
+  state.monthlyPlans.push(planRecord);
+
+  // Резерв
+  if(plan.reserve>0){
+    const reserveGoal=state.goals.find(
+      g=>g.type==="reserve"
+    );
+
+    if(reserveGoal){
+      reserveGoal.current=
+        num(reserveGoal.current)+plan.reserve;
+    }
+  }
+
+  // Цели
+  plan.goals.forEach(item=>{
+    const goal=state.goals.find(
+      g=>g.id===item.id
+    );
+
+    if(goal){
+      goal.current=
+        num(goal.current)+num(item.amount);
+
+      if(num(goal.current)>=num(goal.target)){
+        goal.current=num(goal.target);
+        goal.status="completed";
       }
     }
+  });
 
-    plan.goals.forEach(item=>{
-      const goal=state.goals.find(
-        g=>g.id===item.id
-      );
-
-      if(goal){
-        goal.current=
-          num(goal.current)+num(item.amount);
-
-        if(num(goal.current)>=num(goal.target)){
-          goal.current=num(goal.target);
-          goal.status="completed";
-        }
-      }
-    });
-
-    saveLocal();
-    return true;
-  }
+  saveLocal();
+  return true;
+}
 
   function runFinancialEngineTest(){
     const testState=normalizeState({
@@ -726,195 +749,231 @@ remaining-=reserve;
     }
 
     function showIncome(){
-      page.innerHTML=`
-        <div class="grid">
+  page.innerHTML=`
+    <div class="grid">
 
-          <div class="col-12">
-            <div class="card">
+      <div class="col-12">
+        <div class="card">
 
-              <div class="kicker">НОВЫЙ ДОХОД</div>
-              <h1>Распредели доход</h1>
+          <div class="kicker">НОВЫЙ ДОХОД</div>
+          <h1>Распредели доход</h1>
 
-              <div class="sub">
-                Введи сумму — ARISE рассчитает план автоматически.
-              </div>
+          <div class="sub">
+            Введи сумму и укажи источник дохода.
+          </div>
 
-              <div class="form" style="margin-top:20px">
+          <div class="form" style="margin-top:20px">
 
-                <div class="field full">
-                  <label>Сумма дохода</label>
-                  <input
-                    id="incomeInput"
-                    type="number"
-                    inputmode="decimal"
-                    placeholder="150000"
-                  >
-                </div>
-
-              </div>
-
-              <div class="actions">
-
-                <button
-                  class="btn primary"
-                  id="calculateBtn"
-                >
-                  Рассчитать
-                </button>
-
-                <button
-                  class="btn ghost"
-                  id="backHome"
-                >
-                  Назад
-                </button>
-
-              </div>
-
-              <div id="planResult"></div>
-
+            <div class="field full">
+              <label>Сумма дохода</label>
+              <input
+                id="incomeInput"
+                type="number"
+                inputmode="decimal"
+                placeholder="150000"
+              >
             </div>
+
+            <div class="field">
+              <label>Источник дохода</label>
+              <input
+                id="incomeSource"
+                type="text"
+                placeholder="Например, Работа 1"
+              >
+            </div>
+
+            <div class="field">
+              <label>Дата</label>
+              <input
+                id="incomeDate"
+                type="date"
+                value="${new Date().toISOString().slice(0,10)}"
+              >
+            </div>
+
+          </div>
+
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              id="calculateBtn"
+            >
+              Рассчитать
+            </button>
+
+            <button
+              class="btn ghost"
+              id="backHome"
+            >
+              Назад
+            </button>
+
+          </div>
+
+          <div id="planResult"></div>
+
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  const input=document.getElementById("incomeInput");
+  const sourceInput=document.getElementById("incomeSource");
+  const dateInput=document.getElementById("incomeDate");
+  const result=document.getElementById("planResult");
+
+  document.getElementById("backHome")
+    .addEventListener("click",renderHome);
+
+  document.getElementById("calculateBtn")
+    .addEventListener("click",calculate);
+
+  input.addEventListener("keydown",e=>{
+    if(e.key==="Enter")calculate();
+  });
+
+  function calculate(){
+    const income=num(input.value);
+    const source=sourceInput.value.trim();
+    const date=dateInput.value;
+
+    if(income<=0){
+      result.innerHTML=`
+        <div class="notice" style="margin-top:16px">
+          Введи доход больше 0 ₽.
+        </div>
+      `;
+      return;
+    }
+
+    if(!source){
+      result.innerHTML=`
+        <div class="notice" style="margin-top:16px">
+          Укажи источник дохода.
+        </div>
+      `;
+      return;
+    }
+
+    const plan=calculateFinancialPlan(income,A);
+
+    result.innerHTML=`
+      <div style="margin-top:20px">
+
+        <div class="notice">
+          План рассчитан для дохода
+          <strong>${money(income)}</strong>
+          <br>
+          Источник: <strong>${source}</strong>
+        </div>
+
+        <div class="alloc-grid" style="margin-top:12px">
+
+          <div class="alloc">
+            <div class="kicker">СЕМЬЯ</div>
+            <div class="amount">${money(plan.family)}</div>
+          </div>
+
+          <div class="alloc">
+            <div class="kicker">ТВОРЧЕСТВО</div>
+            <div class="amount">${money(plan.creative)}</div>
+          </div>
+
+          <div class="alloc">
+            <div class="kicker">СВОБОДНЫЕ</div>
+            <div class="amount">${money(plan.free)}</div>
+          </div>
+
+          <div class="alloc">
+            <div class="kicker">РЕЗЕРВ</div>
+            <div class="amount">${money(plan.reserve)}</div>
           </div>
 
         </div>
-      `;
 
-      const input=document.getElementById("incomeInput");
-      const result=document.getElementById("planResult");
+        <div class="card" style="margin-top:14px;padding:16px">
 
-      document.getElementById("backHome")
-        .addEventListener("click",renderHome);
+          <h2>Цели</h2>
 
-      document.getElementById("calculateBtn")
-        .addEventListener("click",calculate);
+          ${
+            plan.goals.length
+            ? plan.goals.map(g=>`
+                <div class="row">
+                  <div>
+                    <strong>${g.name}</strong>
+                    <div class="tiny muted">
+                      Требовалось ${money(g.needBefore)}
+                    </div>
+                  </div>
 
-      input.addEventListener("keydown",e=>{
-        if(e.key==="Enter")calculate();
-      });
+                  <strong>
+                    ${money(g.amount)}
+                  </strong>
+                </div>
+              `).join("")
+            : `
+              <div class="empty">
+                Деньги на цели не распределены.
+              </div>
+            `
+          }
 
-      function calculate(){
-        const income=num(input.value);
+        </div>
 
-        if(income<=0){
-          result.innerHTML=`
-            <div class="notice" style="margin-top:16px">
-              Введи доход больше 0 ₽.
-            </div>
-          `;
-          return;
-        }
+        <div class="row" style="margin-top:8px">
+          <span class="muted">Распределено</span>
+          <strong>${money(plan.distributed)}</strong>
+        </div>
 
-        const plan=calculateFinancialPlan(income,A);
+        <div class="row">
+          <span class="muted">Остаток</span>
+          <strong>${money(plan.remaining)}</strong>
+        </div>
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            id="applyPlan"
+          >
+            Применить план
+          </button>
+
+          <button
+            class="btn ghost"
+            id="recalculate"
+          >
+            Пересчитать
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+    document.getElementById("recalculate")
+      .addEventListener("click",calculate);
+
+    document.getElementById("applyPlan")
+      .addEventListener("click",()=>{
+        applyFinancialPlan(plan,A,{
+          source,
+          date
+        });
 
         result.innerHTML=`
-          <div style="margin-top:20px">
-
-            <div class="notice">
-              План рассчитан для дохода
-              <strong>${money(income)}</strong>.
-            </div>
-
-            <div class="alloc-grid" style="margin-top:12px">
-
-              <div class="alloc">
-                <div class="kicker">СЕМЬЯ</div>
-                <div class="amount">${money(plan.family)}</div>
-              </div>
-
-              <div class="alloc">
-                <div class="kicker">ТВОРЧЕСТВО</div>
-                <div class="amount">${money(plan.creative)}</div>
-              </div>
-
-              <div class="alloc">
-                <div class="kicker">СВОБОДНЫЕ</div>
-                <div class="amount">${money(plan.free)}</div>
-              </div>
-
-              <div class="alloc">
-                <div class="kicker">РЕЗЕРВ</div>
-                <div class="amount">${money(plan.reserve)}</div>
-              </div>
-
-            </div>
-
-            <div class="card" style="margin-top:14px;padding:16px">
-
-              <h2>Цели</h2>
-
-              ${
-                plan.goals.length
-                ? plan.goals.map(g=>`
-                    <div class="row">
-                      <div>
-                        <strong>${g.name}</strong>
-                        <div class="tiny muted">
-                          Требовалось ${money(g.needBefore)}
-                        </div>
-                      </div>
-
-                      <strong>
-                        ${money(g.amount)}
-                      </strong>
-                    </div>
-                  `).join("")
-                : `
-                  <div class="empty">
-                    Деньги на цели не распределены.
-                  </div>
-                `
-              }
-
-            </div>
-
-            <div class="row" style="margin-top:8px">
-              <span class="muted">Распределено</span>
-              <strong>${money(plan.distributed)}</strong>
-            </div>
-
-            <div class="row">
-              <span class="muted">Остаток</span>
-              <strong>${money(plan.remaining)}</strong>
-            </div>
-
-            <div class="actions">
-
-              <button
-                class="btn primary"
-                id="applyPlan"
-              >
-                Применить план
-              </button>
-
-              <button
-                class="btn ghost"
-                id="recalculate"
-              >
-                Пересчитать
-              </button>
-
-            </div>
-
+          <div class="notice" style="margin-top:16px">
+            ✓ Доход сохранён и распределён.
           </div>
         `;
 
-        document.getElementById("recalculate")
-          .addEventListener("click",calculate);
-
-        document.getElementById("applyPlan")
-          .addEventListener("click",()=>{
-            applyFinancialPlan(plan,A);
-
-            result.innerHTML=`
-              <div class="notice" style="margin-top:16px">
-                ✓ План применён и сохранён.
-              </div>
-            `;
-
-            setTimeout(renderHome,700);
-          });
-      }
-    }
+        setTimeout(renderHome,700);
+      });
+  }
+}
 
     function showGoal(){
       page.innerHTML=`
