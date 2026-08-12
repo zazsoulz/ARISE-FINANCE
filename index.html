@@ -224,8 +224,9 @@ try {
 
     const settings=state.settings||{};
 
-    const familyMin=Math.max(0,num(settings.family));
-    const creativeMin=Math.max(0,num(settings.creativeMin));
+    const basicNeeds=Math.max(0,num(settings.basicNeeds));
+const familyMin=Math.max(0,num(settings.family));
+const creativeMin=Math.max(0,num(settings.creativeMin));
     const creativeTarget=Math.max(creativeMin,num(settings.creativeTarget));
     const freeMin=Math.max(0,num(settings.freeMin));
     const reserveTarget=Math.max(0,num(settings.reserveTarget));
