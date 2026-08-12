@@ -66,7 +66,102 @@ window.onerror = function(message, source, line, column) {
 </script>
 
 <script>
-document.getElementById("root").innerHTML =
-  '<div style="padding:40px;color:white;font:30px Arial">JS WORKS</div>';
+try {
+  const hasSupabase = false;
+  const sb = null;
+  const LOCAL_KEY = "arise_finance_local_v3";
+
+  const DEFAULT = {
+    profile: {
+      id: "local",
+      name: "Мой профиль",
+      baseCurrency: "RUB",
+      hidden: false
+    },
+    settings: {
+      family: 20000,
+      creativeMin: 5000,
+      creativeTarget: 12500,
+      freeMin: 20000,
+      reserveTarget: 300000
+    },
+    goals: [
+      {
+        id: "reserve",
+        name: "Финансовый резерв",
+        type: "reserve",
+        target: 300000,
+        current: 0,
+        deadline: "",
+        priority: 5,
+        status: "active"
+      },
+      {
+        id: "turkey",
+        name: "Турция",
+        type: "goal",
+        target: 125000,
+        current: 0,
+        deadline: "",
+        priority: 4,
+        status: "active"
+      },
+      {
+        id: "bmw",
+        name: "BMW G20",
+        type: "goal",
+        target: 2000000,
+        current: 0,
+        deadline: "",
+        priority: 2,
+        status: "active"
+      }
+    ],
+    transactions: [],
+    allocations: [],
+    monthlyPlans: [],
+    currencyRates: {}
+  };
+
+  let A = JSON.parse(JSON.stringify(DEFAULT));
+
+  document.getElementById("root").innerHTML = `
+    <div style="
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:20px;
+      color:white;
+      font-family:Arial,sans-serif;
+    ">
+      <div style="
+        padding:30px;
+        border:1px solid #333;
+        border-radius:20px;
+        background:#111;
+      ">
+        <div style="font-size:28px;font-weight:bold;">
+          JS TEST 2
+        </div>
+        <div style="margin-top:10px;color:#999;">
+          DEFAULT и локальное состояние созданы успешно
+        </div>
+      </div>
+    </div>
+  `;
+
+} catch (error) {
+  document.getElementById("root").innerHTML = `
+    <pre style="
+      white-space:pre-wrap;
+      padding:30px;
+      color:#fff;
+      background:#000;
+      font:16px monospace;
+    ">JS ERROR
+
+${String(error && error.stack || error)}</pre>
+  `;
+}
 </script>
 </body></html>
