@@ -1154,50 +1154,68 @@ remaining-=reserve;
     family:num(document.getElementById("editFamily").value),
     creative:num(document.getElementById("editCreative").value),
     free:num(document.getElementById("editFree").value),
-    reserve:num(document.getElementById("editReserve").value)
+    reserve:num(document.getElementById("editReserve").value),
+
+    goals:Array.from(
+      document.querySelectorAll(".goal-input")
+    ).map(input=>({
+      id:input.dataset.goalId,
+      amount:num(input.value)
+    }))
   };
 
-  const editedPlan=rebalanceFinancialPlan(
-    plan,
-    editedValues,
-    A
-  );
+  const income=num(plan.income);
 
-  const manualGoals=[];
+  const editedPlan={
+    ...clone(plan),
 
-  document.querySelectorAll(".goal-input")
-    .forEach(input=>{
+    basic:editedValues.basic,
+    family:editedValues.family,
+    creative:editedValues.creative,
+    free:editedValues.free,
+    reserve:editedValues.reserve,
 
-      const id=input.dataset.goalId;
-      const amount=num(input.value);
+    goals:[]
+  };
 
-      manualGoals.push({
-        id,
-        amount
-      });
+  /*
+   * Берём ВСЕ цели, которые были показаны
+   * пользователю в первоначальном плане.
+   *
+   * Поэтому 31 800 ₽ Турции не теряется
+   * при пересчёте остальных категорий.
+   */
 
-    });
+  plan.goals.forEach(goal=>{
 
-  editedPlan.goals=editedPlan.goals.map(goal=>{
-
-    const manual=manualGoals.find(
-      item=>item.id===goal.id
+    const editedGoal=editedValues.goals.find(
+      g=>g.id===goal.id
     );
 
-    if(!manual){
-      return goal;
-    }
+    const amount=editedGoal
+      ? Math.max(0,editedGoal.amount)
+      : Math.max(0,num(goal.amount));
 
-    return {
-      ...goal,
-      amount:manual.amount,
+    const needBefore=num(goal.needBefore);
+
+    editedPlan.goals.push({
+      id:goal.id,
+      name:goal.name,
+      amount,
+      needBefore,
       needAfter:Math.max(
         0,
-        goal.needBefore-manual.amount
+        needBefore-amount
       )
-    };
+    });
 
   });
+
+  /*
+   * Финальный расчёт.
+   * ВСЕ категории + ВСЕ цели должны
+   * участвовать в общей сумме.
+   */
 
   editedPlan.distributed=
     editedPlan.basic+
@@ -1206,12 +1224,12 @@ remaining-=reserve;
     editedPlan.free+
     editedPlan.reserve+
     editedPlan.goals.reduce(
-      (sum,goal)=>sum+num(goal.amount),
+      (total,goal)=>total+num(goal.amount),
       0
     );
 
   editedPlan.remaining=
-    editedPlan.income-editedPlan.distributed;
+    income-editedPlan.distributed;
 
   return editedPlan;
 }
