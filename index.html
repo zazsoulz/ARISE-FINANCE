@@ -1162,55 +1162,165 @@ remaining-=reserve;
     }
 
     function renderHistory(){
-      const plans=A.monthlyPlans||[];
+  const plans=A.monthlyPlans||[];
 
-      page.innerHTML=`
-        <div class="grid">
+  page.innerHTML=`
+    <div class="grid">
 
-          <div class="col-12">
-            <div class="card">
+      <div class="col-12">
+        <div class="card">
 
-              <div class="kicker">ИСТОРИЯ</div>
-              <h1>Финансовые планы</h1>
+          <div class="kicker">ИСТОРИЯ</div>
+          <h1>Финансовые операции</h1>
 
-              ${
-                plans.length
-                ? [...plans].reverse().map(p=>`
-                    <div class="event">
+          ${
+            plans.length
+            ? [...plans].reverse().map(p=>`
+                <div
+                  class="event"
+                  style="
+                    display:block;
+                    padding:16px 0;
+                  "
+                >
 
-                      <div>
-                        <strong>${money(p.income)}</strong>
+                  <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    gap:15px;
+                    align-items:flex-start;
+                  ">
 
-                        <div class="tiny muted">
-                          ${p.month}
-                        </div>
+                    <div>
+                      <strong style="font-size:16px">
+                        ${money(p.income)}
+                      </strong>
+
+                      <div class="tiny muted" style="margin-top:4px">
+                        ${p.source||"Без источника"}
                       </div>
 
-                      <div style="text-align:right">
-                        <strong>
-                          ${money(p.distributed)}
-                        </strong>
-
-                        <div class="tiny muted">
-                          распределено
-                        </div>
+                      <div class="tiny muted" style="margin-top:3px">
+                        ${p.date||p.month||""}
                       </div>
+                    </div>
+
+                    <div style="text-align:right">
+
+                      <div class="pill">
+                        Распределено
+                      </div>
+
+                      <strong style="
+                        display:block;
+                        margin-top:5px;
+                      ">
+                        ${money(p.distributed)}
+                      </strong>
 
                     </div>
-                  `).join("")
-                : `
-                  <div class="empty">
-                    История пока пуста.
-                  </div>
-                `
-              }
 
-            </div>
-          </div>
+                  </div>
+
+                  <div
+                    class="alloc-grid"
+                    style="
+                      margin-top:12px;
+                      grid-template-columns:repeat(2,1fr);
+                    "
+                  >
+
+                    <div class="alloc">
+                      <div class="kicker">СЕМЬЯ</div>
+                      <div class="amount">
+                        ${money(p.family)}
+                      </div>
+                    </div>
+
+                    <div class="alloc">
+                      <div class="kicker">ТВОРЧЕСТВО</div>
+                      <div class="amount">
+                        ${money(p.creative)}
+                      </div>
+                    </div>
+
+                    <div class="alloc">
+                      <div class="kicker">СВОБОДНЫЕ</div>
+                      <div class="amount">
+                        ${money(p.free)}
+                      </div>
+                    </div>
+
+                    <div class="alloc">
+                      <div class="kicker">РЕЗЕРВ</div>
+                      <div class="amount">
+                        ${money(p.reserve)}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  ${
+                    Array.isArray(p.goals)&&p.goals.length
+                    ? `
+                      <div style="
+                        margin-top:12px;
+                        padding:13px;
+                        border:1px solid var(--line);
+                        border-radius:15px;
+                        background:rgba(255,255,255,.015);
+                      ">
+
+                        <div class="kicker">
+                          ЦЕЛИ
+                        </div>
+
+                        ${p.goals.map(g=>`
+                          <div class="row">
+
+                            <span>
+                              ${g.name}
+                            </span>
+
+                            <strong>
+                              ${money(g.amount)}
+                            </strong>
+
+                          </div>
+                        `).join("")}
+
+                      </div>
+                    `
+                    : ""
+                  }
+
+                  <div class="row" style="margin-top:8px">
+
+                    <span class="muted">
+                      Остаток
+                    </span>
+
+                    <strong>
+                      ${money(p.remaining)}
+                    </strong>
+
+                  </div>
+
+                </div>
+              `).join("")
+            : `
+              <div class="empty">
+                История пока пуста.
+              </div>
+            `
+          }
 
         </div>
-      `;
-    }
+      </div>
+
+    </div>
+  `;
+}
 
     function renderProfile(){
       page.innerHTML=`
