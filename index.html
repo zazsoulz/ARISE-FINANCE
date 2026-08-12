@@ -233,11 +233,13 @@ const creativeMin=Math.max(0,num(settings.creativeMin));
 
     let remaining=total;
 
-    const family=Math.min(remaining,familyMin);
-    remaining-=family;
+    const basic=Math.min(remaining,basicNeeds);
+remaining-=basic;
 
-    const creative=Math.min(remaining,creativeTarget);
-    remaining-=creative;
+const family=Math.min(remaining,familyMin);
+remaining-=family;
+
+const creative=Math.min(remaining,creativeTarget);
 
     const free=Math.min(remaining,freeMin);
     remaining-=free;
