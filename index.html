@@ -72,60 +72,117 @@ try {
   const LOCAL_KEY = "arise_finance_local_v3";
 
   const DEFAULT = {
-    profile: {
-      id: "local",
-      name: "Мой профиль",
-      baseCurrency: "RUB",
-      hidden: false
+    profile:{id:"local",name:"Мой профиль",baseCurrency:"RUB",hidden:false},
+    settings:{
+      family:20000,
+      creativeMin:5000,
+      creativeTarget:12500,
+      freeMin:20000,
+      reserveTarget:300000
     },
-    settings: {
-      family: 20000,
-      creativeMin: 5000,
-      creativeTarget: 12500,
-      freeMin: 20000,
-      reserveTarget: 300000
-    },
-    goals: [
-      {
-        id: "reserve",
-        name: "Финансовый резерв",
-        type: "reserve",
-        target: 300000,
-        current: 0,
-        deadline: "",
-        priority: 5,
-        status: "active"
-      },
-      {
-        id: "turkey",
-        name: "Турция",
-        type: "goal",
-        target: 125000,
-        current: 0,
-        deadline: "",
-        priority: 4,
-        status: "active"
-      },
-      {
-        id: "bmw",
-        name: "BMW G20",
-        type: "goal",
-        target: 2000000,
-        current: 0,
-        deadline: "",
-        priority: 2,
-        status: "active"
-      }
+    goals:[
+      {id:"reserve",name:"Финансовый резерв",type:"reserve",target:300000,current:0,deadline:"",priority:5,status:"active"},
+      {id:"turkey",name:"Турция",type:"goal",target:125000,current:0,deadline:"",priority:4,status:"active"},
+      {id:"bmw",name:"BMW G20",type:"goal",target:2000000,current:0,deadline:"",priority:2,status:"active"}
     ],
-    transactions: [],
-    allocations: [],
-    monthlyPlans: [],
-    currencyRates: {}
+    transactions:[],
+    allocations:[],
+    monthlyPlans:[],
+    currencyRates:{}
   };
 
-  let A = JSON.parse(JSON.stringify(DEFAULT));
+  function clone(x){
+    return JSON.parse(JSON.stringify(x));
+  }
 
-  document.getElementById("root").innerHTML = `
+  function safeId(){
+    return "id_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,10);
+  }
+
+  function normalizeState(raw){
+    const base=clone(DEFAULT);
+    const src=raw&&typeof raw==="object"?raw:{};
+
+    const out={
+      ...base,
+      ...src,
+      profile:{
+        ...base.profile,
+        ...(src.profile&&typeof src.profile==="object"?src.profile:{})
+      },
+      settings:{
+        ...base.settings,
+        ...(src.settings&&typeof src.settings==="object"?src.settings:{})
+      }
+    };
+
+    out.goals=Array.isArray(src.goals)
+      ? src.goals.filter(Boolean).map(g=>({
+          id:g.id||safeId(),
+          name:g.name||"Цель",
+          type:g.type||"goal",
+          target:Number(g.target)||0,
+          current:Number(g.current)||0,
+          deadline:g.deadline||"",
+          priority:Number(g.priority)||3,
+          status:g.status||"active",
+          ...g
+        }))
+      : clone(base.goals);
+
+    out.transactions=Array.isArray(src.transactions)
+      ? src.transactions.filter(Boolean)
+      : [];
+
+    out.allocations=Array.isArray(src.allocations)
+      ? src.allocations.filter(Boolean)
+      : [];
+
+    out.monthlyPlans=Array.isArray(src.monthlyPlans)
+      ? src.monthlyPlans.filter(Boolean)
+      : [];
+
+    out.currencyRates=
+      src.currencyRates&&
+      typeof src.currencyRates==="object"&&
+      !Array.isArray(src.currencyRates)
+        ? src.currencyRates
+        : {};
+
+    if(!out.profile.baseCurrency){
+      out.profile.baseCurrency="RUB";
+    }
+
+    return out;
+  }
+
+  function loadLocal(){
+    try{
+      const raw=localStorage.getItem(LOCAL_KEY);
+      return normalizeState(raw?JSON.parse(raw):null);
+    }catch(e){
+      try{
+        localStorage.removeItem(LOCAL_KEY);
+      }catch(_){}
+      return clone(DEFAULT);
+    }
+  }
+
+  function saveLocal(){
+    try{
+      localStorage.setItem(
+        LOCAL_KEY,
+        JSON.stringify(normalizeState(A))
+      );
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  let A=loadLocal();
+
+  document.getElementById("root").innerHTML=`
     <div style="
       min-height:100vh;
       display:grid;
@@ -133,6 +190,7 @@ try {
       padding:20px;
       color:white;
       font-family:Arial,sans-serif;
+      background:#090c11;
     ">
       <div style="
         padding:30px;
@@ -140,18 +198,19 @@ try {
         border-radius:20px;
         background:#111;
       ">
-        <div style="font-size:28px;font-weight:bold;">
-          JS TEST 2
+        <div style="font-size:28px;font-weight:bold">
+          JS TEST 3
         </div>
-        <div style="margin-top:10px;color:#999;">
-          DEFAULT и локальное состояние созданы успешно
+        <div style="margin-top:10px;color:#999">
+          normalizeState + loadLocal + saveLocal работают
         </div>
       </div>
     </div>
   `;
 
-} catch (error) {
-  document.getElementById("root").innerHTML = `
+}catch(error){
+
+  document.getElementById("root").innerHTML=`
     <pre style="
       white-space:pre-wrap;
       padding:30px;
@@ -160,8 +219,9 @@ try {
       font:16px monospace;
     ">JS ERROR
 
-${String(error && error.stack || error)}</pre>
+${String(error&&error.stack||error)}</pre>
   `;
+
 }
 </script>
 </body></html>
