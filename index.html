@@ -422,69 +422,315 @@ remaining-=reserve;
 
   const ENGINE_TEST=runFinancialEngineTest();
 
-  document.getElementById("root").innerHTML=`
-    <div style="
-      min-height:100vh;
-      display:grid;
-      place-items:center;
-      padding:20px;
-      color:white;
-      font-family:Arial,sans-serif;
-      background:#090c11;
-    ">
+    // =========================
+  // ARISE FINANCE — LIVE PLAN
+  // =========================
+
+  function formatMoney(value){
+    return num(value).toLocaleString("ru-RU") + " ₽";
+  }
+
+  function renderPlan(plan){
+    const goalHtml = plan.goals.length
+      ? plan.goals.map(goal=>`
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            gap:16px;
+            padding:14px 0;
+            border-bottom:1px solid rgba(255,255,255,.055);
+          ">
+            <div>
+              <div style="font-weight:700">${goal.name}</div>
+              <div style="margin-top:4px;color:#8d98a7;font-size:11px">
+                Приоритетная цель
+              </div>
+            </div>
+
+            <div style="
+              font-size:16px;
+              font-weight:800;
+              white-space:nowrap;
+            ">
+              ${formatMoney(goal.amount)}
+            </div>
+          </div>
+        `).join("")
+      : `
+        <div style="padding:20px 0;color:#8d98a7">
+          На цели пока ничего не распределено.
+        </div>
+      `;
+
+    return `
       <div style="
-        width:min(700px,100%);
-        padding:30px;
-        border:1px solid #333;
-        border-radius:20px;
-        background:#111;
+        margin-top:20px;
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:10px;
       ">
-        <div style="
-          font-size:28px;
-          font-weight:bold;
-        ">
-          JS TEST 4
-        </div>
 
         <div style="
-          margin-top:10px;
-          color:${ENGINE_TEST.ok?"#9bbfae":"#d59a9a"};
-        ">
-          ${ENGINE_TEST.ok
-            ?"Финансовый движок работает"
-            :"Финансовый движок содержит ошибку"}
-        </div>
-
-        <div style="
-          margin-top:20px;
           padding:16px;
-          background:#090c11;
-          border-radius:14px;
-          font-family:monospace;
-          font-size:13px;
-          line-height:1.8;
+          border:1px solid #222b36;
+          border-radius:16px;
+          background:#0c1118;
         ">
-          ${ENGINE_TEST.checks.map(
-            x=>`${x[1]?"✓":"✗"} ${x[0]}`
-          ).join("<br>")}
+          <div style="color:#8d98a7;font-size:11px">Семья</div>
+          <div style="font-size:20px;font-weight:800;margin-top:6px">
+            ${formatMoney(plan.family)}
+          </div>
         </div>
 
         <div style="
-          margin-top:20px;
-          color:#999;
-          font-size:12px;
-          line-height:1.6;
+          padding:16px;
+          border:1px solid #222b36;
+          border-radius:16px;
+          background:#0c1118;
         ">
-          Тестовый доход: 150 000 ₽<br>
-          Семья: ${ENGINE_TEST.plan.family.toLocaleString("ru-RU")} ₽<br>
-          Творчество: ${ENGINE_TEST.plan.creative.toLocaleString("ru-RU")} ₽<br>
-          Свободные: ${ENGINE_TEST.plan.free.toLocaleString("ru-RU")} ₽<br>
-          Резерв: ${ENGINE_TEST.plan.reserve.toLocaleString("ru-RU")} ₽<br>
-          Остаток: ${ENGINE_TEST.plan.remaining.toLocaleString("ru-RU")} ₽
+          <div style="color:#8d98a7;font-size:11px">Творчество</div>
+          <div style="font-size:20px;font-weight:800;margin-top:6px">
+            ${formatMoney(plan.creative)}
+          </div>
+        </div>
+
+        <div style="
+          padding:16px;
+          border:1px solid #222b36;
+          border-radius:16px;
+          background:#0c1118;
+        ">
+          <div style="color:#8d98a7;font-size:11px">Свободные</div>
+          <div style="font-size:20px;font-weight:800;margin-top:6px">
+            ${formatMoney(plan.free)}
+          </div>
+        </div>
+
+        <div style="
+          padding:16px;
+          border:1px solid #222b36;
+          border-radius:16px;
+          background:#0c1118;
+        ">
+          <div style="color:#8d98a7;font-size:11px">Резерв</div>
+          <div style="font-size:20px;font-weight:800;margin-top:6px">
+            ${formatMoney(plan.reserve)}
+          </div>
         </div>
       </div>
-    </div>
-  `;
+
+      <div style="
+        margin-top:14px;
+        padding:18px;
+        border:1px solid #222b36;
+        border-radius:18px;
+        background:#0c1118;
+      ">
+        <div style="
+          font-size:12px;
+          color:#8d98a7;
+          margin-bottom:4px;
+        ">
+          Цели
+        </div>
+
+        ${goalHtml}
+      </div>
+
+      <div style="
+        margin-top:14px;
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        padding:16px 18px;
+        border-radius:16px;
+        background:rgba(155,191,174,.07);
+        border:1px solid rgba(155,191,174,.14);
+      ">
+        <span style="color:#8d98a7">Распределено</span>
+        <strong>${formatMoney(plan.distributed)}</strong>
+      </div>
+
+      <div style="
+        margin-top:8px;
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        padding:12px 18px;
+        color:#8d98a7;
+        font-size:12px;
+      ">
+        <span>Остаток</span>
+        <span>${formatMoney(plan.remaining)}</span>
+      </div>
+    `;
+  }
+
+  function renderApp(){
+    document.getElementById("root").innerHTML=`
+      <div style="
+        min-height:100vh;
+        background:#090c11;
+        color:#eef2f6;
+        font-family:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+        padding:20px 16px 100px;
+      ">
+
+        <div style="
+          width:min(720px,100%);
+          margin:0 auto;
+        ">
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:28px;
+          ">
+            <div style="
+              letter-spacing:.18em;
+              font-size:13px;
+              font-weight:800;
+            ">
+              ARISE FINANCE
+            </div>
+
+            <div style="
+              color:#8d98a7;
+              font-size:12px;
+            ">
+              ${A.profile.name}
+            </div>
+          </div>
+
+          <div style="
+            margin-bottom:22px;
+          ">
+            <div style="
+              color:#8d98a7;
+              font-size:12px;
+              margin-bottom:7px;
+            ">
+              Финансовый план
+            </div>
+
+            <div style="
+              font-size:32px;
+              font-weight:800;
+              letter-spacing:-.04em;
+            ">
+              Распредели доход
+            </div>
+
+            <div style="
+              color:#8d98a7;
+              font-size:13px;
+              line-height:1.5;
+              margin-top:7px;
+            ">
+              ARISE автоматически распределит деньги
+              согласно твоим текущим приоритетам.
+            </div>
+          </div>
+
+          <div style="
+            padding:20px;
+            border:1px solid #222b36;
+            border-radius:22px;
+            background:#10151d;
+          ">
+
+            <div style="
+              color:#8d98a7;
+              font-size:11px;
+              margin-bottom:8px;
+            ">
+              Месячный доход
+            </div>
+
+            <input
+              id="incomeInput"
+              type="number"
+              inputmode="decimal"
+              placeholder="150000"
+              style="
+                width:100%;
+                box-sizing:border-box;
+                border:1px solid #222b36;
+                background:#0c1118;
+                color:#eef2f6;
+                border-radius:14px;
+                padding:15px;
+                font-size:20px;
+                outline:none;
+              "
+            >
+
+            <button
+              id="calculateBtn"
+              style="
+                width:100%;
+                margin-top:12px;
+                border:0;
+                border-radius:14px;
+                padding:15px;
+                background:#d8dde5;
+                color:#111720;
+                font-weight:800;
+                font-size:14px;
+                cursor:pointer;
+              "
+            >
+              Рассчитать план
+            </button>
+
+          </div>
+
+          <div id="planResult"></div>
+
+        </div>
+      </div>
+    `;
+
+    const input=document.getElementById("incomeInput");
+    const button=document.getElementById("calculateBtn");
+    const result=document.getElementById("planResult");
+
+    function calculate(){
+      const income=num(input.value);
+
+      if(income<=0){
+        result.innerHTML=`
+          <div style="
+            margin-top:14px;
+            padding:14px;
+            border-radius:14px;
+            background:rgba(213,154,154,.08);
+            border:1px solid rgba(213,154,154,.15);
+            color:#d59a9a;
+            font-size:12px;
+          ">
+            Введи доход больше 0 ₽
+          </div>
+        `;
+        return;
+      }
+
+      const plan=calculateFinancialPlan(income,A);
+
+      result.innerHTML=renderPlan(plan);
+    }
+
+    button.addEventListener("click",calculate);
+
+    input.addEventListener("keydown",event=>{
+      if(event.key==="Enter"){
+        calculate();
+      }
+    });
+  }
+
+  renderApp();
   
 
 }catch(error){
