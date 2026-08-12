@@ -211,97 +211,393 @@ try {
       )
       .sort((a,b)=>num(b.priority)-num(a.priority));
 }
+function distributeGoalBudget(
+  budget,
+  goals,
+  existingGoals=[]
+){
 
-  function calculateFinancialPlan(income,state=A){
-    const total=num(income);
+  let amountLeft=Math.max(
+    0,
+    Math.round(num(budget))
+  );
 
-    if(total<=0){
-      return {
-        income:0,
-        family:0,
-        creative:0,
-        free:0,
-        reserve:0,
-        goals:[],
-        distributed:0,
-        remaining:0
-      };
-    }
+  if(amountLeft<=0 || !goals.length){
+    return [];
+  }
 
-    const settings=state.settings||{};
+  // =================================
+  // УЧИТЫВАЕМ УЖЕ ВЫДЕЛЕННЫЕ ДЕНЬГИ
+  // =================================
 
-    const basicNeeds=Math.max(0,num(settings.basicNeeds));
-const familyMin=Math.max(0,num(settings.family));
-const creativeMin=Math.max(0,num(settings.creativeMin));
-    const creativeTarget=Math.max(creativeMin,num(settings.creativeTarget));
-    const freeMin=Math.max(0,num(settings.freeMin));
-    const reserveTarget=Math.max(0,num(settings.reserveTarget));
+  const alreadyAllocated=new Map();
 
-    let remaining=total;
-
-    const basic=Math.min(remaining,basicNeeds);
-remaining-=basic;
-
-const family=Math.min(remaining,familyMin);
-remaining-=family;
-
-const creative=Math.min(remaining,creativeTarget);
-remaining-=creative;
-
-const free=Math.min(remaining,freeMin);
-remaining-=free;
-
-    const currentReserve=sum(
-      state.goals||[],
-      g=>g.type==="reserve"?g.current:0
+  (existingGoals||[]).forEach(g=>{
+    alreadyAllocated.set(
+      g.id,
+      num(g.amount)
     );
+  });
 
-    const reserveNeed=Math.max(0,reserveTarget-currentReserve);
-const reserveMonthlyLimit=30000;
-const reserve=Math.min(
-  remaining,
-  reserveNeed,
-  reserveMonthlyLimit
-);
-remaining-=reserve;
 
-    const goals=[];
-    const activeGoals=getActiveGoals(state);
+  // =================================
+  // СОЗДАЁМ ВЕС ЦЕЛИ
+  // =================================
 
-    activeGoals.forEach(goal=>{
-      if(remaining<=0)return;
+  const prepared=goals
+    .map(goal=>{
 
       const target=num(goal.target);
       const current=num(goal.current);
-      const need=Math.max(0,target-current);
 
-      if(need<=0)return;
+      const already=num(
+        alreadyAllocated.get(goal.id)
+      );
 
-      const amount=Math.min(remaining,need);
+      const need=Math.max(
+        0,
+        target-current-already
+      );
 
-      goals.push({
-        id:goal.id,
-        name:goal.name,
+      if(need<=0){
+        return null;
+      }
+
+      const priority=Math.max(
+        1,
+        num(goal.priority)||1
+      );
+
+      // Приоритет — главный фактор.
+      // Близость к завершению немного усиливает цель.
+      const progress=target>0
+        ? Math.min(
+            1,
+            (current+already)/target
+          )
+        : 0;
+
+      const urgency=1+(progress*0.5);
+
+      const weight=
+        priority*
+        urgency;
+
+      return {
+        goal,
+        need,
+        weight
+      };
+
+    })
+    .filter(Boolean);
+
+
+  if(!prepared.length){
+    return [];
+  }
+
+
+  // =================================
+  // ПЕРВИЧНОЕ РАСПРЕДЕЛЕНИЕ
+  // =================================
+
+  const totalWeight=prepared.reduce(
+    (sum,item)=>sum+item.weight,
+    0
+  );
+
+  const result=[];
+
+  prepared.forEach(item=>{
+
+    const proportional=
+      amountLeft*
+      (item.weight/totalWeight);
+
+    const amount=Math.min(
+      item.need,
+      Math.floor(proportional)
+    );
+
+    if(amount>0){
+
+      result.push({
+        id:item.goal.id,
+        name:item.goal.name,
         amount,
-        needBefore:need,
-        needAfter:need-amount
+        needBefore:item.need,
+        needAfter:item.need-amount
       });
 
-      remaining-=amount;
+      amountLeft-=amount;
+    }
+
+  });
+
+
+  // =================================
+  // РАСПРЕДЕЛЯЕМ ОСТАВШИЕСЯ РУБЛИ
+  // =================================
+
+  while(
+    amountLeft>0 &&
+    result.length>0
+  ){
+
+    let best=null;
+
+    result.forEach(item=>{
+
+      if(item.needAfter<=0){
+        return;
+      }
+
+      const goal=goals.find(
+        g=>g.id===item.id
+      );
+
+      if(!goal){
+        return;
+      }
+
+      const priority=num(goal.priority)||1;
+
+      if(
+        !best ||
+        priority>best.priority
+      ){
+        best={
+          item,
+          priority
+        };
+      }
+
     });
 
+    if(!best){
+      break;
+    }
+
+    best.item.amount+=1;
+    best.item.needAfter-=1;
+
+    amountLeft-=1;
+  }
+
+
+  return result;
+}
+  function calculateFinancialPlan(income,state=A){
+
+  const total=num(income);
+
+  if(total<=0){
     return {
-  income:total,
-  basic,
-  family,
-      creative,
-      free,
-      reserve,
-      goals,
-      distributed:total-remaining,
-      remaining
+      income:0,
+      basic:0,
+      family:0,
+      creative:0,
+      free:0,
+      reserve:0,
+      goals:[],
+      distributed:0,
+      remaining:0
     };
   }
+
+  const settings=state.settings||{};
+
+  // =================================
+  // 1. ФИКСИРОВАННЫЕ РАСХОДЫ
+  // =================================
+
+  const basicNeeds=Math.max(
+    0,
+    num(settings.basicNeeds)
+  );
+
+  const familyMin=Math.max(
+    0,
+    num(settings.family)
+  );
+
+  let remaining=total;
+
+  const basic=Math.min(
+    remaining,
+    basicNeeds
+  );
+
+  remaining-=basic;
+
+  const family=Math.min(
+    remaining,
+    familyMin
+  );
+
+  remaining-=family;
+
+
+  // =================================
+  // 2. ПРОЦЕНТЫ ОТ ОСТАТКА
+  // =================================
+
+  const reservePercent=0.30;
+  const goalsPercent=0.40;
+  const creativePercent=0.10;
+  const freePercent=0.20;
+
+  const reserveRaw=remaining*reservePercent;
+  const goalsRaw=remaining*goalsPercent;
+  const creativeRaw=remaining*creativePercent;
+  const freeRaw=remaining*freePercent;
+
+
+  // =================================
+  // 3. ОКРУГЛЕНИЕ
+  // =================================
+
+  let reserve=Math.round(reserveRaw);
+  let creative=Math.round(creativeRaw);
+  let free=Math.round(freeRaw);
+
+
+  // =================================
+  // 4. АКТИВНЫЕ ЦЕЛИ
+  // =================================
+
+  const activeGoals=getActiveGoals(state);
+
+  const currentReserve=sum(
+    state.goals||[],
+    g=>g.type==="reserve"?g.current:0
+  );
+
+  const reserveTarget=Math.max(
+    0,
+    num(settings.reserveTarget)
+  );
+
+  const reserveNeed=Math.max(
+    0,
+    reserveTarget-currentReserve
+  );
+
+  // Не отправляем в резерв больше,
+  // чем реально требуется до цели.
+  reserve=Math.min(
+    reserve,
+    reserveNeed
+  );
+
+
+  // =================================
+  // 5. ДИНАМИЧЕСКОЕ РАСПРЕДЕЛЕНИЕ ЦЕЛЕЙ
+  // =================================
+
+  const goalBudget=Math.round(
+    goalsRaw
+  );
+
+  const goals=distributeGoalBudget(
+    goalBudget,
+    activeGoals
+  );
+
+
+  // =================================
+  // 6. БАЛАНСИРОВКА
+  // =================================
+
+  let distributed=
+    basic+
+    family+
+    reserve+
+    creative+
+    free+
+    goals.reduce(
+      (s,g)=>s+num(g.amount),
+      0
+    );
+
+  let difference=total-distributed;
+
+
+  // Если из-за того, что резерв уже достиг цели,
+  // освободились деньги — отправляем их
+  // обратно в систему целей/свободных денег.
+
+  if(difference>0){
+
+    const extraGoals=distributeGoalBudget(
+      difference,
+      activeGoals,
+      goals
+    );
+
+    extraGoals.forEach(extra=>{
+
+      const existing=goals.find(
+        g=>g.id===extra.id
+      );
+
+      if(existing){
+        existing.amount+=extra.amount;
+        existing.needAfter=Math.max(
+          0,
+          existing.needAfter-extra.amount
+        );
+      }else{
+        goals.push(extra);
+      }
+
+    });
+
+    distributed=
+      basic+
+      family+
+      reserve+
+      creative+
+      free+
+      goals.reduce(
+        (s,g)=>s+num(g.amount),
+        0
+      );
+
+    difference=total-distributed;
+  }
+
+
+  // Последняя страховка:
+  // любые 1–2 ₽ после округления
+  // остаются свободными.
+
+  if(difference!==0){
+    free+=difference;
+    distributed+=difference;
+  }
+
+
+  return {
+
+    income:total,
+
+    basic,
+    family,
+
+    creative,
+    free,
+    reserve,
+
+    goals,
+
+    distributed,
+
+    remaining:total-distributed
+
+  };
+}
 
   function applyFinancialPlan(plan,state=A,meta={}){
   if(!plan||!state)return false;
