@@ -196,9 +196,13 @@ try {
 
   function getActiveGoals(state){
     return (state.goals||[])
-      .filter(g=>g && g.status!=="completed")
+      .filter(g=>
+        g &&
+        g.status!=="completed" &&
+        g.type!=="reserve"
+      )
       .sort((a,b)=>num(b.priority)-num(a.priority));
-  }
+}
 
   function calculateFinancialPlan(income,state=A){
     const total=num(income);
