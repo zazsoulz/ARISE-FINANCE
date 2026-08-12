@@ -1420,7 +1420,13 @@ remaining-=reserve;
     renderHome();
   }
 
-  renderApp();
+  console.log("ARISE: state loaded", A);
+console.log("ARISE: engine test", ENGINE_TEST);
+console.log("ARISE: renderApp start");
+
+renderApp();
+
+console.log("ARISE: renderApp done");
   
 
 }catch(error){
