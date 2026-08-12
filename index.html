@@ -387,7 +387,132 @@ remaining-=reserve;
   saveLocal();
   return true;
 }
+  // =========================
+  // ARISE FINANCE — REBALANCE ENGINE
+  // =========================
 
+  function rebalanceFinancialPlan(basePlan,editedValues,state=A){
+
+    if(!basePlan || !editedValues){
+      return basePlan;
+    }
+
+    const income=num(basePlan.income);
+
+    const result={
+      ...clone(basePlan),
+      goals:[],
+      distributed:0,
+      remaining:0
+    };
+
+    // ---------------------------------
+    // 1. Фиксированные категории
+    // ---------------------------------
+
+    result.basic=num(basePlan.basic);
+    result.family=num(basePlan.family);
+
+    // ---------------------------------
+    // 2. Пользовательские категории
+    // ---------------------------------
+
+    result.creative=Math.max(
+      0,
+      num(editedValues.creative)
+    );
+
+    result.free=Math.max(
+      0,
+      num(editedValues.free)
+    );
+
+    result.reserve=Math.max(
+      0,
+      num(editedValues.reserve)
+    );
+
+    // ---------------------------------
+    // 3. Сколько осталось после категорий
+    // ---------------------------------
+
+    let remaining=
+      income
+      -result.basic
+      -result.family
+      -result.creative
+      -result.free
+      -result.reserve;
+
+    // ---------------------------------
+    // 4. Если категорий стало больше
+    //    чем весь доход — уменьшаем
+    //    цели до нуля
+    // ---------------------------------
+
+    const activeGoals=getActiveGoals(state);
+
+    if(remaining<0){
+
+      result.goals=[];
+
+      result.distributed=income;
+      result.remaining=0;
+
+      return result;
+    }
+
+    // ---------------------------------
+    // 5. Распределяем остаток по целям
+    //    согласно приоритету
+    // ---------------------------------
+
+    activeGoals.forEach(goal=>{
+
+      if(remaining<=0){
+        return;
+      }
+
+      const target=num(goal.target);
+      const current=num(goal.current);
+
+      const need=Math.max(
+        0,
+        target-current
+      );
+
+      if(need<=0){
+        return;
+      }
+
+      const amount=Math.min(
+        remaining,
+        need
+      );
+
+      result.goals.push({
+        id:goal.id,
+        name:goal.name,
+        amount,
+        needBefore:need,
+        needAfter:need-amount
+      });
+
+      remaining-=amount;
+    });
+
+    // ---------------------------------
+    // 6. Итог
+    // ---------------------------------
+
+    result.distributed=
+      income-remaining;
+
+    result.remaining=
+      remaining;
+
+    return result;
+  }
   function runFinancialEngineTest(){
     const testState=normalizeState({
       profile:{name:"TEST"},
