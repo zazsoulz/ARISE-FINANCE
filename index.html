@@ -566,168 +566,659 @@ remaining-=reserve;
     `;
   }
 
+    function formatMoney(value){
+    return num(value).toLocaleString("ru-RU") + " ₽";
+  }
+
   function renderApp(){
     document.getElementById("root").innerHTML=`
-      <div style="
-        min-height:100vh;
-        background:#090c11;
-        color:#eef2f6;
-        font-family:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-        padding:20px 16px 100px;
-      ">
+      <div class="app">
+        <div class="shell">
 
-        <div style="
-          width:min(720px,100%);
-          margin:0 auto;
-        ">
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:28px;
-          ">
-            <div style="
-              letter-spacing:.18em;
-              font-size:13px;
-              font-weight:800;
-            ">
-              ARISE FINANCE
+          <div class="top">
+            <div class="brand">
+              ARISE <span>FINANCE</span>
             </div>
 
-            <div style="
-              color:#8d98a7;
-              font-size:12px;
-            ">
-              ${A.profile.name}
+            <div class="profile">
+              <div class="avatar">
+                ${(A.profile.name||"М").slice(0,1).toUpperCase()}
+              </div>
+              <span>${A.profile.name||"Мой профиль"}</span>
             </div>
           </div>
 
-          <div style="
-            margin-bottom:22px;
-          ">
-            <div style="
-              color:#8d98a7;
-              font-size:12px;
-              margin-bottom:7px;
-            ">
-              Финансовый план
-            </div>
-
-            <div style="
-              font-size:32px;
-              font-weight:800;
-              letter-spacing:-.04em;
-            ">
-              Распредели доход
-            </div>
-
-            <div style="
-              color:#8d98a7;
-              font-size:13px;
-              line-height:1.5;
-              margin-top:7px;
-            ">
-              ARISE автоматически распределит деньги
-              согласно твоим текущим приоритетам.
-            </div>
+          <div class="nav">
+            <button class="active" data-page="home">Главная</button>
+            <button data-page="income">Доход</button>
+            <button data-page="goals">Цели</button>
+            <button data-page="history">История</button>
+            <button data-page="profile">Профиль</button>
           </div>
 
-          <div style="
-            padding:20px;
-            border:1px solid #222b36;
-            border-radius:22px;
-            background:#10151d;
-          ">
-
-            <div style="
-              color:#8d98a7;
-              font-size:11px;
-              margin-bottom:8px;
-            ">
-              Месячный доход
-            </div>
-
-            <input
-              id="incomeInput"
-              type="number"
-              inputmode="decimal"
-              placeholder="150000"
-              style="
-                width:100%;
-                box-sizing:border-box;
-                border:1px solid #222b36;
-                background:#0c1118;
-                color:#eef2f6;
-                border-radius:14px;
-                padding:15px;
-                font-size:20px;
-                outline:none;
-              "
-            >
-
-            <button
-              id="calculateBtn"
-              style="
-                width:100%;
-                margin-top:12px;
-                border:0;
-                border-radius:14px;
-                padding:15px;
-                background:#d8dde5;
-                color:#111720;
-                font-weight:800;
-                font-size:14px;
-                cursor:pointer;
-              "
-            >
-              Рассчитать план
-            </button>
-
-          </div>
-
-          <div id="planResult"></div>
+          <div id="page"></div>
 
         </div>
       </div>
     `;
 
-    const input=document.getElementById("incomeInput");
-    const button=document.getElementById("calculateBtn");
-    const result=document.getElementById("planResult");
+    const page=document.getElementById("page");
 
-    function calculate(){
-      const income=num(input.value);
-
-      if(income<=0){
-        result.innerHTML=`
-          <div style="
-            margin-top:14px;
-            padding:14px;
-            border-radius:14px;
-            background:rgba(213,154,154,.08);
-            border:1px solid rgba(213,154,154,.15);
-            color:#d59a9a;
-            font-size:12px;
-          ">
-            Введи доход больше 0 ₽
-          </div>
-        `;
-        return;
-      }
-
-      const plan=calculateFinancialPlan(income,A);
-
-      result.innerHTML=renderPlan(plan);
+    function money(v){
+      return formatMoney(v);
     }
 
-    button.addEventListener("click",calculate);
+    function renderHome(){
+      const income=A.monthlyPlans?.length
+        ? A.monthlyPlans[A.monthlyPlans.length-1].income
+        : 0;
 
-    input.addEventListener("keydown",event=>{
-      if(event.key==="Enter"){
-        calculate();
+      const reserve=(A.goals||[])
+        .filter(g=>g.type==="reserve")
+        .reduce((s,g)=>s+num(g.current),0);
+
+      const goals=(A.goals||[])
+        .filter(g=>g.type!=="reserve" && g.status!=="completed");
+
+      page.innerHTML=`
+        <div class="grid">
+
+          <div class="col-12">
+            <div class="card">
+              <div class="kicker">ФИНАНСОВАЯ СИСТЕМА</div>
+              <h1>Твои деньги под контролем.</h1>
+              <div class="sub">
+                ARISE распределяет доход согласно твоим приоритетам.
+              </div>
+
+              <div class="actions">
+                <button class="btn primary" id="newIncome">
+                  Добавить доход
+                </button>
+
+                <button class="btn ghost" id="newGoal">
+                  Добавить цель
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="card">
+              <div class="kicker">ПОСЛЕДНИЙ ДОХОД</div>
+              <div class="value">${money(income)}</div>
+              <div class="sub">Последний рассчитанный доход</div>
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="card">
+              <div class="kicker">РЕЗЕРВ</div>
+              <div class="value">${money(reserve)}</div>
+              <div class="sub">
+                Цель ${money(A.settings.reserveTarget)}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-4">
+            <div class="card">
+              <div class="kicker">ЦЕЛИ</div>
+              <div class="value">${goals.length}</div>
+              <div class="sub">Активных целей</div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card">
+              <h2>Активные цели</h2>
+
+              ${
+                goals.length
+                ? goals.map(g=>{
+                    const target=num(g.target);
+                    const current=num(g.current);
+                    const percent=target>0
+                      ? Math.min(100,current/target*100)
+                      : 0;
+
+                    return `
+                      <div class="goal">
+                        <div class="goal-head">
+                          <div>
+                            <div class="goal-name">${g.name}</div>
+                            <div class="goal-meta">
+                              ${money(current)} из ${money(target)}
+                            </div>
+                          </div>
+
+                          <div class="pill">
+                            ${Math.round(percent)}%
+                          </div>
+                        </div>
+
+                        <div class="progress">
+                          <div
+                            class="bar"
+                            style="width:${percent}%"
+                          ></div>
+                        </div>
+                      </div>
+                    `;
+                  }).join("")
+                : `
+                  <div class="empty">
+                    Пока нет активных целей.
+                  </div>
+                `
+              }
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      document.getElementById("newIncome")
+        .addEventListener("click",()=>showIncome());
+
+      document.getElementById("newGoal")
+        .addEventListener("click",()=>showGoal());
+    }
+
+    function showIncome(){
+      page.innerHTML=`
+        <div class="grid">
+
+          <div class="col-12">
+            <div class="card">
+
+              <div class="kicker">НОВЫЙ ДОХОД</div>
+              <h1>Распредели доход</h1>
+
+              <div class="sub">
+                Введи сумму — ARISE рассчитает план автоматически.
+              </div>
+
+              <div class="form" style="margin-top:20px">
+
+                <div class="field full">
+                  <label>Сумма дохода</label>
+                  <input
+                    id="incomeInput"
+                    type="number"
+                    inputmode="decimal"
+                    placeholder="150000"
+                  >
+                </div>
+
+              </div>
+
+              <div class="actions">
+
+                <button
+                  class="btn primary"
+                  id="calculateBtn"
+                >
+                  Рассчитать
+                </button>
+
+                <button
+                  class="btn ghost"
+                  id="backHome"
+                >
+                  Назад
+                </button>
+
+              </div>
+
+              <div id="planResult"></div>
+
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      const input=document.getElementById("incomeInput");
+      const result=document.getElementById("planResult");
+
+      document.getElementById("backHome")
+        .addEventListener("click",renderHome);
+
+      document.getElementById("calculateBtn")
+        .addEventListener("click",calculate);
+
+      input.addEventListener("keydown",e=>{
+        if(e.key==="Enter")calculate();
+      });
+
+      function calculate(){
+        const income=num(input.value);
+
+        if(income<=0){
+          result.innerHTML=`
+            <div class="notice" style="margin-top:16px">
+              Введи доход больше 0 ₽.
+            </div>
+          `;
+          return;
+        }
+
+        const plan=calculateFinancialPlan(income,A);
+
+        result.innerHTML=`
+          <div style="margin-top:20px">
+
+            <div class="notice">
+              План рассчитан для дохода
+              <strong>${money(income)}</strong>.
+            </div>
+
+            <div class="alloc-grid" style="margin-top:12px">
+
+              <div class="alloc">
+                <div class="kicker">СЕМЬЯ</div>
+                <div class="amount">${money(plan.family)}</div>
+              </div>
+
+              <div class="alloc">
+                <div class="kicker">ТВОРЧЕСТВО</div>
+                <div class="amount">${money(plan.creative)}</div>
+              </div>
+
+              <div class="alloc">
+                <div class="kicker">СВОБОДНЫЕ</div>
+                <div class="amount">${money(plan.free)}</div>
+              </div>
+
+              <div class="alloc">
+                <div class="kicker">РЕЗЕРВ</div>
+                <div class="amount">${money(plan.reserve)}</div>
+              </div>
+
+            </div>
+
+            <div class="card" style="margin-top:14px;padding:16px">
+
+              <h2>Цели</h2>
+
+              ${
+                plan.goals.length
+                ? plan.goals.map(g=>`
+                    <div class="row">
+                      <div>
+                        <strong>${g.name}</strong>
+                        <div class="tiny muted">
+                          Требовалось ${money(g.needBefore)}
+                        </div>
+                      </div>
+
+                      <strong>
+                        ${money(g.amount)}
+                      </strong>
+                    </div>
+                  `).join("")
+                : `
+                  <div class="empty">
+                    Деньги на цели не распределены.
+                  </div>
+                `
+              }
+
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              <span class="muted">Распределено</span>
+              <strong>${money(plan.distributed)}</strong>
+            </div>
+
+            <div class="row">
+              <span class="muted">Остаток</span>
+              <strong>${money(plan.remaining)}</strong>
+            </div>
+
+            <div class="actions">
+
+              <button
+                class="btn primary"
+                id="applyPlan"
+              >
+                Применить план
+              </button>
+
+              <button
+                class="btn ghost"
+                id="recalculate"
+              >
+                Пересчитать
+              </button>
+
+            </div>
+
+          </div>
+        `;
+
+        document.getElementById("recalculate")
+          .addEventListener("click",calculate);
+
+        document.getElementById("applyPlan")
+          .addEventListener("click",()=>{
+            applyFinancialPlan(plan,A);
+
+            result.innerHTML=`
+              <div class="notice" style="margin-top:16px">
+                ✓ План применён и сохранён.
+              </div>
+            `;
+
+            setTimeout(renderHome,700);
+          });
       }
-    });
+    }
+
+    function showGoal(){
+      page.innerHTML=`
+        <div class="grid">
+
+          <div class="col-12">
+            <div class="card">
+
+              <div class="kicker">НОВАЯ ЦЕЛЬ</div>
+              <h1>Создать цель</h1>
+
+              <div class="form" style="margin-top:20px">
+
+                <div class="field full">
+                  <label>Название</label>
+                  <input
+                    id="goalName"
+                    placeholder="Например, отпуск"
+                  >
+                </div>
+
+                <div class="field">
+                  <label>Сумма цели</label>
+                  <input
+                    id="goalTarget"
+                    type="number"
+                    inputmode="decimal"
+                    placeholder="125000"
+                  >
+                </div>
+
+                <div class="field">
+                  <label>Приоритет</label>
+                  <select id="goalPriority">
+                    <option value="5">5 — очень высокий</option>
+                    <option value="4" selected>4 — высокий</option>
+                    <option value="3">3 — обычный</option>
+                    <option value="2">2 — низкий</option>
+                    <option value="1">1 — минимальный</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <div class="actions">
+
+                <button
+                  class="btn primary"
+                  id="saveGoal"
+                >
+                  Создать цель
+                </button>
+
+                <button
+                  class="btn ghost"
+                  id="cancelGoal"
+                >
+                  Назад
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      document.getElementById("cancelGoal")
+        .addEventListener("click",renderHome);
+
+      document.getElementById("saveGoal")
+        .addEventListener("click",()=>{
+          const name=document.getElementById("goalName").value.trim();
+          const target=num(document.getElementById("goalTarget").value);
+          const priority=num(document.getElementById("goalPriority").value);
+
+          if(!name || target<=0){
+            alert("Заполни название и сумму цели.");
+            return;
+          }
+
+          A.goals.push({
+            id:safeId(),
+            name,
+            type:"goal",
+            target,
+            current:0,
+            deadline:"",
+            priority,
+            status:"active"
+          });
+
+          saveLocal();
+
+          renderGoals();
+        });
+    }
+
+    function renderGoals(){
+      page.innerHTML=`
+        <div class="grid">
+
+          <div class="col-12">
+            <div class="card">
+
+              <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:10px;
+              ">
+                <div>
+                  <div class="kicker">ЦЕЛИ</div>
+                  <h1>Мои цели</h1>
+                </div>
+
+                <button class="btn primary" id="addGoal">
+                  + Цель
+                </button>
+              </div>
+
+              <div style="margin-top:18px">
+
+                ${
+                  A.goals.length
+                  ? A.goals.map(g=>{
+
+                      const target=num(g.target);
+                      const current=num(g.current);
+                      const percent=target
+                        ? Math.min(100,current/target*100)
+                        : 0;
+
+                      return `
+                        <div class="goal">
+
+                          <div class="goal-head">
+
+                            <div>
+                              <div class="goal-name">
+                                ${g.name}
+                              </div>
+
+                              <div class="goal-meta">
+                                ${money(current)}
+                                из
+                                ${money(target)}
+                              </div>
+                            </div>
+
+                            <div class="pill">
+                              Приоритет ${g.priority}
+                            </div>
+
+                          </div>
+
+                          <div class="progress">
+                            <div
+                              class="bar"
+                              style="width:${percent}%"
+                            ></div>
+                          </div>
+
+                        </div>
+                      `;
+
+                    }).join("")
+                  : `
+                    <div class="empty">
+                      Целей пока нет.
+                    </div>
+                  `
+                }
+
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      document.getElementById("addGoal")
+        .addEventListener("click",showGoal);
+    }
+
+    function renderHistory(){
+      const plans=A.monthlyPlans||[];
+
+      page.innerHTML=`
+        <div class="grid">
+
+          <div class="col-12">
+            <div class="card">
+
+              <div class="kicker">ИСТОРИЯ</div>
+              <h1>Финансовые планы</h1>
+
+              ${
+                plans.length
+                ? [...plans].reverse().map(p=>`
+                    <div class="event">
+
+                      <div>
+                        <strong>${money(p.income)}</strong>
+
+                        <div class="tiny muted">
+                          ${p.month}
+                        </div>
+                      </div>
+
+                      <div style="text-align:right">
+                        <strong>
+                          ${money(p.distributed)}
+                        </strong>
+
+                        <div class="tiny muted">
+                          распределено
+                        </div>
+                      </div>
+
+                    </div>
+                  `).join("")
+                : `
+                  <div class="empty">
+                    История пока пуста.
+                  </div>
+                `
+              }
+
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function renderProfile(){
+      page.innerHTML=`
+        <div class="grid">
+
+          <div class="col-12">
+            <div class="card">
+
+              <div class="kicker">ПРОФИЛЬ</div>
+              <h1>${A.profile.name}</h1>
+
+              <div class="row">
+                <span class="muted">Валюта</span>
+                <strong>${A.profile.baseCurrency}</strong>
+              </div>
+
+              <div class="row">
+                <span class="muted">Семья</span>
+                <strong>${money(A.settings.family)}</strong>
+              </div>
+
+              <div class="row">
+                <span class="muted">Творчество</span>
+                <strong>${money(A.settings.creativeTarget)}</strong>
+              </div>
+
+              <div class="row">
+                <span class="muted">Свободные деньги</span>
+                <strong>${money(A.settings.freeMin)}</strong>
+              </div>
+
+              <div class="row">
+                <span class="muted">Цель резерва</span>
+                <strong>${money(A.settings.reserveTarget)}</strong>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function setPage(name){
+      document.querySelectorAll(".nav button")
+        .forEach(btn=>{
+          btn.classList.toggle(
+            "active",
+            btn.dataset.page===name
+          );
+        });
+
+      if(name==="home")renderHome();
+      if(name==="income")showIncome();
+      if(name==="goals")renderGoals();
+      if(name==="history")renderHistory();
+      if(name==="profile")renderProfile();
+    }
+
+    document.querySelectorAll(".nav button")
+      .forEach(button=>{
+        button.addEventListener("click",()=>{
+          setPage(button.dataset.page);
+        });
+      });
+
+    renderHome();
   }
 
   renderApp();
