@@ -62,8 +62,11 @@ window.onerror = function(message, source, line, column) {
 <script src="supabase-config.js"></script>
 <script>
 try {
-  const hasSupabase = false;
-const sb = null;
+  const hasSupabase = true;
+const sb = window.supabase.createClient(
+  window.SUPABASE_CONFIG.url,
+  window.SUPABASE_CONFIG.key
+);
   const LOCAL_KEY = "arise_finance_local_v3";
 
   const DEFAULT = {
