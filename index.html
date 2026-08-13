@@ -1286,7 +1286,76 @@ function distributeGoalBudget(
 
   });
 }
+async function loginUser(){
 
+  const email=document
+    .getElementById("authEmail")
+    .value
+    .trim();
+
+  const password=document
+    .getElementById("authPassword")
+    .value;
+
+  const message=document
+    .getElementById("authMessage");
+
+  if(!email || !password){
+    message.textContent=
+      "Введите email и пароль.";
+    return;
+  }
+
+  message.textContent="Выполняем вход…";
+
+  try{
+
+    const {data,error}=await sb.auth
+      .signInWithPassword({
+        email,
+        password
+      });
+
+    if(error){
+
+      console.error(
+        "ARISE login error:",
+        error
+      );
+
+      message.textContent=
+        error.message;
+
+      return;
+    }
+
+    if(!data.user){
+
+      message.textContent=
+        "Не удалось выполнить вход.";
+
+      return;
+    }
+
+    message.textContent=
+      "Вход выполнен. Загружаем ARISE…";
+
+    setTimeout(()=>{
+      renderApp();
+    },300);
+
+  }catch(error){
+
+    console.error(
+      "ARISE loginUser error:",
+      error
+    );
+
+    message.textContent=
+      "Ошибка входа.";
+
+  }
+}
 async function registerUser(){
 
   const email=document
