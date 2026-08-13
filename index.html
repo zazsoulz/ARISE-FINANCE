@@ -2898,7 +2898,13 @@ if(!validation.valid || validation.remaining!==0){
 console.log("ARISE: engine test", ENGINE_TEST);
 console.log("ARISE: renderApp start");
 
-renderApp();
+initSupabaseAuth().then(user=>{
+  if(user){
+    renderApp();
+  }else{
+    renderAuth();
+  }
+});
 
 console.log("ARISE: renderApp done");
   
