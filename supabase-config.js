@@ -1,4 +1,4 @@
 window.SUPABASE_CONFIG = {
   url: "https://ayttgprdjhzphnwdhfsl.supabase.co",
-  key: "ТВОЙ_PUBLISHABLE_KEY"
+  key: "sb_publishable_Ovdodkq4ra_-gYuAw7VZLw_EtOgavav"
 };
