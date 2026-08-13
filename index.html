@@ -67,6 +67,14 @@ const sb = window.supabase.createClient(
   window.SUPABASE_CONFIG.url,
   window.SUPABASE_CONFIG.key
 );
+ sb.auth.getSession()
+  .then(({ data, error }) => {
+    if (error) {
+      console.error("ARISE SUPABASE ERROR:", error);
+    } else {
+      console.log("ARISE SUPABASE OK:", data);
+    }
+  });
   const LOCAL_KEY = "arise_finance_local_v3";
 
   const DEFAULT = {
