@@ -1163,13 +1163,13 @@ function distributeGoalBudget(
           ARISE FINANCE
         </div>
 
-        <div class="auth-title">
-          Добро пожаловать
+        <div class="auth-title" id="authTitle">
+          Вход в ARISE
         </div>
 
-        <div class="auth-copy">
-          Создайте аккаунт, чтобы сохранить
-          свою финансовую систему.
+        <div class="auth-copy" id="authCopy">
+          Войдите в свой аккаунт,
+          чтобы продолжить.
         </div>
 
         <input
@@ -1183,7 +1183,7 @@ function distributeGoalBudget(
           id="authPassword"
           type="password"
           placeholder="Пароль"
-          autocomplete="new-password"
+          autocomplete="current-password"
         >
 
         <input
@@ -1191,14 +1191,30 @@ function distributeGoalBudget(
           type="password"
           placeholder="Повторите пароль"
           autocomplete="new-password"
+          style="display:none"
         >
 
         <button
-          id="authRegister"
+          id="authAction"
           class="primary"
           style="width:100%;margin-top:12px"
         >
-          Создать аккаунт
+          Войти
+        </button>
+
+        <button
+          id="authSwitch"
+          type="button"
+          style="
+            width:100%;
+            margin-top:10px;
+            background:none;
+            border:0;
+            color:#8d98a7;
+            cursor:pointer;
+          "
+        >
+          Нет аккаунта? Создать
         </button>
 
         <div
@@ -1211,9 +1227,64 @@ function distributeGoalBudget(
     </div>
   `;
 
-  document
-    .getElementById("authRegister")
-    .addEventListener("click",registerUser);
+  let mode="login";
+
+  const title=document.getElementById("authTitle");
+  const copy=document.getElementById("authCopy");
+  const password2=document.getElementById("authPassword2");
+  const action=document.getElementById("authAction");
+  const switchButton=document.getElementById("authSwitch");
+  const password=document.getElementById("authPassword");
+
+  switchButton.addEventListener("click",()=>{
+
+    mode=mode==="login"
+      ? "register"
+      : "login";
+
+    const isRegister=mode==="register";
+
+    title.textContent=isRegister
+      ? "Создать аккаунт"
+      : "Вход в ARISE";
+
+    copy.textContent=isRegister
+      ? "Создайте аккаунт, чтобы сохранить свою финансовую систему."
+      : "Войдите в свой аккаунт, чтобы продолжить.";
+
+    password2.style.display=
+      isRegister ? "block" : "none";
+
+    password2.value="";
+
+    password.autocomplete=
+      isRegister
+        ? "new-password"
+        : "current-password";
+
+    action.textContent=
+      isRegister
+        ? "Создать аккаунт"
+        : "Войти";
+
+    switchButton.textContent=
+      isRegister
+        ? "Уже есть аккаунт? Войти"
+        : "Нет аккаунта? Создать";
+
+    document.getElementById("authMessage")
+      .textContent="";
+  });
+
+  action.addEventListener("click",()=>{
+
+    if(mode==="register"){
+      registerUser();
+    }else{
+      loginUser();
+    }
+
+  });
 }
 
 async function registerUser(){
