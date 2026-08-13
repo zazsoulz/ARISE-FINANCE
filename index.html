@@ -1152,7 +1152,166 @@ function distributeGoalBudget(
     `;
   }
 
-    
+    function renderAuth(){
+  const root=document.getElementById("root");
+
+  root.innerHTML=`
+    <div class="auth">
+      <div class="auth-card">
+
+        <div class="auth-logo">
+          ARISE FINANCE
+        </div>
+
+        <div class="auth-title">
+          Добро пожаловать
+        </div>
+
+        <div class="auth-copy">
+          Создайте аккаунт, чтобы сохранить
+          свою финансовую систему.
+        </div>
+
+        <input
+          id="authEmail"
+          type="email"
+          placeholder="Email"
+          autocomplete="email"
+        >
+
+        <input
+          id="authPassword"
+          type="password"
+          placeholder="Пароль"
+          autocomplete="new-password"
+        >
+
+        <input
+          id="authPassword2"
+          type="password"
+          placeholder="Повторите пароль"
+          autocomplete="new-password"
+        >
+
+        <button
+          id="authRegister"
+          class="primary"
+          style="width:100%;margin-top:12px"
+        >
+          Создать аккаунт
+        </button>
+
+        <div
+          id="authMessage"
+          class="tiny muted"
+          style="margin-top:12px;text-align:center"
+        ></div>
+
+      </div>
+    </div>
+  `;
+
+  document
+    .getElementById("authRegister")
+    .addEventListener("click",registerUser);
+}
+
+async function registerUser(){
+
+  const email=document
+    .getElementById("authEmail")
+    .value
+    .trim();
+
+  const password=document
+    .getElementById("authPassword")
+    .value;
+
+  const password2=document
+    .getElementById("authPassword2")
+    .value;
+
+  const message=document
+    .getElementById("authMessage");
+
+  if(!email || !password || !password2){
+    message.textContent="Заполните все поля.";
+    return;
+  }
+
+  if(password!==password2){
+    message.textContent="Пароли не совпадают.";
+    return;
+  }
+
+  if(password.length<6){
+    message.textContent="Пароль должен быть минимум 6 символов.";
+    return;
+  }
+
+  message.textContent="Создаём аккаунт…";
+
+  try{
+
+    const {data,error}=await sb.auth.signUp({
+      email,
+      password
+    });
+
+    if(error){
+      console.error(
+        "ARISE registration error:",
+        error
+      );
+
+      message.textContent=error.message;
+      return;
+    }
+
+    if(!data.user){
+      message.textContent=
+        "Не удалось создать пользователя.";
+      return;
+    }
+
+    const {error:profileError}=await sb
+      .from("profiles")
+      .insert({
+        id:data.user.id,
+        name:"Мой профиль",
+        base_currency:"RUB"
+      });
+
+    if(profileError){
+      console.error(
+        "ARISE profile create error:",
+        profileError
+      );
+
+      message.textContent=
+        "Аккаунт создан, но профиль не создался.";
+      return;
+    }
+
+    message.textContent=
+      "Аккаунт создан. Загружаем ARISE…";
+
+    setTimeout(()=>{
+      renderApp();
+    },500);
+
+  }catch(error){
+
+    console.error(
+      "ARISE registerUser error:",
+      error
+    );
+
+    message.textContent=
+      "Ошибка регистрации.";
+
+  }
+}
 
   function renderApp(){
     document.getElementById("root").innerHTML=`
