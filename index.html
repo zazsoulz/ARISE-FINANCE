@@ -201,6 +201,62 @@ const sb = window.supabase.createClient(
 }
 
   let A=loadLocal();
+ async function initSupabaseAuth(){
+  try{
+    if(!window.supabase || !window.SUPABASE_CONFIG){
+      console.warn("ARISE: Supabase not configured");
+      return null;
+    }
+
+    const {data,error}=await sb.auth.getSession();
+
+    if(error){
+      console.error("ARISE auth session error:",error);
+      return null;
+    }
+
+    if(!data.session){
+      console.log("ARISE: user is not authenticated");
+      return null;
+    }
+
+    const user=data.session.user;
+
+    console.log(
+      "ARISE: authenticated user:",
+      user.email
+    );
+
+    const {data:profile,error:profileError}=await sb
+      .from("profiles")
+      .select("*")
+      .eq("id",user.id)
+      .maybeSingle();
+
+    if(profileError){
+      console.error(
+        "ARISE profile load error:",
+        profileError
+      );
+      return user;
+    }
+
+    if(profile){
+      A.profile.id=profile.id;
+      A.profile.name=profile.name;
+      A.profile.baseCurrency=profile.base_currency;
+    }
+
+    return user;
+
+  }catch(error){
+    console.error(
+      "ARISE initSupabaseAuth error:",
+      error
+    );
+    return null;
+  }
+}
   // =========================
   // JS TEST 4 — FINANCIAL ENGINE
   // =========================
