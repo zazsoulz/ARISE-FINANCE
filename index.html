@@ -1533,11 +1533,29 @@ async function registerUser(){
             </div>
 
             <div class="profile">
-              <div class="avatar">
-                ${(A.profile.name||"М").slice(0,1).toUpperCase()}
-              </div>
-              <span>${A.profile.name||"Мой профиль"}</span>
-            </div>
+
+  <div class="avatar">
+    ${(A.profile.name||"М").slice(0,1).toUpperCase()}
+  </div>
+
+  <span>${A.profile.name||"Мой профиль"}</span>
+
+  <button
+    id="logoutButton"
+    type="button"
+    style="
+      margin-left:10px;
+      background:none;
+      border:0;
+      color:#8d98a7;
+      cursor:pointer;
+      font-size:12px;
+    "
+  >
+    Выйти
+  </button>
+
+</div>
           </div>
 
           <div class="nav">
@@ -1555,7 +1573,34 @@ async function registerUser(){
     `;
 
     const page=document.getElementById("page");
+document
+  .getElementById("logoutButton")
+  .addEventListener("click",async()=>{
 
+    try{
+
+      const {error}=await sb.auth.signOut();
+
+      if(error){
+        console.error(
+          "ARISE logout error:",
+          error
+        );
+        return;
+      }
+
+      renderAuth();
+
+    }catch(error){
+
+      console.error(
+        "ARISE logout exception:",
+        error
+      );
+
+    }
+
+  });
     function money(v){
       return formatMoney(v);
     }
