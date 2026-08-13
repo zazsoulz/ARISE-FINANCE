@@ -1274,31 +1274,12 @@ async function registerUser(){
       return;
     }
 
-    const {error:profileError}=await sb
-      .from("profiles")
-      .insert({
-        id:data.user.id,
-        name:"Мой профиль",
-        base_currency:"RUB"
-      });
-
-    if(profileError){
-      console.error(
-        "ARISE profile create error:",
-        profileError
-      );
-
-      message.textContent=
-  "PROFILE ERROR: "+profileError.message;
-      return;
-    }
+    
 
     message.textContent=
-      "Аккаунт создан. Загружаем ARISE…";
+  "Аккаунт создан. Проверьте почту и подтвердите email.";
 
-    setTimeout(()=>{
-      renderApp();
-    },500);
+  
 
   }catch(error){
 
