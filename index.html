@@ -1336,7 +1336,95 @@ async function loginUser(){
 
       return;
     }
+const {data:profile,error:profileError}=await sb
+  .from("profiles")
+  .select("*")
+  .eq("id",data.user.id)
+  .maybeSingle();
 
+if(profileError){
+
+  console.error(
+    "ARISE profile load error:",
+    profileError
+  );
+
+  message.textContent=
+    "Ошибка загрузки профиля: "+
+    profileError.message;
+
+  return;
+}
+
+if(!profile){
+
+  const {error:createProfileError}=await sb
+    .from("profiles")
+    .insert({
+      id:data.user.id,
+      name:"Мой профиль",
+      base_currency:"RUB"
+    });
+
+  if(createProfileError){
+
+    console.error(
+      "ARISE profile create error:",
+      createProfileError
+    );
+
+    message.textContent=
+      "Ошибка создания профиля: "+
+      createProfileError.message;
+
+    return;
+  }
+
+const {data:profile,error:profileError}=await sb
+  .from("profiles")
+  .select("*")
+  .eq("id",data.user.id)
+  .maybeSingle();
+
+if(profileError){
+
+  console.error(
+    "ARISE profile load error:",
+    profileError
+  );
+
+  message.textContent=
+    "Ошибка загрузки профиля: "+
+    profileError.message;
+
+  return;
+}
+
+if(!profile){
+
+  const {error:createProfileError}=await sb
+    .from("profiles")
+    .insert({
+      id:data.user.id,
+      name:"Мой профиль",
+      base_currency:"RUB"
+    });
+
+  if(createProfileError){
+
+    console.error(
+      "ARISE profile create error:",
+      createProfileError
+    );
+
+    message.textContent=
+      "Ошибка создания профиля: "+
+      createProfileError.message;
+
+    return;
+  }
+
+}
     message.textContent=
       "Вход выполнен. Загружаем ARISE…";
 
