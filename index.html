@@ -3305,12 +3305,26 @@ if(!validation.valid || validation.remaining!==0){
 console.log("ARISE: engine test", ENGINE_TEST);
 console.log("ARISE: renderApp start");
 
-initSupabaseAuth().then(user=>{
+initSupabaseAuth().then(async user=>{
+
   if(user){
+
+    const loaded=await loadSupabaseData(user);
+
+    if(!loaded){
+      console.warn(
+        "ARISE: Supabase data load failed, using local state"
+      );
+    }
+
     renderApp();
+
   }else{
+
     renderAuth();
+
   }
+
 });
 
 console.log("ARISE: renderApp done");
