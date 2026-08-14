@@ -459,6 +459,335 @@ const sb = window.supabase.createClient(
     return false;
   }
 }
+ async function migrateLocalDataToSupabase(user){
+
+  try{
+
+    if(!user){
+      console.warn(
+        "ARISE: no user for migration"
+      );
+      return false;
+    }
+
+    console.log(
+      "ARISE: starting local → Supabase migration"
+    );
+
+    // =========================
+    // FINANCIAL SETTINGS
+    // =========================
+
+    const {data:existingSettings,error:settingsCheckError}=await sb
+      .from("financial_settings")
+      .select("user_id")
+      .eq("user_id",user.id)
+      .maybeSingle();
+
+    if(settingsCheckError){
+      console.error(
+        "ARISE settings check error:",
+        settingsCheckError
+      );
+      return false;
+    }
+
+    if(!existingSettings){
+
+      const {error:settingsInsertError}=await sb
+        .from("financial_settings")
+        .insert({
+          user_id:user.id,
+          basic_needs:num(A.settings.basicNeeds),
+          family:num(A.settings.family),
+          creative_min:num(A.settings.creativeMin),
+          creative_target:num(A.settings.creativeTarget),
+          free_min:num(A.settings.freeMin),
+          reserve_target:num(A.settings.reserveTarget)
+        });
+
+      if(settingsInsertError){
+
+        console.error(
+          "ARISE settings migration error:",
+          settingsInsertError
+        );
+
+        return false;
+      }
+
+    }
+
+    // =========================
+    // GOALS
+    // =========================
+
+    const {data:existingGoals,error:goalsCheckError}=await sb
+      .from("goals")
+      .select("id")
+      .eq("user_id",user.id);
+
+    if(goalsCheckError){
+
+      console.error(
+        "ARISE goals check error:",
+        goalsCheckError
+      );
+
+      return false;
+    }
+
+    if((existingGoals||[]).length===0){
+
+      const goals=A.goals||[];
+
+      if(goals.length>0){
+
+        const rows=goals.map(g=>({
+
+          id:g.id,
+          user_id:user.id,
+
+          name:g.name||"Цель",
+          type:g.type||"goal",
+
+          target:num(g.target),
+          current:num(g.current),
+
+          deadline:g.deadline||null,
+          priority:num(g.priority)||3,
+          status:g.status||"active"
+
+        }));
+
+        const {error:goalsInsertError}=await sb
+          .from("goals")
+          .insert(rows);
+
+        if(goalsInsertError){
+
+          console.error(
+            "ARISE goals migration error:",
+            goalsInsertError
+          );
+
+          return false;
+        }
+
+      }
+
+    }
+
+    // =========================
+    // TRANSACTIONS
+    // =========================
+
+    const {data:existingTransactions,error:transactionsCheckError}=await sb
+      .from("transactions")
+      .select("id")
+      .eq("user_id",user.id);
+
+    if(transactionsCheckError){
+
+      console.error(
+        "ARISE transactions check error:",
+        transactionsCheckError
+      );
+
+      return false;
+    }
+
+    if((existingTransactions||[]).length===0){
+
+      const transactions=A.transactions||[];
+
+      if(transactions.length>0){
+
+        const rows=transactions.map(t=>({
+
+          id:t.id,
+          user_id:user.id,
+
+          type:t.type||"income",
+          amount:num(t.amount),
+
+          source:t.source||"Без источника",
+
+          date:t.date||new Date().toISOString().slice(0,10),
+
+          month:t.month||
+            String(t.date||new Date().toISOString().slice(0,10))
+              .slice(0,7)
+
+        }));
+
+        const {error:transactionsInsertError}=await sb
+          .from("transactions")
+          .insert(rows);
+
+        if(transactionsInsertError){
+
+          console.error(
+            "ARISE transactions migration error:",
+            transactionsInsertError
+          );
+
+          return false;
+        }
+
+      }
+
+    }
+
+    // =========================
+    // MONTHLY PLANS
+    // =========================
+
+    const {data:existingPlans,error:plansCheckError}=await sb
+      .from("monthly_plans")
+      .select("id")
+      .eq("user_id",user.id);
+
+    if(plansCheckError){
+
+      console.error(
+        "ARISE plans check error:",
+        plansCheckError
+      );
+
+      return false;
+    }
+
+    if((existingPlans||[]).length===0){
+
+      const plans=A.monthlyPlans||[];
+
+      if(plans.length>0){
+
+        const rows=plans.map(p=>({
+
+          id:p.id,
+          user_id:user.id,
+
+          month:p.month||
+            String(p.date||new Date().toISOString().slice(0,10))
+              .slice(0,7),
+
+          income:num(p.income),
+
+          source:p.source||"Без источника",
+
+          date:p.date||
+            new Date().toISOString().slice(0,10),
+
+          basic:num(p.basic),
+          family:num(p.family),
+          creative:num(p.creative),
+          free:num(p.free),
+          reserve:num(p.reserve),
+
+          goals:Array.isArray(p.goals)
+            ? p.goals
+            : [],
+
+          distributed:num(p.distributed),
+          remaining:num(p.remaining)
+
+        }));
+
+        const {error:plansInsertError}=await sb
+          .from("monthly_plans")
+          .insert(rows);
+
+        if(plansInsertError){
+
+          console.error(
+            "ARISE monthly plans migration error:",
+            plansInsertError
+          );
+
+          return false;
+        }
+
+      }
+
+    }
+
+    // =========================
+    // ALLOCATIONS
+    // =========================
+
+    const {data:existingAllocations,error:allocationsCheckError}=await sb
+      .from("allocations")
+      .select("id")
+      .eq("user_id",user.id);
+
+    if(allocationsCheckError){
+
+      console.error(
+        "ARISE allocations check error:",
+        allocationsCheckError
+      );
+
+      return false;
+    }
+
+    if((existingAllocations||[]).length===0){
+
+      const allocations=A.allocations||[];
+
+      if(allocations.length>0){
+
+        const rows=allocations.map(a=>({
+
+          id:a.id,
+          user_id:user.id,
+
+          transaction_id:a.transaction_id||null,
+          monthly_plan_id:a.monthly_plan_id||null,
+
+          category:a.category||"other",
+
+          amount:num(a.amount),
+
+          goal_id:a.goal_id||null
+
+        }));
+
+        const {error:allocationsInsertError}=await sb
+          .from("allocations")
+          .insert(rows);
+
+        if(allocationsInsertError){
+
+          console.error(
+            "ARISE allocations migration error:",
+            allocationsInsertError
+          );
+
+          return false;
+        }
+
+      }
+
+    }
+
+    console.log(
+      "ARISE: local → Supabase migration completed"
+    );
+
+    return true;
+
+  }catch(error){
+
+    console.error(
+      "ARISE migration error:",
+      error
+    );
+
+    return false;
+  }
+}
   // =========================
   // JS TEST 4 — FINANCIAL ENGINE
   // =========================
