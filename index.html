@@ -257,6 +257,203 @@ const sb = window.supabase.createClient(
     return null;
   }
 }
+ async function loadSupabaseData(user){
+  try{
+
+    if(!user){
+      console.warn("ARISE: no user for data loading");
+      return false;
+    }
+
+    console.log(
+      "ARISE: loading financial data for:",
+      user.email
+    );
+
+    // =========================
+    // FINANCIAL SETTINGS
+    // =========================
+
+    const {data:settings,error:settingsError}=await sb
+      .from("financial_settings")
+      .select("*")
+      .eq("user_id",user.id)
+      .maybeSingle();
+
+    if(settingsError){
+      console.error(
+        "ARISE financial_settings load error:",
+        settingsError
+      );
+      return false;
+    }
+
+    if(settings){
+
+      A.settings={
+        ...A.settings,
+
+        basicNeeds:num(settings.basic_needs),
+        family:num(settings.family),
+        creativeMin:num(settings.creative_min),
+        creativeTarget:num(settings.creative_target),
+        freeMin:num(settings.free_min),
+        reserveTarget:num(settings.reserve_target)
+      };
+
+    }
+
+    // =========================
+    // GOALS
+    // =========================
+
+    const {data:goals,error:goalsError}=await sb
+      .from("goals")
+      .select("*")
+      .eq("user_id",user.id)
+      .order("priority",{ascending:false});
+
+    if(goalsError){
+      console.error(
+        "ARISE goals load error:",
+        goalsError
+      );
+      return false;
+    }
+
+    if(Array.isArray(goals)){
+
+      A.goals=goals.map(g=>({
+
+        id:g.id,
+        name:g.name,
+        type:g.type,
+        target:num(g.target),
+        current:num(g.current),
+        deadline:g.deadline||"",
+        priority:num(g.priority),
+        status:g.status
+
+      }));
+
+    }
+
+    // =========================
+    // TRANSACTIONS
+    // =========================
+
+    const {data:transactions,error:transactionsError}=await sb
+      .from("transactions")
+      .select("*")
+      .eq("user_id",user.id)
+      .order("date",{ascending:false});
+
+    if(transactionsError){
+      console.error(
+        "ARISE transactions load error:",
+        transactionsError
+      );
+      return false;
+    }
+
+    A.transactions=
+      Array.isArray(transactions)
+        ? transactions.map(t=>({
+            id:t.id,
+            type:t.type,
+            amount:num(t.amount),
+            source:t.source,
+            date:t.date,
+            month:t.month,
+            createdAt:t.created_at
+          }))
+        : [];
+
+    // =========================
+    // MONTHLY PLANS
+    // =========================
+
+    const {data:plans,error:plansError}=await sb
+      .from("monthly_plans")
+      .select("*")
+      .eq("user_id",user.id)
+      .order("date",{ascending:false});
+
+    if(plansError){
+      console.error(
+        "ARISE monthly_plans load error:",
+        plansError
+      );
+      return false;
+    }
+
+    A.monthlyPlans=
+      Array.isArray(plans)
+        ? plans.map(p=>({
+            id:p.id,
+            month:p.month,
+            income:num(p.income),
+            source:p.source,
+            date:p.date,
+            basic:num(p.basic),
+            family:num(p.family),
+            creative:num(p.creative),
+            free:num(p.free),
+            reserve:num(p.reserve),
+            goals:Array.isArray(p.goals)
+              ? p.goals
+              : [],
+            distributed:num(p.distributed),
+            remaining:num(p.remaining),
+            createdAt:p.created_at
+          }))
+        : [];
+
+    // =========================
+    // ALLOCATIONS
+    // =========================
+
+    const {data:allocations,error:allocationsError}=await sb
+      .from("allocations")
+      .select("*")
+      .eq("user_id",user.id)
+      .order("created_at",{ascending:false});
+
+    if(allocationsError){
+      console.error(
+        "ARISE allocations load error:",
+        allocationsError
+      );
+      return false;
+    }
+
+    A.allocations=
+      Array.isArray(allocations)
+        ? allocations
+        : [];
+
+    console.log(
+      "ARISE: financial data loaded",
+      {
+        goals:A.goals.length,
+        transactions:A.transactions.length,
+        monthlyPlans:A.monthlyPlans.length,
+        allocations:A.allocations.length
+      }
+    );
+
+    return true;
+
+  }catch(error){
+
+    console.error(
+      "ARISE loadSupabaseData error:",
+      error
+    );
+
+    return false;
+  }
+}
   // =========================
   // JS TEST 4 — FINANCIAL ENGINE
   // =========================
