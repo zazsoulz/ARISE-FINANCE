@@ -389,27 +389,29 @@ const sb = window.supabase.createClient(
       return false;
     }
 
-    A.monthlyPlans=
-      Array.isArray(plans)
-        ? plans.map(p=>({
-            id:p.id,
-            month:p.month,
-            income:num(p.income),
-            source:p.source,
-            date:p.date,
-            basic:num(p.basic),
-            family:num(p.family),
-            creative:num(p.creative),
-            free:num(p.free),
-            reserve:num(p.reserve),
-            goals:Array.isArray(p.goals)
-              ? p.goals
-              : [],
-            distributed:num(p.distributed),
-            remaining:num(p.remaining),
-            createdAt:p.created_at
-          }))
-        : [];
+    if(Array.isArray(plans) && plans.length>0){
+
+  A.monthlyPlans=
+    plans.map(p=>({
+      id:p.id,
+      month:p.month,
+      income:num(p.income),
+      source:p.source,
+      date:p.date,
+      basic:num(p.basic),
+      family:num(p.family),
+      creative:num(p.creative),
+      free:num(p.free),
+      reserve:num(p.reserve),
+      goals:Array.isArray(p.goals)
+        ? p.goals
+        : [],
+      distributed:num(p.distributed),
+      remaining:num(p.remaining),
+      createdAt:p.created_at
+    }));
+
+}
 
     // =========================
     // ALLOCATIONS
@@ -429,10 +431,11 @@ const sb = window.supabase.createClient(
       return false;
     }
 
-    A.allocations=
-      Array.isArray(allocations)
-        ? allocations
-        : [];
+    if(Array.isArray(allocations) && allocations.length>0){
+
+  A.allocations=allocations;
+
+}
 
     console.log(
       "ARISE: financial data loaded",
