@@ -3665,7 +3665,12 @@ initSupabaseAuth().then(async user=>{
         "ARISE: Supabase data load failed, using local state"
       );
     }
+const migrated=await migrateLocalDataToSupabase(user);
 
+console.log(
+  "ARISE: migration result:",
+  migrated
+);
     renderApp();
 
   }else{
