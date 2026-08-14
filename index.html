@@ -3643,7 +3643,22 @@ initSupabaseAuth().then(async user=>{
 
   if(user){
 
+    console.log(
+      "ARISE: authenticated, current local state:",
+      A
+    );
+
     const loaded=await loadSupabaseData(user);
+
+    console.log(
+      "ARISE: Supabase load result:",
+      loaded
+    );
+
+    console.log(
+      "ARISE: state after Supabase load:",
+      A
+    );
 
     if(!loaded){
       console.warn(
