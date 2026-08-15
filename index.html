@@ -1799,9 +1799,26 @@ if(!profile){
     message.textContent=
       "Вход выполнен. Загружаем ARISE…";
 
-    setTimeout(()=>{
-      renderApp();
-    },300);
+    const loaded=await loadSupabaseData(data.user);
+
+if(!loaded){
+
+  console.warn(
+    "ARISE: Supabase data load failed"
+  );
+
+  message.textContent=
+    "Не удалось загрузить финансовые данные.";
+
+  return;
+}
+
+message.textContent=
+  "Вход выполнен. Загружаем ARISE…";
+
+setTimeout(()=>{
+  renderApp();
+},300);
 
   }catch(error){
 
