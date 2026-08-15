@@ -201,316 +201,57 @@ const sb = window.supabase.createClient(
 }
 
   let A=loadLocal();
- async function initSupabaseAuth(){
-  try{
-    if(!window.supabase || !window.SUPABASE_CONFIG){
-      console.warn("ARISE: Supabase not configured");
-      return null;
-    }
-
-    const {data,error}=await sb.auth.getSession();
-
-    if(error){
-      console.error("ARISE auth session error:",error);
-      return null;
-    }
-
-    if(!data.session){
-      console.log("ARISE: user is not authenticated");
-      return null;
-    }
-
-    const user=data.session.user;
-
-    console.log(
-      "ARISE: authenticated user:",
-      user.email
-    );
-
-    const {data:profile,error:profileError}=await sb
-      .from("profiles")
-      .select("*")
-      .eq("id",user.id)
-      .maybeSingle();
-
-    if(profileError){
-      console.error(
-        "ARISE profile load error:",
-        profileError
-      );
-      return user;
-    }
-
-    if(profile){
-      A.profile.id=profile.id;
-      A.profile.name=profile.name;
-      A.profile.baseCurrency=profile.base_currency;
-    }
-
-    return user;
-
-  }catch(error){
-    console.error(
-      "ARISE initSupabaseAuth error:",
-      error
-    );
-    return null;
-  }
-}
- async function loadSupabaseData(user){
-  try{
-
-    if(!user){
-      console.warn("ARISE: no user for data loading");
-      return false;
-    }
-
-    console.log(
-      "ARISE: loading financial data for:",
-      user.email
-    );
-
-    // =========================
-    // FINANCIAL SETTINGS
-    // =========================
-
-    const {data:settings,error:settingsError}=await sb
-      .from("financial_settings")
-      .select("*")
-      .eq("user_id",user.id)
-      .maybeSingle();
-
-    if(settingsError){
-      console.error(
-        "ARISE financial_settings load error:",
-        settingsError
-      );
-      return false;
-    }
-
-    if(settings){
-
-      A.settings={
-        ...A.settings,
-
-        basicNeeds:num(settings.basic_needs),
-        family:num(settings.family),
-        creativeMin:num(settings.creative_min),
-        creativeTarget:num(settings.creative_target),
-        freeMin:num(settings.free_min),
-        reserveTarget:num(settings.reserve_target)
-      };
-
-    }
-
-    // =========================
-    // GOALS
-    // =========================
-
-    const {data:goals,error:goalsError}=await sb
-      .from("goals")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("priority",{ascending:false});
-
-    if(goalsError){
-      console.error(
-        "ARISE goals load error:",
-        goalsError
-      );
-      return false;
-    }
-
-    if(Array.isArray(goals) && goals.length>0){
-
-  A.goals=goals.map(g=>({
-
-        id:g.id,
-        name:g.name,
-        type:g.type,
-        target:num(g.target),
-        current:num(g.current),
-        deadline:g.deadline||"",
-        priority:num(g.priority),
-        status:g.status
-
-      }));
-
-    }
-
-    // =========================
-    // TRANSACTIONS
-    // =========================
-
-    const {data:transactions,error:transactionsError}=await sb
-      .from("transactions")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("date",{ascending:false});
-
-    if(transactionsError){
-      console.error(
-        "ARISE transactions load error:",
-        transactionsError
-      );
-      return false;
-    }
-
-    if(Array.isArray(transactions) && transactions.length>0){
-
-  A.transactions=
-    transactions.map(t=>({
-      id:t.id,
-      type:t.type,
-      amount:num(t.amount),
-      source:t.source,
-      date:t.date,
-      month:t.month,
-      createdAt:t.created_at
-    }));
-
-}
-
-    // =========================
-    // MONTHLY PLANS
-    // =========================
-
-    const {data:plans,error:plansError}=await sb
-      .from("monthly_plans")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("date",{ascending:false});
-
-    if(plansError){
-      console.error(
-        "ARISE monthly_plans load error:",
-        plansError
-      );
-      return false;
-    }
-
-    if(Array.isArray(plans) && plans.length>0){
-
-  A.monthlyPlans=
-    plans.map(p=>({
-      id:p.id,
-      month:p.month,
-      income:num(p.income),
-      source:p.source,
-      date:p.date,
-      basic:num(p.basic),
-      family:num(p.family),
-      creative:num(p.creative),
-      free:num(p.free),
-      reserve:num(p.reserve),
-      goals:Array.isArray(p.goals)
-        ? p.goals
-        : [],
-      distributed:num(p.distributed),
-      remaining:num(p.remaining),
-      createdAt:p.created_at
-    }));
-
-}
-
-    // =========================
-    // ALLOCATIONS
-    // =========================
-
-    const {data:allocations,error:allocationsError}=await sb
-      .from("allocations")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("created_at",{ascending:false});
-
-    if(allocationsError){
-      console.error(
-        "ARISE allocations load error:",
-        allocationsError
-      );
-      return false;
-    }
-
-    if(Array.isArray(allocations) && allocations.length>0){
-
-  A.allocations=allocations;
-
-}
-
-    console.log(
-      "ARISE: financial data loaded",
-      {
-        goals:A.goals.length,
-        transactions:A.transactions.length,
-        monthlyPlans:A.monthlyPlans.length,
-        allocations:A.allocations.length
-      }
-    );
-
-    return true;
-
-  }catch(error){
-
-    console.error(
-      "ARISE loadSupabaseData error:",
-      error
-    );
-
-    return false;
-  }
-}
  async function migrateLocalDataToSupabase(user){
 
   try{
 
     if(!user){
-      console.warn(
-        "ARISE: no user for migration"
-      );
+      console.warn("ARISE: migration stopped — no user");
       return false;
     }
 
     console.log(
-      "ARISE: starting local → Supabase migration"
+      "ARISE: starting local → Supabase migration v2"
     );
 
-    // =========================
-    // FINANCIAL SETTINGS
-    // =========================
+    // =========================================
+    // 1. ПРОВЕРЯЕМ, ЧТО SUPABASE ЕЩЁ ПУСТ
+    // =========================================
 
-    const {data:existingSettings,error:settingsCheckError}=await sb
-      .from("financial_settings")
-      .select("user_id")
-      .eq("user_id",user.id)
-      .maybeSingle();
+    const tables=[
+      "financial_settings",
+      "goals",
+      "transactions",
+      "monthly_plans",
+      "allocations"
+    ];
 
-    if(settingsCheckError){
-      console.error(
-        "ARISE settings check error:",
-        settingsCheckError
-      );
-      return false;
-    }
+    for(const table of tables){
 
-    if(!existingSettings){
+      const {count,error}=await sb
+        .from(table)
+        .select("*",{count:"exact",head:true})
+        .eq(
+          table==="financial_settings"
+            ? "user_id"
+            : "user_id",
+          user.id
+        );
 
-      const {error:settingsInsertError}=await sb
-        .from("financial_settings")
-        .insert({
-          user_id:user.id,
-          basic_needs:num(A.settings.basicNeeds),
-          family:num(A.settings.family),
-          creative_min:num(A.settings.creativeMin),
-          creative_target:num(A.settings.creativeTarget),
-          free_min:num(A.settings.freeMin),
-          reserve_target:num(A.settings.reserveTarget)
-        });
-
-      if(settingsInsertError){
+      if(error){
 
         console.error(
-          "ARISE settings migration error:",
-          settingsInsertError
+          `ARISE ${table} check error:`,
+          error
+        );
+
+        return false;
+      }
+
+      if((count||0)>0){
+
+        console.warn(
+          `ARISE: migration stopped — ${table} already contains data`
         );
 
         return false;
@@ -518,262 +259,404 @@ const sb = window.supabase.createClient(
 
     }
 
-    // =========================
-    // GOALS
-    // =========================
+    // =========================================
+    // 2. FINANCIAL SETTINGS
+    // =========================================
 
-    const {data:existingGoals,error:goalsCheckError}=await sb
-      .from("goals")
-      .select("id")
-      .eq("user_id",user.id);
+    const settings=A.settings||{};
 
-    if(goalsCheckError){
+    const {error:settingsError}=await sb
+      .from("financial_settings")
+      .insert({
+
+        user_id:user.id,
+
+        basic_needs:num(
+          settings.basicNeeds
+        ),
+
+        family:num(
+          settings.family
+        ),
+
+        creative_min:num(
+          settings.creativeMin
+        ),
+
+        creative_target:num(
+          settings.creativeTarget
+        ),
+
+        free_min:num(
+          settings.freeMin
+        ),
+
+        reserve_target:num(
+          settings.reserveTarget
+        )
+
+      });
+
+    if(settingsError){
 
       console.error(
-        "ARISE goals check error:",
-        goalsCheckError
+        "ARISE settings migration error:",
+        settingsError
       );
 
       return false;
     }
 
-    if((existingGoals||[]).length===0){
+    console.log(
+      "ARISE: financial settings migrated"
+    );
 
-      const goals=A.goals||[];
+    // =========================================
+    // 3. GOALS
+    // =========================================
 
-      if(goals.length>0){
+    const goalIdMap=new Map();
 
-        const rows=goals.map(g=>({
+    const localGoals=Array.isArray(A.goals)
+      ? A.goals
+      : [];
 
-          id:g.id,
+    for(const goal of localGoals){
+
+      const {data:newGoal,error:goalError}=await sb
+        .from("goals")
+        .insert({
+
           user_id:user.id,
 
-          name:g.name||"Цель",
-          type:g.type||"goal",
+          name:goal.name||"Цель",
 
-          target:num(g.target),
-          current:num(g.current),
+          type:goal.type||"goal",
 
-          deadline:g.deadline||null,
-          priority:num(g.priority)||3,
-          status:g.status||"active"
+          target:num(goal.target),
 
-        }));
+          current:num(goal.current),
 
-        const {error:goalsInsertError}=await sb
-          .from("goals")
-          .insert(rows);
+          deadline:
+            goal.deadline
+              ? goal.deadline
+              : null,
 
-        if(goalsInsertError){
+          priority:
+            num(goal.priority)||3,
 
-          console.error(
-            "ARISE goals migration error:",
-            goalsInsertError
-          );
+          status:
+            goal.status||"active"
 
-          return false;
-        }
+        })
+        .select("id")
+        .single();
 
+      if(goalError){
+
+        console.error(
+          "ARISE goal migration error:",
+          goalError
+        );
+
+        return false;
       }
 
-    }
-
-    // =========================
-    // TRANSACTIONS
-    // =========================
-
-    const {data:existingTransactions,error:transactionsCheckError}=await sb
-      .from("transactions")
-      .select("id")
-      .eq("user_id",user.id);
-
-    if(transactionsCheckError){
-
-      console.error(
-        "ARISE transactions check error:",
-        transactionsCheckError
+      goalIdMap.set(
+        goal.id,
+        newGoal.id
       );
 
-      return false;
     }
 
-    if((existingTransactions||[]).length===0){
+    console.log(
+      "ARISE: goals migrated:",
+      goalIdMap.size
+    );
 
-      const transactions=A.transactions||[];
+    // =========================================
+    // 4. TRANSACTIONS
+    // =========================================
 
-      if(transactions.length>0){
+    const transactionIdMap=new Map();
 
-        const rows=transactions.map(t=>({
+    const localTransactions=
+      Array.isArray(A.transactions)
+        ? A.transactions
+        : [];
 
-          id:t.id,
+    for(const transaction of localTransactions){
+
+      const transactionDate=
+        transaction.date ||
+        new Date()
+          .toISOString()
+          .slice(0,10);
+
+      const {data:newTransaction,error:transactionError}=await sb
+        .from("transactions")
+        .insert({
+
           user_id:user.id,
 
-          type:t.type||"income",
-          amount:num(t.amount),
+          type:
+            transaction.type ||
+            "income",
 
-          source:t.source||"Без источника",
+          amount:
+            num(transaction.amount),
 
-          date:t.date||new Date().toISOString().slice(0,10),
+          source:
+            transaction.source ||
+            "Без источника",
 
-          month:t.month||
-            String(t.date||new Date().toISOString().slice(0,10))
+          date:
+            transactionDate,
+
+          month:
+            transaction.month ||
+            String(transactionDate)
               .slice(0,7)
 
-        }));
+        })
+        .select("id")
+        .single();
 
-        const {error:transactionsInsertError}=await sb
-          .from("transactions")
-          .insert(rows);
+      if(transactionError){
 
-        if(transactionsInsertError){
+        console.error(
+          "ARISE transaction migration error:",
+          transactionError
+        );
 
-          console.error(
-            "ARISE transactions migration error:",
-            transactionsInsertError
-          );
-
-          return false;
-        }
-
+        return false;
       }
 
-    }
-
-    // =========================
-    // MONTHLY PLANS
-    // =========================
-
-    const {data:existingPlans,error:plansCheckError}=await sb
-      .from("monthly_plans")
-      .select("id")
-      .eq("user_id",user.id);
-
-    if(plansCheckError){
-
-      console.error(
-        "ARISE plans check error:",
-        plansCheckError
+      transactionIdMap.set(
+        transaction.id,
+        newTransaction.id
       );
 
-      return false;
     }
 
-    if((existingPlans||[]).length===0){
+    console.log(
+      "ARISE: transactions migrated:",
+      transactionIdMap.size
+    );
 
-      const plans=A.monthlyPlans||[];
+    // =========================================
+    // 5. MONTHLY PLANS
+    // =========================================
 
-      if(plans.length>0){
+    const monthlyPlanIdMap=new Map();
 
-        const rows=plans.map(p=>({
+    const localPlans=
+      Array.isArray(A.monthlyPlans)
+        ? A.monthlyPlans
+        : [];
 
-          id:p.id,
+    function remapGoalSnapshot(goals){
+
+      if(!Array.isArray(goals)){
+        return [];
+      }
+
+      return goals.map(goal=>{
+
+        const mappedId=
+          goalIdMap.get(
+            goal.id
+          );
+
+        return {
+
+          ...goal,
+
+          id:
+            mappedId ||
+            goal.id
+
+        };
+
+      });
+
+    }
+
+    for(const plan of localPlans){
+
+      const planDate=
+        plan.date ||
+        new Date()
+          .toISOString()
+          .slice(0,10);
+
+      const {data:newPlan,error:planError}=await sb
+        .from("monthly_plans")
+        .insert({
+
           user_id:user.id,
 
-          month:p.month||
-            String(p.date||new Date().toISOString().slice(0,10))
+          month:
+            plan.month ||
+            String(planDate)
               .slice(0,7),
 
-          income:num(p.income),
+          income:
+            num(plan.income),
 
-          source:p.source||"Без источника",
+          source:
+            plan.source ||
+            "Без источника",
 
-          date:p.date||
-            new Date().toISOString().slice(0,10),
+          date:
+            planDate,
 
-          basic:num(p.basic),
-          family:num(p.family),
-          creative:num(p.creative),
-          free:num(p.free),
-          reserve:num(p.reserve),
+          basic:
+            num(plan.basic),
 
-          goals:Array.isArray(p.goals)
-            ? p.goals
-            : [],
+          family:
+            num(plan.family),
 
-          distributed:num(p.distributed),
-          remaining:num(p.remaining)
+          creative:
+            num(plan.creative),
 
-        }));
+          free:
+            num(plan.free),
 
-        const {error:plansInsertError}=await sb
-          .from("monthly_plans")
-          .insert(rows);
+          reserve:
+            num(plan.reserve),
 
-        if(plansInsertError){
+          goals:
+            remapGoalSnapshot(
+              plan.goals
+            ),
 
-          console.error(
-            "ARISE monthly plans migration error:",
-            plansInsertError
-          );
+          distributed:
+            num(plan.distributed),
 
-          return false;
-        }
+          remaining:
+            num(plan.remaining)
 
+        })
+        .select("id")
+        .single();
+
+      if(planError){
+
+        console.error(
+          "ARISE monthly plan migration error:",
+          planError
+        );
+
+        return false;
       }
 
-    }
-
-    // =========================
-    // ALLOCATIONS
-    // =========================
-
-    const {data:existingAllocations,error:allocationsCheckError}=await sb
-      .from("allocations")
-      .select("id")
-      .eq("user_id",user.id);
-
-    if(allocationsCheckError){
-
-      console.error(
-        "ARISE allocations check error:",
-        allocationsCheckError
+      monthlyPlanIdMap.set(
+        plan.id,
+        newPlan.id
       );
 
-      return false;
     }
 
-    if((existingAllocations||[]).length===0){
+    console.log(
+      "ARISE: monthly plans migrated:",
+      monthlyPlanIdMap.size
+    );
 
-      const allocations=A.allocations||[];
+    // =========================================
+    // 6. ALLOCATIONS
+    // =========================================
 
-      if(allocations.length>0){
+    const localAllocations=
+      Array.isArray(A.allocations)
+        ? A.allocations
+        : [];
 
-        const rows=allocations.map(a=>({
+    for(const allocation of localAllocations){
 
-          id:a.id,
+      const localTransactionId=
+        allocation.transaction_id ||
+        allocation.transactionId ||
+        null;
+
+      const localPlanId=
+        allocation.monthly_plan_id ||
+        allocation.monthlyPlanId ||
+        null;
+
+      const localGoalId=
+        allocation.goal_id ||
+        allocation.goalId ||
+        null;
+
+      const newTransactionId=
+        localTransactionId
+          ? transactionIdMap.get(
+              localTransactionId
+            ) || null
+          : null;
+
+      const newMonthlyPlanId=
+        localPlanId
+          ? monthlyPlanIdMap.get(
+              localPlanId
+            ) || null
+          : null;
+
+      const newGoalId=
+        localGoalId
+          ? goalIdMap.get(
+              localGoalId
+            ) || null
+          : null;
+
+      const {error:allocationError}=await sb
+        .from("allocations")
+        .insert({
+
           user_id:user.id,
 
-          transaction_id:a.transaction_id||null,
-          monthly_plan_id:a.monthly_plan_id||null,
+          transaction_id:
+            newTransactionId,
 
-          category:a.category||"other",
+          monthly_plan_id:
+            newMonthlyPlanId,
 
-          amount:num(a.amount),
+          category:
+            allocation.category ||
+            "other",
 
-          goal_id:a.goal_id||null
+          amount:
+            num(allocation.amount),
 
-        }));
+          goal_id:
+            newGoalId
 
-        const {error:allocationsInsertError}=await sb
-          .from("allocations")
-          .insert(rows);
+        });
 
-        if(allocationsInsertError){
+      if(allocationError){
 
-          console.error(
-            "ARISE allocations migration error:",
-            allocationsInsertError
-          );
+        console.error(
+          "ARISE allocation migration error:",
+          allocationError
+        );
 
-          return false;
-        }
-
+        return false;
       }
 
     }
 
     console.log(
-      "ARISE: local → Supabase migration completed"
+      "ARISE: allocations migrated:",
+      localAllocations.length
+    );
+
+    // =========================================
+    // 7. ГОТОВО
+    // =========================================
+
+    console.log(
+      "ARISE: local → Supabase migration v2 completed successfully"
     );
 
     return true;
@@ -781,12 +664,13 @@ const sb = window.supabase.createClient(
   }catch(error){
 
     console.error(
-      "ARISE migration error:",
+      "ARISE migration v2 error:",
       error
     );
 
     return false;
   }
+
 }
   // =========================
   // JS TEST 4 — FINANCIAL ENGINE
