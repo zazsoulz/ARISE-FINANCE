@@ -1,2538 +1,2103 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0d1118">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>ARISE FINANCE</title>
+<meta charset="UTF-8">
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1,viewport-fit=cover"
+/>
+
+<title>ARISE Finance</title>
+
 <style>
 :root{
- --bg:#090c11;--panel:#10151d;--panel2:#141b24;--line:#222b36;--text:#eef2f6;--muted:#8d98a7;
- --accent:#9aa8c5;--accent2:#c7bda9;--good:#9bbfae;--warn:#d4b78c;--danger:#d59a9a;
- --radius:22px;--shadow:0 20px 70px rgba(0,0,0,.28)
+  --bg:#0b0e12;
+  --panel:#11161d;
+  --panel2:#151b23;
+  --panel3:#19212b;
+  --line:rgba(255,255,255,.08);
+  --line2:rgba(255,255,255,.12);
+
+  --text:#f1f3f5;
+  --muted:#8993a0;
+  --muted2:#68727f;
+
+  --green:#9bbfae;
+  --green2:#719f8d;
+  --blue:#9eafd0;
+  --purple:#b5a4c8;
+  --orange:#d3b18a;
+  --red:#d29a9a;
+
+  --shadow:
+    0 20px 60px rgba(0,0,0,.24);
+
+  --radius:22px;
+  --radius2:16px;
+
+  --ease:cubic-bezier(.22,.61,.36,1);
 }
-*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:
- radial-gradient(900px 500px at 90% -10%,rgba(139,157,190,.10),transparent 65%),
- radial-gradient(700px 500px at -10% 40%,rgba(187,166,135,.07),transparent 65%),var(--bg);
- color:var(--text);font-family:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
-button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #8290ad;outline-offset:2px}
-.app{min-height:100vh}.shell{max-width:1180px;margin:auto;padding:20px 18px 120px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.brand{letter-spacing:.18em;font-size:13px;font-weight:800}.brand span{color:var(--muted);font-weight:600}
-.profile{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);background:rgba(16,21,29,.78);border-radius:999px;color:var(--text)}
-.avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#8f9bb2,#5e6b80);color:#0b0e13;font-size:12px;font-weight:800}
-.nav{position:sticky;top:8px;z-index:20;display:flex;gap:7px;padding:7px;margin-bottom:18px;border:1px solid rgba(255,255,255,.06);background:rgba(12,16,22,.82);backdrop-filter:blur(20px);border-radius:18px;overflow:auto}
-.nav button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);padding:10px 13px;border-radius:13px;font-size:13px}
-.nav button.active{background:#1b232e;color:var(--text);box-shadow:inset 0 1px rgba(255,255,255,.06)}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.col-12{grid-column:span 12}.col-8{grid-column:span 8}.col-6{grid-column:span 6}.col-4{grid-column:span 4}
-.card{background:linear-gradient(180deg,rgba(20,27,36,.96),rgba(15,20,27,.96));border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);animation:rise .38s ease both}
-@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
-.kicker{color:var(--muted);font-size:12px;letter-spacing:.05em}.value{font-size:32px;line-height:1.1;font-weight:800;letter-spacing:-.035em;margin-top:8px}.sub{font-size:12px;color:var(--muted);margin-top:7px}
-h1{font-size:28px;letter-spacing:-.04em;margin:0 0 5px}h2{font-size:17px;margin:0 0 15px;letter-spacing:-.02em}h3{font-size:14px;margin:18px 0 10px}
-.row{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.055)}.row:last-child{border-bottom:0}
-.muted{color:var(--muted)}.tiny{font-size:11px}.positive{color:var(--good)}.negative{color:var(--danger)}.warning{color:var(--warn)}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.btn{border:1px solid var(--line);border-radius:13px;padding:11px 14px;background:#171e27;color:var(--text);transition:.22s}.btn:hover{transform:translateY(-1px);background:#1d2631}.btn.primary{background:#d8dde5;color:#111720;border-color:#d8dde5;font-weight:800}.btn.ghost{background:transparent}.btn.danger{color:var(--danger)}
-.form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.field{display:flex;flex-direction:column;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:11px;color:var(--muted)}input,select{width:100%;border:1px solid var(--line);background:#0c1118;color:var(--text);border-radius:13px;padding:12px 13px}.field small{color:var(--muted);font-size:10px}
-.pill{border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:10px;color:var(--muted);white-space:nowrap}
-.progress{height:8px;background:#202833;border-radius:99px;overflow:hidden;margin:10px 0 7px}.bar{height:100%;width:0;background:linear-gradient(90deg,#7787a4,#b3a98f);border-radius:99px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
-.goal{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.055)}.goal:last-child{border-bottom:0}
-.goal-head{display:flex;justify-content:space-between;gap:10px}.goal-name{font-weight:700}.goal-meta{font-size:11px;color:var(--muted);margin-top:3px}
-.chart{height:210px;position:relative}.chart svg{width:100%;height:100%;overflow:visible}.chart-line{fill:none;stroke:#b7c2d3;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:800;stroke-dashoffset:800;animation:draw 1.2s ease forwards}.chart-fill{fill:url(#g)}@keyframes draw{to{stroke-dashoffset:0}}
-.bar-chart{display:flex;align-items:end;gap:8px;height:160px;padding-top:15px}.bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:end}.bar-col{width:100%;max-width:34px;background:linear-gradient(180deg,#9aa8c5,#59677c);border-radius:8px 8px 3px 3px;min-height:3px;animation:barIn .8s ease both;transform-origin:bottom}.bar-label{font-size:9px;color:var(--muted)}@keyframes barIn{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-.alloc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.alloc{padding:13px;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.015)}.alloc .amount{font-size:17px;font-weight:800;margin-top:5px}
-.notice{padding:13px 14px;border-radius:15px;background:rgba(154,168,197,.07);border:1px solid rgba(154,168,197,.16);color:#cbd4e2;font-size:12px;line-height:1.55}
-.empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:13px}.event{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.055)}.event:last-child{border-bottom:0}
-.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;padding:10px 14px calc(10px + env(safe-area-inset-bottom));pointer-events:none}.bottom-inner{pointer-events:auto;display:flex;gap:8px;padding:7px;border:1px solid var(--line);background:rgba(12,16,22,.9);backdrop-filter:blur(20px);border-radius:18px;box-shadow:var(--shadow)}.bottom button{border:0;background:transparent;color:var(--muted);padding:10px 12px;border-radius:12px}.bottom button.active{background:#1a222d;color:var(--text)}
-.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(7px);z-index:60;display:grid;place-items:center;padding:18px}.modal{width:min(560px,100%);max-height:90vh;overflow:auto;background:#10151d;border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:0 30px 100px rgba(0,0,0,.55);animation:rise .25s ease}
-.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.auth-card{width:min(460px,100%);padding:28px;border:1px solid var(--line);border-radius:28px;background:rgba(15,20,27,.92);box-shadow:var(--shadow);backdrop-filter:blur(20px)}.auth-logo{font-size:14px;letter-spacing:.22em;font-weight:800;margin-bottom:40px}.auth-title{font-size:31px;letter-spacing:-.05em;font-weight:800}.auth-copy{color:var(--muted);font-size:13px;line-height:1.6;margin:8px 0 24px}.auth-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.auth-grid .btn{padding:12px 8px}.separator{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:10px;margin:17px 0}.separator:before,.separator:after{content:"";height:1px;background:var(--line);flex:1}
-.onboarding{min-height:100vh;display:grid;place-items:center;padding:20px}.on-card{width:min(680px,100%);border:1px solid var(--line);border-radius:28px;background:rgba(15,20,27,.96);padding:25px;box-shadow:var(--shadow)}.steps{display:flex;gap:6px;margin-bottom:24px}.step{height:3px;flex:1;background:#242c37;border-radius:9px}.step.on{background:#aeb9ca}.choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.choice{padding:14px;border:1px solid var(--line);border-radius:15px;background:#0c1118;color:var(--text);text-align:left}.choice.selected{border-color:#aeb9ca;background:#1b232e}
-.toast{position:fixed;left:50%;bottom:85px;transform:translateX(-50%) translateY(15px);z-index:100;background:#e1e5eb;color:#111720;padding:11px 14px;border-radius:13px;font-size:12px;font-weight:700;opacity:0;transition:.25s;pointer-events:none}.toast.show{opacity:1;transform:translateX(-50%)}
-@media(max-width:760px){.shell{padding:14px 12px 105px}.grid{grid-template-columns:1fr 1fr}.col-12,.col-8,.col-6,.col-4{grid-column:span 2}.form{grid-template-columns:1fr}.field.full{grid-column:auto}.value{font-size:27px}.nav{top:4px}.hide-mobile{display:none}.alloc-grid{grid-template-columns:1fr 1fr}}
+
+*{
+  box-sizing:border-box;
+}
+
+html{
+  min-height:100%;
+  background:var(--bg);
+}
+
+body{
+  margin:0;
+  min-height:100%;
+  background:
+    radial-gradient(
+      circle at 15% 0%,
+      rgba(155,191,174,.055),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 90% 20%,
+      rgba(158,175,208,.04),
+      transparent 30%
+    ),
+    var(--bg);
+  color:var(--text);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+button,
+input,
+select{
+  font:inherit;
+}
+
+button{
+  -webkit-tap-highlight-color:transparent;
+}
+
+input,
+select{
+  width:100%;
+  border:1px solid var(--line);
+  outline:none;
+  background:rgba(255,255,255,.025);
+  color:var(--text);
+  border-radius:14px;
+  padding:13px 14px;
+  transition:
+    border-color .25s var(--ease),
+    background .25s var(--ease),
+    box-shadow .25s var(--ease);
+}
+
+input:focus,
+select:focus{
+  border-color:rgba(155,191,174,.42);
+  background:rgba(155,191,174,.045);
+  box-shadow:
+    0 0 0 4px rgba(155,191,174,.055);
+}
+
+select option{
+  background:#11161d;
+  color:#fff;
+}
+
+input::placeholder{
+  color:#59636f;
+}
+
+button{
+  border:0;
+  cursor:pointer;
+}
+
+#root{
+  min-height:100vh;
+}
+
+.app{
+  min-height:100vh;
+}
+
+.shell{
+  width:min(1180px,calc(100% - 32px));
+  margin:0 auto;
+  padding:
+    max(22px,env(safe-area-inset-top))
+    0
+    max(40px,env(safe-area-inset-bottom));
+}
+
+.top{
+  min-height:78px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+}
+
+.brand{
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:.16em;
+}
+
+.brand span{
+  color:var(--muted);
+  font-weight:500;
+}
+
+.profile{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#cdd3da;
+  font-size:13px;
+}
+
+.avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(155,191,174,.25),
+      rgba(158,175,208,.15)
+    );
+  border:1px solid var(--line2);
+  color:#dfe9e4;
+  font-weight:600;
+}
+
+.nav{
+  display:flex;
+  gap:5px;
+  overflow-x:auto;
+  padding:7px;
+  margin-bottom:22px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:rgba(255,255,255,.018);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+
+.nav::-webkit-scrollbar{
+  display:none;
+}
+
+.nav button{
+  flex:0 0 auto;
+  padding:10px 15px;
+  border-radius:12px;
+  background:transparent;
+  color:var(--muted);
+  transition:
+    background .25s var(--ease),
+    color .25s var(--ease),
+    transform .25s var(--ease);
+}
+
+.nav button:hover{
+  color:var(--text);
+}
+
+.nav button.active{
+  background:rgba(155,191,174,.11);
+  color:#dce9e2;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:14px;
+}
+
+.col-12{grid-column:span 12}
+.col-8{grid-column:span 8}
+.col-6{grid-column:span 6}
+.col-4{grid-column:span 4}
+.col-3{grid-column:span 3}
+
+.card{
+  position:relative;
+  overflow:hidden;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.045),
+      rgba(255,255,255,.018)
+    );
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:22px;
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+  animation:
+    cardIn .42s var(--ease) both;
+}
+
+.card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(155,191,174,.055),
+      transparent 30%
+    );
+}
+
+@keyframes cardIn{
+  from{
+    opacity:0;
+    transform:translateY(7px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+.kicker{
+  color:var(--muted);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+h1,
+h2,
+h3{
+  position:relative;
+  z-index:1;
+  margin:7px 0 0;
+  font-weight:600;
+  letter-spacing:-.035em;
+}
+
+h1{
+  font-size:31px;
+  line-height:1.08;
+}
+
+h2{
+  font-size:20px;
+}
+
+h3{
+  font-size:16px;
+}
+
+.sub{
+  position:relative;
+  z-index:1;
+  margin-top:9px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.55;
+}
+
+.value{
+  position:relative;
+  z-index:1;
+  margin-top:11px;
+  font-size:30px;
+  font-weight:650;
+  letter-spacing:-.04em;
+}
+
+.amount{
+  position:relative;
+  z-index:1;
+  margin-top:8px;
+  font-size:20px;
+  font-weight:600;
+  letter-spacing:-.025em;
+}
+
+.actions{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-top:20px;
+}
+
+.btn{
+  padding:12px 17px;
+  border-radius:14px;
+  color:var(--text);
+  transition:
+    transform .22s var(--ease),
+    background .22s var(--ease),
+    border-color .22s var(--ease);
+}
+
+.btn:hover{
+  transform:translateY(-1px);
+}
+
+.btn:active{
+  transform:translateY(0);
+}
+
+.btn.primary{
+  background:
+    linear-gradient(
+      135deg,
+      rgba(155,191,174,.23),
+      rgba(155,191,174,.12)
+    );
+  border:1px solid rgba(155,191,174,.25);
+  color:#dcebe3;
+}
+
+.btn.ghost{
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--line);
+  color:#b9c1ca;
+}
+
+.btn.danger{
+  background:rgba(210,154,154,.08);
+  border:1px solid rgba(210,154,154,.18);
+  color:#d9abab;
+}
+
+.btn.small{
+  padding:9px 12px;
+  font-size:12px;
+}
+
+.form{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px;
+}
+
+.field{
+  min-width:0;
+}
+
+.field.full{
+  grid-column:1/-1;
+}
+
+.field label{
+  display:block;
+  margin:0 0 7px;
+  color:#89939f;
+  font-size:11px;
+}
+
+.notice{
+  position:relative;
+  z-index:2;
+  padding:14px 15px;
+  border-radius:15px;
+  background:rgba(155,191,174,.055);
+  border:1px solid rgba(155,191,174,.12);
+  color:#bfcac4;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.notice.warning{
+  background:rgba(211,177,138,.055);
+  border-color:rgba(211,177,138,.15);
+  color:#d5b993;
+}
+
+.notice.error{
+  background:rgba(210,154,154,.055);
+  border-color:rgba(210,154,154,.16);
+  color:#d6aaaa;
+}
+
+.notice.success{
+  background:rgba(155,191,174,.07);
+  border-color:rgba(155,191,174,.18);
+  color:#c6dbd0;
+}
+
+.alloc-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+}
+
+.alloc{
+  position:relative;
+  min-width:0;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:rgba(255,255,255,.018);
+}
+
+.alloc .kicker{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.hero-grid{
+  display:grid;
+  grid-template-columns:1.5fr 1fr;
+  gap:14px;
+}
+
+.stat-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  padding:12px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.stat-row:last-child{
+  border-bottom:0;
+}
+
+.muted{
+  color:var(--muted);
+}
+
+.tiny{
+  font-size:11px;
+}
+
+.positive{
+  color:#a9cbb9;
+}
+
+.warning{
+  color:#d3b18a;
+}
+
+.negative{
+  color:#d29a9a;
+}
+
+.goal{
+  position:relative;
+  z-index:1;
+  padding:15px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.goal:last-child{
+  border-bottom:0;
+}
+
+.goal-head{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  align-items:flex-start;
+}
+
+.goal-name{
+  font-size:15px;
+  font-weight:600;
+}
+
+.goal-meta{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.progress{
+  height:6px;
+  margin-top:12px;
+  border-radius:99px;
+  background:rgba(255,255,255,.065);
+  overflow:hidden;
+}
+
+.bar{
+  height:100%;
+  border-radius:99px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(155,191,174,.55),
+      rgba(158,175,208,.65)
+    );
+  transition:width .45s var(--ease);
+}
+
+.pill{
+  flex:0 0 auto;
+  padding:6px 9px;
+  border-radius:99px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.025);
+  color:#9ca6b2;
+  font-size:10px;
+}
+
+.empty{
+  padding:24px 0;
+  text-align:center;
+  color:var(--muted2);
+  font-size:13px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  padding:10px 0;
+}
+
+.row + .row{
+  border-top:1px solid var(--line);
+}
+
+.divider{
+  height:1px;
+  background:var(--line);
+  margin:18px 0;
+}
+
+.event{
+  padding:17px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.event:last-child{
+  border-bottom:0;
+}
+
+.event-head{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+}
+
+.event-title{
+  font-size:16px;
+  font-weight:600;
+}
+
+.event-source{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.event-date{
+  margin-top:3px;
+  color:var(--muted2);
+  font-size:11px;
+}
+
+.chart{
+  position:relative;
+  height:210px;
+  margin-top:18px;
+  display:flex;
+  align-items:flex-end;
+  gap:7px;
+  padding:15px 4px 22px;
+}
+
+.chart-grid{
+  position:absolute;
+  inset:15px 0 22px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  pointer-events:none;
+}
+
+.chart-line{
+  height:1px;
+  background:rgba(255,255,255,.045);
+}
+
+.chart-bars{
+  position:relative;
+  z-index:2;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:flex-end;
+  gap:7px;
+}
+
+.chart-item{
+  flex:1;
+  min-width:4px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:center;
+  height:100%;
+}
+
+.chart-bar{
+  width:100%;
+  max-width:42px;
+  min-height:3px;
+  border-radius:8px 8px 3px 3px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(155,191,174,.7),
+      rgba(155,191,174,.25)
+    );
+  transition:
+    height .55s var(--ease),
+    opacity .3s var(--ease);
+}
+
+.chart-label{
+  position:absolute;
+  bottom:0;
+  font-size:9px;
+  color:var(--muted2);
+}
+
+.chart-value{
+  margin-bottom:4px;
+  font-size:8px;
+  color:#88939e;
+}
+
+.month-tabs{
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  margin-top:15px;
+}
+
+.month-tabs::-webkit-scrollbar{
+  display:none;
+}
+
+.month-tab{
+  flex:0 0 auto;
+  padding:8px 11px;
+  border-radius:11px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.02);
+  color:var(--muted);
+}
+
+.month-tab.active{
+  background:rgba(155,191,174,.1);
+  color:#d5e2dc;
+  border-color:rgba(155,191,174,.18);
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:15px;
+  background:rgba(0,0,0,.56);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+
+.modal.open{
+  display:flex;
+}
+
+.modal-card{
+  width:min(600px,100%);
+  max-height:90vh;
+  overflow:auto;
+  padding:22px;
+  border:1px solid var(--line2);
+  border-radius:25px;
+  background:#11161d;
+  box-shadow:
+    0 30px 100px rgba(0,0,0,.5);
+  animation:modalIn .3s var(--ease);
+}
+
+@keyframes modalIn{
+  from{
+    opacity:0;
+    transform:translateY(18px) scale(.985);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+}
+
+.modal-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:15px;
+}
+
+.close{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:rgba(255,255,255,.04);
+  color:#aab3bd;
+  font-size:18px;
+}
+
+.toast{
+  position:fixed;
+  z-index:2000;
+  left:50%;
+  bottom:25px;
+  transform:translateX(-50%) translateY(15px);
+  width:min(440px,calc(100% - 30px));
+  padding:13px 15px;
+  border-radius:15px;
+  background:#171d25;
+  border:1px solid var(--line2);
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  color:#dce1e6;
+  font-size:13px;
+  opacity:0;
+  pointer-events:none;
+  transition:
+    opacity .25s var(--ease),
+    transform .25s var(--ease);
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+.auth{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:25px;
+}
+
+.auth-card{
+  width:min(460px,100%);
+  padding:30px;
+  border:1px solid var(--line);
+  border-radius:28px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.045),
+      rgba(255,255,255,.018)
+    );
+  box-shadow:0 30px 100px rgba(0,0,0,.35);
+  backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px);
+}
+
+.auth-logo{
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:.16em;
+}
+
+.auth-logo span{
+  color:var(--muted);
+}
+
+.auth-title{
+  margin-top:35px;
+  font-size:32px;
+  font-weight:600;
+  letter-spacing:-.045em;
+}
+
+.auth-sub{
+  margin-top:9px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.55;
+}
+
+.auth-tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  padding:5px;
+  margin-top:25px;
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+
+.auth-tabs button{
+  padding:10px;
+  border-radius:10px;
+  background:transparent;
+  color:var(--muted);
+}
+
+.auth-tabs button.active{
+  background:rgba(155,191,174,.1);
+  color:#dbe8e2;
+}
+
+.progress-big{
+  height:9px;
+  border-radius:99px;
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+}
+
+.progress-big div{
+  height:100%;
+  border-radius:inherit;
+  background:
+    linear-gradient(
+      90deg,
+      var(--green2),
+      var(--blue)
+    );
+}
+
+@media(max-width:900px){
+  .col-8,
+  .col-6{
+    grid-column:span 12;
+  }
+
+  .col-4{
+    grid-column:span 6;
+  }
+
+  .col-3{
+    grid-column:span 6;
+  }
+
+  .hero-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:620px){
+  .shell{
+    width:min(100% - 20px,1180px);
+    padding-top:12px;
+  }
+
+  .top{
+    min-height:68px;
+  }
+
+  .profile span{
+    display:none;
+  }
+
+  .nav{
+    margin-bottom:12px;
+  }
+
+  .grid{
+    gap:10px;
+  }
+
+  .card{
+    padding:17px;
+    border-radius:19px;
+  }
+
+  h1{
+    font-size:25px;
+  }
+
+  h2{
+    font-size:18px;
+  }
+
+  .col-4,
+  .col-3{
+    grid-column:span 12;
+  }
+
+  .form{
+    grid-template-columns:1fr;
+  }
+
+  .field.full{
+    grid-column:auto;
+  }
+
+  .alloc-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .actions{
+    flex-direction:column;
+  }
+
+  .actions .btn{
+    width:100%;
+  }
+
+  .event-head{
+    flex-direction:column;
+  }
+}
 </style>
 </head>
-<body><div id="root"><div class="auth"><div class="auth-card"><div class="auth-logo">ARISE FINANCE</div><div class="auth-title">Запуск ARISE…</div><div class="auth-copy">Подготавливаем финансовую систему.</div></div></div></div><div id="toast" class="toast"></div>
-<script>
-window.onerror = function(message, source, line, column) {
-  console.error("ARISE JS ERROR:", message, source, line, column);
-};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script>
-try {
-  const hasSupabase = true;
-const sb = window.supabase.createClient(
-  window.SUPABASE_CONFIG.url,
-  window.SUPABASE_CONFIG.key
-);
- sb.auth.getSession()
-  .then(({ data, error }) => {
-    if (error) {
-      console.error("ARISE SUPABASE ERROR:", error);
-    } else {
-      console.log("ARISE SUPABASE OK:", data);
-    }
-  });
-  const LOCAL_KEY = "arise_finance_local_v3";
 
-  const DEFAULT = {
-    profile:{id:"local",name:"Мой профиль",baseCurrency:"RUB",hidden:false},
+<body>
+
+<div id="root"></div>
+
+<div id="modalRoot"></div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   ARISE FINANCE
+   Новый чистый клиентский слой.
+
+   Принцип:
+   - local-first
+   - пользователь контролирует каждое распределение
+   - категории создаются пользователем
+   - цели создаются пользователем
+   - резерв является отдельной статистикой
+   - месячная статистика собирается из реальных транзакций
+   ========================================================= */
+
+
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
+
+const STORAGE_KEY="ARISE_FINANCE_V2";
+
+const SUPPORTED_CURRENCIES=[
+  "RUB",
+  "EUR",
+  "USD"
+];
+
+const PERCENT_STEPS=[
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  8,
+  10,
+  12,
+  14,
+  16,
+  18,
+  20,
+  22,
+  25,
+  27,
+  30,
+  35,
+  40,
+  45,
+  50,
+  55,
+  60,
+  65,
+  70,
+  75,
+  80,
+  85,
+  90,
+  95,
+  100
+];
+
+const DEFAULT_CATEGORY_TEMPLATE=[
+  {
+    id:"basic",
+    name:"Обязательные расходы",
+    type:"fixed",
+    fixed:true,
+    amount:0,
+    percent:0,
+    priority:5,
+    monthlyLimit:null,
+    enabled:true
+  },
+  {
+    id:"family",
+    name:"Семья",
+    type:"category",
+    fixed:false,
+    amount:0,
+    percent:20,
+    priority:4,
+    monthlyLimit:null,
+    enabled:true
+  },
+  {
+    id:"free",
+    name:"Свободные деньги",
+    type:"free",
+    fixed:false,
+    amount:0,
+    percent:20,
+    priority:3,
+    monthlyLimit:null,
+    enabled:true
+  },
+  {
+    id:"reserve",
+    name:"Резерв",
+    type:"reserve",
+    fixed:false,
+    amount:0,
+    percent:10,
+    priority:5,
+    monthlyLimit:null,
+    enabled:true
+  }
+];
+
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function id(){
+  return (
+    Date.now().toString(36)+
+    Math.random().toString(36).slice(2,10)
+  );
+}
+
+function num(value){
+  const n=Number(value);
+  return Number.isFinite(n)?n:0;
+}
+
+function clamp(value,min,max){
+  return Math.min(max,Math.max(min,value));
+}
+
+function clone(value){
+  return JSON.parse(JSON.stringify(value));
+}
+
+function escapeHtml(value){
+  return String(value??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function today(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function monthOf(date){
+  return String(date||today()).slice(0,7);
+}
+
+function currentMonth(){
+  return monthOf(today());
+}
+
+function money(value,currency=state.settings.baseCurrency){
+  const amount=num(value);
+
+  try{
+    return new Intl.NumberFormat(
+      "ru-RU",
+      {
+        style:"currency",
+        currency,
+        maximumFractionDigits:0
+      }
+    ).format(amount);
+  }catch{
+    return `${Math.round(amount)} ${currency}`;
+  }
+}
+
+function moneyExact(value,currency=state.settings.baseCurrency){
+  const amount=num(value);
+
+  try{
+    return new Intl.NumberFormat(
+      "ru-RU",
+      {
+        style:"currency",
+        currency,
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      }
+    ).format(amount);
+  }catch{
+    return `${amount.toFixed(2)} ${currency}`;
+  }
+}
+
+function monthLabel(month){
+  const [year,m]=String(month).split("-");
+
+  const names=[
+    "Январь",
+    "Февраль",
+    "Март",
+    "Апрель",
+    "Май",
+    "Июнь",
+    "Июль",
+    "Август",
+    "Сентябрь",
+    "Октябрь",
+    "Ноябрь",
+    "Декабрь"
+  ];
+
+  return `${names[num(m)-1]||m} ${year}`;
+}
+
+function formatPercent(value){
+  return `${Math.round(num(value))}%`;
+}
+
+function showToast(message){
+  const el=document.getElementById("toast");
+
+  el.textContent=message;
+  el.classList.add("show");
+
+  clearTimeout(showToast.timer);
+
+  showToast.timer=setTimeout(()=>{
+    el.classList.remove("show");
+  },2600);
+}
+
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+function createDefaultState(){
+  return {
+    version:2,
+
+    account:{
+      id:id(),
+      name:"",
+      email:"",
+      phone:"",
+      avatar:""
+    },
+
+    profile:{
+      id:id(),
+      name:"Мой профиль",
+      avatar:"",
+      currency:"RUB"
+    },
+
     settings:{
-  basicNeeds:35700,
-  family:20000,
-  creativeMin:5000,
-  creativeTarget:12500,
-  freeMin:20000,
-  reserveTarget:300000
-},
-    goals:[
-      {id:"reserve",name:"Финансовый резерв",type:"reserve",target:300000,current:0,deadline:"",priority:5,status:"active"},
-      {id:"turkey",name:"Турция",type:"goal",target:125000,current:0,deadline:"",priority:4,status:"active"},
-      {id:"bmw",name:"BMW G20",type:"goal",target:2000000,current:0,deadline:"",priority:2,status:"active"}
-    ],
+      baseCurrency:"RUB",
+      categories:clone(DEFAULT_CATEGORY_TEMPLATE),
+      reserveTarget:0,
+      reserveEnabled:true
+    },
+
+    goals:[],
+
     transactions:[],
-    allocations:[],
-    monthlyPlans:[],
-    currencyRates:{}
+
+    months:{},
+
+    sync:{
+      pending:[],
+      lastSync:null
+    }
   };
+}
 
-  function clone(x){
-    return JSON.parse(JSON.stringify(x));
-  }
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
 
-  function safeId(){
-    return "id_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,10);
-  }
+    if(!raw){
+      return createDefaultState();
+    }
 
-  function normalizeState(raw){
-    const base=clone(DEFAULT);
-    const src=raw&&typeof raw==="object"?raw:{};
+    const parsed=JSON.parse(raw);
 
-    const out={
+    const base=createDefaultState();
+
+    return {
       ...base,
-      ...src,
+      ...parsed,
+      account:{
+        ...base.account,
+        ...(parsed.account||{})
+      },
       profile:{
         ...base.profile,
-        ...(src.profile&&typeof src.profile==="object"?src.profile:{})
+        ...(parsed.profile||{})
       },
       settings:{
         ...base.settings,
-        ...(src.settings&&typeof src.settings==="object"?src.settings:{})
+        ...(parsed.settings||{}),
+        categories:
+          Array.isArray(parsed.settings?.categories)
+          ? parsed.settings.categories
+          : clone(DEFAULT_CATEGORY_TEMPLATE)
+      },
+      goals:Array.isArray(parsed.goals)
+        ? parsed.goals
+        : [],
+      transactions:Array.isArray(parsed.transactions)
+        ? parsed.transactions
+        : [],
+      sync:{
+        ...base.sync,
+        ...(parsed.sync||{})
       }
     };
-
-    out.goals=Array.isArray(src.goals)
-      ? src.goals.filter(Boolean).map(g=>({
-          id:g.id||safeId(),
-          name:g.name||"Цель",
-          type:g.type||"goal",
-          target:Number(g.target)||0,
-          current:Number(g.current)||0,
-          deadline:g.deadline||"",
-          priority:Number(g.priority)||3,
-          status:g.status||"active",
-          ...g
-        }))
-      : clone(base.goals);
-
-    out.transactions=Array.isArray(src.transactions)
-      ? src.transactions.filter(Boolean)
-      : [];
-
-    out.allocations=Array.isArray(src.allocations)
-      ? src.allocations.filter(Boolean)
-      : [];
-
-    out.monthlyPlans=Array.isArray(src.monthlyPlans)
-      ? src.monthlyPlans.filter(Boolean)
-      : [];
-
-    out.currencyRates=
-      src.currencyRates&&
-      typeof src.currencyRates==="object"&&
-      !Array.isArray(src.currencyRates)
-        ? src.currencyRates
-        : {};
-
-    if(!out.profile.baseCurrency){
-      out.profile.baseCurrency="RUB";
-    }
-
-    return out;
-  }
-
-  function loadLocal(){
-  try{
-    const raw=window.localStorage
-      ? window.localStorage.getItem(LOCAL_KEY)
-      : null;
-
-    if(!raw){
-      return clone(DEFAULT);
-    }
-
-    return normalizeState(JSON.parse(raw));
-
-  }catch(e){
-    console.error("ARISE loadLocal error:", e);
-    return clone(DEFAULT);
-  }
-}
-
-  function saveLocal(){
-  try{
-    if(!window.localStorage){
-      return false;
-    }
-
-    window.localStorage.setItem(
-      LOCAL_KEY,
-      JSON.stringify(normalizeState(A))
-    );
-
-    return true;
-
-  }catch(e){
-    console.error("ARISE saveLocal error:", e);
-    return false;
-  }
-}
-
-  let A=loadLocal();
- async function migrateLocalDataToSupabase(user){
-
-  try{
-
-    if(!user){
-      console.warn("ARISE: migration stopped — no user");
-      return false;
-    }
-
-    console.log(
-      "ARISE: starting local → Supabase migration v2"
-    );
-
-    // =========================================
-    // 1. ПРОВЕРЯЕМ, ЧТО SUPABASE ЕЩЁ ПУСТ
-    // =========================================
-
-    const tables=[
-      "financial_settings",
-      "goals",
-      "transactions",
-      "monthly_plans",
-      "allocations"
-    ];
-
-    for(const table of tables){
-
-      const {count,error}=await sb
-        .from(table)
-        .select("*",{count:"exact",head:true})
-        .eq(
-          table==="financial_settings"
-            ? "user_id"
-            : "user_id",
-          user.id
-        );
-
-      if(error){
-
-        console.error(
-          `ARISE ${table} check error:`,
-          error
-        );
-
-        return false;
-      }
-
-      if((count||0)>0){
-
-        console.warn(
-          `ARISE: migration stopped — ${table} already contains data`
-        );
-
-        return false;
-      }
-
-    }
-
-    // =========================================
-    // 2. FINANCIAL SETTINGS
-    // =========================================
-
-    const settings=A.settings||{};
-
-    const {error:settingsError}=await sb
-      .from("financial_settings")
-      .insert({
-
-        user_id:user.id,
-
-        basic_needs:num(
-          settings.basicNeeds
-        ),
-
-        family:num(
-          settings.family
-        ),
-
-        creative_min:num(
-          settings.creativeMin
-        ),
-
-        creative_target:num(
-          settings.creativeTarget
-        ),
-
-        free_min:num(
-          settings.freeMin
-        ),
-
-        reserve_target:num(
-          settings.reserveTarget
-        )
-
-      });
-
-    if(settingsError){
-
-      console.error(
-        "ARISE settings migration error:",
-        settingsError
-      );
-
-      return false;
-    }
-
-    console.log(
-      "ARISE: financial settings migrated"
-    );
-
-    // =========================================
-    // 3. GOALS
-    // =========================================
-
-    const goalIdMap=new Map();
-
-    const localGoals=Array.isArray(A.goals)
-      ? A.goals
-      : [];
-
-    for(const goal of localGoals){
-
-      const {data:newGoal,error:goalError}=await sb
-        .from("goals")
-        .insert({
-
-          user_id:user.id,
-
-          name:goal.name||"Цель",
-
-          type:goal.type||"goal",
-
-          target:num(goal.target),
-
-          current:num(goal.current),
-
-          deadline:
-            goal.deadline
-              ? goal.deadline
-              : null,
-
-          priority:
-            num(goal.priority)||3,
-
-          status:
-            goal.status||"active"
-
-        })
-        .select("id")
-        .single();
-
-      if(goalError){
-
-        console.error(
-          "ARISE goal migration error:",
-          goalError
-        );
-
-        return false;
-      }
-
-      goalIdMap.set(
-        goal.id,
-        newGoal.id
-      );
-
-    }
-
-    console.log(
-      "ARISE: goals migrated:",
-      goalIdMap.size
-    );
-
-    // =========================================
-    // 4. TRANSACTIONS
-    // =========================================
-
-    const transactionIdMap=new Map();
-
-    const localTransactions=
-      Array.isArray(A.transactions)
-        ? A.transactions
-        : [];
-
-    for(const transaction of localTransactions){
-
-      const transactionDate=
-        transaction.date ||
-        new Date()
-          .toISOString()
-          .slice(0,10);
-
-      const {data:newTransaction,error:transactionError}=await sb
-        .from("transactions")
-        .insert({
-
-          user_id:user.id,
-
-          type:
-            transaction.type ||
-            "income",
-
-          amount:
-            num(transaction.amount),
-
-          source:
-            transaction.source ||
-            "Без источника",
-
-          date:
-            transactionDate,
-
-          month:
-            transaction.month ||
-            String(transactionDate)
-              .slice(0,7)
-
-        })
-        .select("id")
-        .single();
-
-      if(transactionError){
-
-        console.error(
-          "ARISE transaction migration error:",
-          transactionError
-        );
-
-        return false;
-      }
-
-      transactionIdMap.set(
-        transaction.id,
-        newTransaction.id
-      );
-
-    }
-
-    console.log(
-      "ARISE: transactions migrated:",
-      transactionIdMap.size
-    );
-
-    // =========================================
-    // 5. MONTHLY PLANS
-    // =========================================
-
-    const monthlyPlanIdMap=new Map();
-
-    const localPlans=
-      Array.isArray(A.monthlyPlans)
-        ? A.monthlyPlans
-        : [];
-
-    function remapGoalSnapshot(goals){
-
-      if(!Array.isArray(goals)){
-        return [];
-      }
-
-      return goals.map(goal=>{
-
-        const mappedId=
-          goalIdMap.get(
-            goal.id
-          );
-
-        return {
-
-          ...goal,
-
-          id:
-            mappedId ||
-            goal.id
-
-        };
-
-      });
-
-    }
-
-    for(const plan of localPlans){
-
-      const planDate=
-        plan.date ||
-        new Date()
-          .toISOString()
-          .slice(0,10);
-
-      const {data:newPlan,error:planError}=await sb
-        .from("monthly_plans")
-        .insert({
-
-          user_id:user.id,
-
-          month:
-            plan.month ||
-            String(planDate)
-              .slice(0,7),
-
-          income:
-            num(plan.income),
-
-          source:
-            plan.source ||
-            "Без источника",
-
-          date:
-            planDate,
-
-          basic:
-            num(plan.basic),
-
-          family:
-            num(plan.family),
-
-          creative:
-            num(plan.creative),
-
-          free:
-            num(plan.free),
-
-          reserve:
-            num(plan.reserve),
-
-          goals:
-            remapGoalSnapshot(
-              plan.goals
-            ),
-
-          distributed:
-            num(plan.distributed),
-
-          remaining:
-            num(plan.remaining)
-
-        })
-        .select("id")
-        .single();
-
-      if(planError){
-
-        console.error(
-          "ARISE monthly plan migration error:",
-          planError
-        );
-
-        return false;
-      }
-
-      monthlyPlanIdMap.set(
-        plan.id,
-        newPlan.id
-      );
-
-    }
-
-    console.log(
-      "ARISE: monthly plans migrated:",
-      monthlyPlanIdMap.size
-    );
-
-    // =========================================
-    // 6. ALLOCATIONS
-    // =========================================
-
-    const localAllocations=
-      Array.isArray(A.allocations)
-        ? A.allocations
-        : [];
-
-    for(const allocation of localAllocations){
-
-      const localTransactionId=
-        allocation.transaction_id ||
-        allocation.transactionId ||
-        null;
-
-      const localPlanId=
-        allocation.monthly_plan_id ||
-        allocation.monthlyPlanId ||
-        null;
-
-      const localGoalId=
-        allocation.goal_id ||
-        allocation.goalId ||
-        null;
-
-      const newTransactionId=
-        localTransactionId
-          ? transactionIdMap.get(
-              localTransactionId
-            ) || null
-          : null;
-
-      const newMonthlyPlanId=
-        localPlanId
-          ? monthlyPlanIdMap.get(
-              localPlanId
-            ) || null
-          : null;
-
-      const newGoalId=
-        localGoalId
-          ? goalIdMap.get(
-              localGoalId
-            ) || null
-          : null;
-
-      const {error:allocationError}=await sb
-        .from("allocations")
-        .insert({
-
-          user_id:user.id,
-
-          transaction_id:
-            newTransactionId,
-
-          monthly_plan_id:
-            newMonthlyPlanId,
-
-          category:
-            allocation.category ||
-            "other",
-
-          amount:
-            num(allocation.amount),
-
-          goal_id:
-            newGoalId
-
-        });
-
-      if(allocationError){
-
-        console.error(
-          "ARISE allocation migration error:",
-          allocationError
-        );
-
-        return false;
-      }
-
-    }
-
-    console.log(
-      "ARISE: allocations migrated:",
-      localAllocations.length
-    );
-
-    // =========================================
-    // 7. ГОТОВО
-    // =========================================
-
-    console.log(
-      "ARISE: local → Supabase migration v2 completed successfully"
-    );
-
-    return true;
 
   }catch(error){
 
-    console.error(
-      "ARISE migration v2 error:",
-      error
-    );
+    console.error("ARISE state load error",error);
 
-    return false;
+    return createDefaultState();
   }
-
-}
-  // =========================
-  // JS TEST 4 — FINANCIAL ENGINE
-  // =========================
-
-  function num(v){
-    const n=Number(v);
-    return Number.isFinite(n)?n:0;
-  }
-
-  function sum(arr,fn){
-    return arr.reduce((s,x)=>s+num(fn(x)),0);
-  }
-
-  function getActiveGoals(state){
-    return (state.goals||[])
-      .filter(g=>
-        g &&
-        g.status!=="completed" &&
-        g.type!=="reserve"
-      )
-      .sort((a,b)=>num(b.priority)-num(a.priority));
-}
-function distributeGoalBudget(
-  budget,
-  goals,
-  existingGoals=[]
-){
-
-  let amountLeft=Math.max(
-    0,
-    Math.round(num(budget))
-  );
-
-  if(amountLeft<=0 || !goals.length){
-    return [];
-  }
-
-  const alreadyAllocated=new Map();
-
-  (existingGoals||[]).forEach(g=>{
-    alreadyAllocated.set(
-      g.id,
-      num(g.amount)
-    );
-  });
-
-  const prepared=goals
-    .map(goal=>{
-
-      const target=num(goal.target);
-      const current=num(goal.current);
-
-      const already=num(
-        alreadyAllocated.get(goal.id)
-      );
-
-      const need=Math.max(
-        0,
-        target-current-already
-      );
-
-      if(need<=0){
-        return null;
-      }
-
-      const priority=Math.max(
-        1,
-        num(goal.priority)||1
-      );
-
-      const progress=target>0
-        ? Math.min(
-            1,
-            (current+already)/target
-          )
-        : 0;
-
-      /*
-       * Приоритет — основной фактор.
-       * Чем ближе цель к завершению,
-       * тем немного выше её вес.
-       */
-      const urgency=1+(progress*0.5);
-
-      return {
-        goal,
-        need,
-        weight:priority*urgency
-      };
-
-    })
-    .filter(Boolean);
-
-  if(!prepared.length){
-    return [];
-  }
-
-  /*
-   * Распределяем бюджет пропорционально весам.
-   */
-  const totalWeight=prepared.reduce(
-    (s,item)=>s+item.weight,
-    0
-  );
-
-  const result=prepared.map(item=>{
-
-    const raw=
-      amountLeft*
-      (item.weight/totalWeight);
-
-    /*
-     * Округляем цели до 100 ₽.
-     * Но не выдаём больше необходимого.
-     */
-    const rounded=
-      Math.floor(raw/100)*100;
-
-    const amount=Math.min(
-      item.need,
-      rounded
-    );
-
-    return {
-      id:item.goal.id,
-      name:item.goal.name,
-      amount,
-      needBefore:item.need,
-      needAfter:item.need-amount,
-      raw
-    };
-
-  });
-
-  /*
-   * Если из-за округления остались деньги,
-   * распределяем их по 100 ₽ начиная
-   * с наиболее приоритетной цели.
-   */
-  let used=result.reduce(
-    (s,g)=>s+g.amount,
-    0
-  );
-
-  let leftover=amountLeft-used;
-
-  while(leftover>=100){
-
-    const candidates=result
-      .map(item=>{
-        const goal=goals.find(
-          g=>g.id===item.id
-        );
-
-        if(!goal || item.needAfter<100){
-          return null;
-        }
-
-        return {
-          item,
-          priority:num(goal.priority)||1
-        };
-      })
-      .filter(Boolean)
-      .sort((a,b)=>{
-        if(b.priority!==a.priority){
-          return b.priority-a.priority;
-        }
-
-        return b.item.raw-a.item.raw;
-      });
-
-    if(!candidates.length){
-      break;
-    }
-
-    const selected=candidates[0].item;
-
-    selected.amount+=100;
-    selected.needAfter-=100;
-    leftover-=100;
-    used+=100;
-  }
-
-  /*
-   * Последние 1–99 ₽ остаются вызывающей системе.
-   */
-  return result.filter(
-    g=>g.amount>0
-  );
-}
-  function calculateFinancialPlan(income,state=A,planDate=""){
-
-  const total=num(income);
-
-  if(total<=0){
-    return {
-      income:0,
-      basic:0,
-      family:0,
-      creative:0,
-      free:0,
-      reserve:0,
-      goals:[],
-      distributed:0,
-      remaining:0
-    };
-  }
-
-  const settings=state.settings||{};
-
-  // =================================
-  // 1. ОПРЕДЕЛЯЕМ МЕСЯЦ
-  // =================================
-
-  const date=planDate ||
-    new Date().toISOString().slice(0,10);
-
-  const month=date.slice(0,7);
-
-  // =================================
-  // 2. СКОЛЬКО ФИКСИРОВАННЫХ
-  //    РАСХОДОВ УЖЕ ПОКРЫТО В МЕСЯЦЕ
-  // =================================
-
-  const monthPlans=(state.monthlyPlans||[])
-    .filter(p=>
-      p &&
-      (p.month===month ||
-       (p.date&&String(p.date).slice(0,7)===month))
-    );
-
-  const alreadyBasic=sum(
-    monthPlans,
-    p=>p.basic
-  );
-
-  const alreadyFamily=sum(
-    monthPlans,
-    p=>p.family
-  );
-
-  // =================================
-  // 3. МЕСЯЧНЫЕ ЛИМИТЫ
-  // =================================
-
-  const basicTarget=Math.max(
-    0,
-    num(settings.basicNeeds)
-  );
-
-  const familyTarget=Math.max(
-    0,
-    num(settings.family)
-  );
-
-  // Сколько ещё реально нужно
-  // покрыть фиксированным категориям.
-
-  const basicNeed=Math.max(
-    0,
-    basicTarget-alreadyBasic
-  );
-
-  const familyNeed=Math.max(
-    0,
-    familyTarget-alreadyFamily
-  );
-
-  // =================================
-  // 4. ПОКРЫВАЕМ ФИКСИРОВАННЫЕ
-  // =================================
-
-  let remaining=total;
-
-  const basic=Math.min(
-    remaining,
-    basicNeed
-  );
-
-  remaining-=basic;
-
-  const family=Math.min(
-    remaining,
-    familyNeed
-  );
-
-  remaining-=family;
-
-  // =================================
-  // 5. ПРОЦЕНТЫ ОТ ОСТАТКА
-  // =================================
-
-  const reservePercent=0.30;
-  const goalsPercent=0.40;
-  const creativePercent=0.10;
-  const freePercent=0.20;
-
-  const reserveRaw=remaining*reservePercent;
-  const goalsRaw=remaining*goalsPercent;
-  const creativeRaw=remaining*creativePercent;
-  const freeRaw=remaining*freePercent;
-
-  // =================================
-  // 6. ОКРУГЛЕНИЕ
-  // =================================
-
-  let reserve=Math.round(reserveRaw);
-  let creative=Math.round(creativeRaw);
-  let free=Math.round(freeRaw);
-
-  // =================================
-  // 7. РЕЗЕРВ
-  // =================================
-
-  const activeGoals=getActiveGoals(state);
-
-  const currentReserve=sum(
-    state.goals||[],
-    g=>g.type==="reserve"?g.current:0
-  );
-
-  const reserveTarget=Math.max(
-    0,
-    num(settings.reserveTarget)
-  );
-
-  const reserveNeed=Math.max(
-    0,
-    reserveTarget-currentReserve
-  );
-
-  reserve=Math.min(
-    reserve,
-    reserveNeed
-  );
-
-  // =================================
-  // 8. ЦЕЛИ
-  // =================================
-
-  const goalBudget=Math.round(
-    goalsRaw
-  );
-
-  const goals=distributeGoalBudget(
-    goalBudget,
-    activeGoals
-  );
-
-  // =================================
-  // 9. БАЛАНС
-  // =================================
-
-  let distributed=
-    basic+
-    family+
-    reserve+
-    creative+
-    free+
-    goals.reduce(
-      (s,g)=>s+num(g.amount),
-      0
-    );
-
-  let difference=total-distributed;
-
-  // =================================
-  // 10. ЕСЛИ РЕЗЕРВ ДОСТИГНУТ —
-  //     ОСВОБОДИВШИЕСЯ ДЕНЬГИ В ЦЕЛИ
-  // =================================
-
-  if(difference>0){
-
-    const extraGoals=distributeGoalBudget(
-      difference,
-      activeGoals,
-      goals
-    );
-
-    extraGoals.forEach(extra=>{
-
-      const existing=goals.find(
-        g=>g.id===extra.id
-      );
-
-      if(existing){
-
-        existing.amount+=extra.amount;
-
-        existing.needAfter=Math.max(
-          0,
-          existing.needAfter-extra.amount
-        );
-
-      }else{
-
-        goals.push(extra);
-
-      }
-
-    });
-
-    distributed=
-      basic+
-      family+
-      reserve+
-      creative+
-      free+
-      goals.reduce(
-        (s,g)=>s+num(g.amount),
-        0
-      );
-
-    difference=total-distributed;
-  }
-
-  // =================================
-  // 11. ПОСЛЕДНИЕ РУБЛИ → СВОБОДНЫЕ
-  // =================================
-
-  if(difference!==0){
-
-    free+=difference;
-    distributed+=difference;
-
-  }
-
-  return {
-
-    income:total,
-
-    basic,
-    family,
-
-    creative,
-    free,
-    reserve,
-
-    goals,
-
-    distributed,
-
-    remaining:total-distributed
-
-  };
 }
 
-  function applyFinancialPlan(plan,state=A,meta={}){
-  if(!plan||!state)return false;
+let state=loadState();
 
-  const now=new Date();
-  const month=now.toISOString().slice(0,7);
-
-  state.monthlyPlans=Array.isArray(state.monthlyPlans)
-    ? state.monthlyPlans
-    : [];
-
-  state.allocations=Array.isArray(state.allocations)
-    ? state.allocations
-    : [];
-
-  state.transactions=Array.isArray(state.transactions)
-    ? state.transactions
-    : [];
-
-  const source=(meta.source||"Без источника").trim();
-  const date=meta.date||now.toISOString().slice(0,10);
-
-  // Записываем сам доход
-  state.transactions.push({
-    id:safeId(),
-    type:"income",
-    amount:plan.income,
-    source,
-    date,
-    month,
-    createdAt:now.toISOString()
-  });
-
-  // Сохраняем рассчитанный план
-  const planRecord={
-    id:safeId(),
-    month,
-    income:plan.income,
-    source,
-    date,
-    basic:plan.basic,
-    family:plan.family,
-    creative:plan.creative,
-    free:plan.free,
-    reserve:plan.reserve,
-    goals:clone(plan.goals),
-    distributed:plan.distributed,
-    remaining:plan.remaining,
-    createdAt:now.toISOString()
-  };
-
-  state.monthlyPlans.push(planRecord);
-
-  // Резерв
-  if(plan.reserve>0){
-    const reserveGoal=state.goals.find(
-      g=>g.type==="reserve"
+function save(){
+  try{
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(state)
     );
-
-    if(reserveGoal){
-      reserveGoal.current=
-        num(reserveGoal.current)+plan.reserve;
-    }
+  }catch(error){
+    console.error("ARISE save error",error);
+    showToast("Не удалось сохранить изменения.");
   }
-
-  // Цели
-  plan.goals.forEach(item=>{
-    const goal=state.goals.find(
-      g=>g.id===item.id
-    );
-
-    if(goal){
-      goal.current=
-        num(goal.current)+num(item.amount);
-
-      if(num(goal.current)>=num(goal.target)){
-        goal.current=num(goal.target);
-        goal.status="completed";
-      }
-    }
-  });
-
-  saveLocal();
-  return true;
 }
-  // =========================
-  // ARISE FINANCE — REBALANCE ENGINE
-  // =========================
 
-  function rebalanceFinancialPlan(basePlan,editedValues,state=A){
 
-  if(!basePlan || !editedValues){
-    return basePlan;
-  }
+/* =========================================================
+   APPLICATION SHELL
+   ========================================================= */
 
-  const income=num(basePlan.income);
+const root=document.getElementById("root");
 
-  const result={
-    ...clone(basePlan),
-    goals:[],
-    distributed:0,
-    remaining:0
-  };
-
-  // =================================
-  // 1. Фиксированные категории
-  // =================================
-
-  result.basic=Math.max(
-    0,
-    num(editedValues.basic)
-  );
-
-  result.family=Math.max(
-    0,
-    num(editedValues.family)
-  );
-
-  // =================================
-  // 2. Редактируемые категории
-  // =================================
-
-  result.creative=Math.max(
-    0,
-    num(editedValues.creative)
-  );
-
-  result.free=Math.max(
-    0,
-    num(editedValues.free)
-  );
-
-  result.reserve=Math.max(
-    0,
-    num(editedValues.reserve)
-  );
-
-  // =================================
-  // 3. Ручные значения целей
-  // =================================
-
-  const editedGoals=Array.isArray(editedValues.goals)
-    ? editedValues.goals
-    : [];
-
-  // =================================
-  // 4. Считаем общую сумму категорий
-  // =================================
-
-  let allocated=
-    result.basic+
-    result.family+
-    result.creative+
-    result.free+
-    result.reserve;
-
-  // =================================
-  // 5. Добавляем цели
-  // =================================
-
-  const activeGoals=getActiveGoals(state);
-
-  activeGoals.forEach(goal=>{
-
-    const edited=editedGoals.find(
-      g=>g.id===goal.id
-    );
-
-    const amount=edited
-      ? Math.max(0,num(edited.amount))
-      : 0;
-
-    const target=num(goal.target);
-    const current=num(goal.current);
-
-    const need=Math.max(
-      0,
-      target-current
-    );
-
-    const finalAmount=Math.min(
-      amount,
-      need
-    );
-
-    if(finalAmount>0){
-
-      result.goals.push({
-        id:goal.id,
-        name:goal.name,
-        amount:finalAmount,
-        needBefore:need,
-        needAfter:need-finalAmount
-      });
-
-      allocated+=finalAmount;
-    }
-  });
-
-  // =================================
-  // 6. Проверяем баланс
-  // =================================
-
-  result.distributed=allocated;
-
-  result.remaining=
-    income-allocated;
-
-  return result;
-}
-  function runFinancialEngineTest(){
-    const testState=normalizeState({
-      profile:{name:"TEST"},
-      settings:{
-  basicNeeds:35700,
-  family:20000,
-  creativeMin:5000,
-  creativeTarget:12500,
-  freeMin:20000,
-  reserveTarget:300000
-},
-      goals:[
-        {
-          id:"reserve",
-          name:"Финансовый резерв",
-          type:"reserve",
-          target:300000,
-          current:0,
-          priority:5,
-          status:"active"
-        },
-        {
-          id:"turkey",
-          name:"Турция",
-          type:"goal",
-          target:125000,
-          current:0,
-          priority:4,
-          status:"active"
-        },
-        {
-          id:"bmw",
-          name:"BMW G20",
-          type:"goal",
-          target:2000000,
-          current:0,
-          priority:2,
-          status:"active"
-        }
-      ]
-    });
-
-    const plan=calculateFinancialPlan(150000,testState);
-
-    const checks=[
-  ["Доход",plan.income===150000],
-
-  ["Базовые потребности",plan.basic===35700],
-
-  ["Семья",plan.family===20000],
-
-  ["Творчество",plan.creative>0],
-
-  ["Свободные деньги",plan.free>0],
-
-  ["Резерв",plan.reserve>0],
-
-  ["Распределено",
-    plan.distributed===150000
-  ],
-
-  ["Остаток",
-    plan.remaining===0
-  ],
-
-  ["Есть цели",
-    Array.isArray(plan.goals)
-  ],
-
-  ["Турция получила деньги",
-    plan.goals.some(
-      g=>g.id==="turkey"&&g.amount>0
-    )
-  ],
-
-  ["BMW получил деньги",
-    plan.goals.some(
-      g=>g.id==="bmw"&&g.amount>0
-    )
-  ]
-];
-
-    const failed=checks.filter(x=>!x[1]);
-
-    return {
-      ok:failed.length===0,
-      plan,
-      checks,
-      failed
-    };
-  }
-
-  const ENGINE_TEST=runFinancialEngineTest();
-
-    // =========================
-  // ARISE FINANCE — LIVE PLAN
-  // =========================
-
-  function formatMoney(value){
-    return num(value).toLocaleString("ru-RU") + " ₽";
-  }
-
-  function renderPlan(plan){
-    const goalHtml = plan.goals.length
-      ? plan.goals.map(goal=>`
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            gap:16px;
-            padding:14px 0;
-            border-bottom:1px solid rgba(255,255,255,.055);
-          ">
-            <div>
-              <div style="font-weight:700">${goal.name}</div>
-              <div style="margin-top:4px;color:#8d98a7;font-size:11px">
-                Приоритетная цель
-              </div>
-            </div>
-
-            <div style="
-              font-size:16px;
-              font-weight:800;
-              white-space:nowrap;
-            ">
-              ${formatMoney(goal.amount)}
-            </div>
-          </div>
-        `).join("")
-      : `
-        <div style="padding:20px 0;color:#8d98a7">
-          На цели пока ничего не распределено.
-        </div>
-      `;
-
-    return `
-      <div style="
-        margin-top:20px;
-        display:grid;
-        grid-template-columns:repeat(2,1fr);
-        gap:10px;
-      ">
-
-        <div style="
-          padding:16px;
-          border:1px solid #222b36;
-          border-radius:16px;
-          background:#0c1118;
-        ">
-          <div style="color:#8d98a7;font-size:11px">Семья</div>
-          <div style="font-size:20px;font-weight:800;margin-top:6px">
-            ${formatMoney(plan.family)}
-          </div>
-        </div>
-
-        <div style="
-          padding:16px;
-          border:1px solid #222b36;
-          border-radius:16px;
-          background:#0c1118;
-        ">
-          <div style="color:#8d98a7;font-size:11px">Творчество</div>
-          <div style="font-size:20px;font-weight:800;margin-top:6px">
-            ${formatMoney(plan.creative)}
-          </div>
-        </div>
-
-        <div style="
-          padding:16px;
-          border:1px solid #222b36;
-          border-radius:16px;
-          background:#0c1118;
-        ">
-          <div style="color:#8d98a7;font-size:11px">Свободные</div>
-          <div style="font-size:20px;font-weight:800;margin-top:6px">
-            ${formatMoney(plan.free)}
-          </div>
-        </div>
-
-        <div style="
-          padding:16px;
-          border:1px solid #222b36;
-          border-radius:16px;
-          background:#0c1118;
-        ">
-          <div style="color:#8d98a7;font-size:11px">Резерв</div>
-          <div style="font-size:20px;font-weight:800;margin-top:6px">
-            ${formatMoney(plan.reserve)}
-          </div>
-        </div>
-      </div>
-
-      <div style="
-        margin-top:14px;
-        padding:18px;
-        border:1px solid #222b36;
-        border-radius:18px;
-        background:#0c1118;
-      ">
-        <div style="
-          font-size:12px;
-          color:#8d98a7;
-          margin-bottom:4px;
-        ">
-          Цели
-        </div>
-
-        ${goalHtml}
-      </div>
-
-      <div style="
-        margin-top:14px;
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-        padding:16px 18px;
-        border-radius:16px;
-        background:rgba(155,191,174,.07);
-        border:1px solid rgba(155,191,174,.14);
-      ">
-        <span style="color:#8d98a7">Распределено</span>
-        <strong>${formatMoney(plan.distributed)}</strong>
-      </div>
-
-      <div style="
-        margin-top:8px;
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-        padding:12px 18px;
-        color:#8d98a7;
-        font-size:12px;
-      ">
-        <span>Остаток</span>
-        <span>${formatMoney(plan.remaining)}</span>
-      </div>
-    `;
-  }
-
-    function renderAuth(){
-  const root=document.getElementById("root");
-
+function renderApp(){
   root.innerHTML=`
-    <div class="auth">
-      <div class="auth-card">
+    <div class="app">
+      <div class="shell">
 
-        <div class="auth-logo">
-          ARISE FINANCE
-        </div>
+        <header class="top">
 
-        <div class="auth-title" id="authTitle">
-          Вход в ARISE
-        </div>
+          <div class="brand">
+            ARISE <span>FINANCE</span>
+          </div>
 
-        <div class="auth-copy" id="authCopy">
-          Войдите в свой аккаунт,
-          чтобы продолжить.
-        </div>
+          <div class="profile">
 
-        <input
-          id="authEmail"
-          type="email"
-          placeholder="Email"
-          autocomplete="email"
-        >
+            <div class="avatar">
+              ${
+                state.profile.avatar
+                ? `<img
+                    src="${escapeHtml(state.profile.avatar)}"
+                    style="
+                      width:100%;
+                      height:100%;
+                      object-fit:cover;
+                      border-radius:50%;
+                    "
+                  >`
+                : escapeHtml(
+                    (state.profile.name||"М").slice(0,1).toUpperCase()
+                  )
+              }
+            </div>
 
-        <input
-          id="authPassword"
-          type="password"
-          placeholder="Пароль"
-          autocomplete="current-password"
-        >
+            <span>
+              ${escapeHtml(state.profile.name||"Мой профиль")}
+            </span>
 
-        <input
-          id="authPassword2"
-          type="password"
-          placeholder="Повторите пароль"
-          autocomplete="new-password"
-          style="display:none"
-        >
+          </div>
 
-        <button
-          id="authAction"
-          class="primary"
-          style="width:100%;margin-top:12px"
-        >
-          Войти
-        </button>
+        </header>
 
-        <button
-          id="authSwitch"
-          type="button"
-          style="
-            width:100%;
-            margin-top:10px;
-            background:none;
-            border:0;
-            color:#8d98a7;
-            cursor:pointer;
-          "
-        >
-          Нет аккаунта? Создать
-        </button>
+        <nav class="nav">
 
-        <div
-          id="authMessage"
-          class="tiny muted"
-          style="margin-top:12px;text-align:center"
-        ></div>
+          <button
+            class="active"
+            data-page="home"
+          >
+            Главная
+          </button>
+
+          <button data-page="income">
+            Доход
+          </button>
+
+          <button data-page="goals">
+            Цели
+          </button>
+
+          <button data-page="history">
+            История
+          </button>
+
+          <button data-page="statistics">
+            Статистика
+          </button>
+
+          <button data-page="profile">
+            Профиль
+          </button>
+
+        </nav>
+
+        <main id="page"></main>
 
       </div>
     </div>
   `;
 
-  let mode="login";
-
-  const title=document.getElementById("authTitle");
-  const copy=document.getElementById("authCopy");
-  const password2=document.getElementById("authPassword2");
-  const action=document.getElementById("authAction");
-  const switchButton=document.getElementById("authSwitch");
-  const password=document.getElementById("authPassword");
-
-  switchButton.addEventListener("click",()=>{
-
-    mode=mode==="login"
-      ? "register"
-      : "login";
-
-    const isRegister=mode==="register";
-
-    title.textContent=isRegister
-      ? "Создать аккаунт"
-      : "Вход в ARISE";
-
-    copy.textContent=isRegister
-      ? "Создайте аккаунт, чтобы сохранить свою финансовую систему."
-      : "Войдите в свой аккаунт, чтобы продолжить.";
-
-    password2.style.display=
-      isRegister ? "block" : "none";
-
-    password2.value="";
-
-    password.autocomplete=
-      isRegister
-        ? "new-password"
-        : "current-password";
-
-    action.textContent=
-      isRegister
-        ? "Создать аккаунт"
-        : "Войти";
-
-    switchButton.textContent=
-      isRegister
-        ? "Уже есть аккаунт? Войти"
-        : "Нет аккаунта? Создать";
-
-    document.getElementById("authMessage")
-      .textContent="";
-  });
-
-  action.addEventListener("click",()=>{
-
-    if(mode==="register"){
-      registerUser();
-    }else{
-      loginUser();
-    }
-
-  });
-}
-async function loginUser(){
-
-  const email=document
-    .getElementById("authEmail")
-    .value
-    .trim();
-
-  const password=document
-    .getElementById("authPassword")
-    .value;
-
-  const message=document
-    .getElementById("authMessage");
-
-  if(!email || !password){
-    message.textContent=
-      "Введите email и пароль.";
-    return;
-  }
-
-  message.textContent="Выполняем вход…";
-
-  try{
-
-    const {data,error}=await sb.auth
-      .signInWithPassword({
-        email,
-        password
+  document
+    .querySelectorAll(".nav button")
+    .forEach(button=>{
+      button.addEventListener("click",()=>{
+        setPage(button.dataset.page);
       });
-
-    if(error){
-
-      console.error(
-        "ARISE login error:",
-        error
-      );
-
-      message.textContent=
-        error.message;
-
-      return;
-    }
-
-    if(!data.user){
-
-      message.textContent=
-        "Не удалось выполнить вход.";
-
-      return;
-    }
-const {data:profile,error:profileError}=await sb
-  .from("profiles")
-  .select("*")
-  .eq("id",data.user.id)
-  .maybeSingle();
-
-if(profileError){
-
-  console.error(
-    "ARISE profile load error:",
-    profileError
-  );
-
-  message.textContent=
-    "Ошибка загрузки профиля: "+
-    profileError.message;
-
-  return;
-}
-
-if(!profile){
-
-  const {error:createProfileError}=await sb
-    .from("profiles")
-    .insert({
-      id:data.user.id,
-      name:"Мой профиль",
-      base_currency:"RUB"
     });
 
-  if(createProfileError){
-
-    console.error(
-      "ARISE profile create error:",
-      createProfileError
-    );
-
-    message.textContent=
-      "Ошибка создания профиля: "+
-      createProfileError.message;
-
-    return;
-  }
-
-}
-    message.textContent=
-      "Вход выполнен. Загружаем ARISE…";
-
-    const loaded=await loadSupabaseData(data.user);
-
-if(!loaded){
-
-  console.warn(
-    "ARISE: Supabase data load failed"
-  );
-
-  message.textContent=
-    "Не удалось загрузить финансовые данные.";
-
-  return;
+  renderHome();
 }
 
-message.textContent=
-  "Вход выполнен. Загружаем ARISE…";
 
-setTimeout(()=>{
-  renderApp();
-},300);
+/* =========================================================
+   PROFILE SETUP
+   ========================================================= */
 
-  }catch(error){
-
-    console.error(
-      "ARISE loginUser error:",
-      error
-    );
-
-    message.textContent=
-      "Ошибка входа.";
-
-  }
+function needsInitialSetup(){
+  return !state.profile.name ||
+         state.profile.name==="Мой профиль";
 }
-async function registerUser(){
 
-  const email=document
-    .getElementById("authEmail")
-    .value
-    .trim();
-
-  const password=document
-    .getElementById("authPassword")
-    .value;
-
-  const password2=document
-    .getElementById("authPassword2")
-    .value;
-
-  const message=document
-    .getElementById("authMessage");
-
-  if(!email || !password || !password2){
-    message.textContent="Заполните все поля.";
-    return;
-  }
-
-  if(password!==password2){
-    message.textContent="Пароли не совпадают.";
-    return;
-  }
-
-  if(password.length<6){
-    message.textContent="Пароль должен быть минимум 6 символов.";
-    return;
-  }
-
-  message.textContent="Создаём аккаунт…";
-
-  try{
-
-    const {data,error}=await sb.auth.signUp({
-      email,
-      password
-    });
-
-    if(error){
-      console.error(
-        "ARISE registration error:",
-        error
-      );
-
-      message.textContent=error.message;
-      return;
-    }
-
-    if(!data.user){
-      message.textContent=
-        "Не удалось создать пользователя.";
-      return;
-    }
-
-    
-
-    message.textContent=
-  "Аккаунт создан. Проверьте почту и подтвердите email.";
-
-  
-
-  }catch(error){
-
-    console.error(
-      "ARISE registerUser error:",
-      error
-    );
-
-    message.textContent=
-      "Ошибка регистрации.";
-
-  }
-}
-async function loadSupabaseData(user){
-
-  try{
-
-    if(!user){
-      console.warn("ARISE: no user for Supabase load");
-      return false;
-    }
-
-    console.log("ARISE: loading Supabase data...");
-
-    // =========================
-    // PROFILE
-    // =========================
-
-    const {data:profile,error:profileError}=await sb
-      .from("profiles")
-      .select("*")
-      .eq("id",user.id)
-      .maybeSingle();
-
-    if(profileError){
-      console.error(
-        "ARISE profile load error:",
-        profileError
-      );
-      return false;
-    }
-
-    if(profile){
-
-      A.profile.id=profile.id;
-
-      A.profile.name=
-        profile.name||"Мой профиль";
-
-      A.profile.baseCurrency=
-        profile.base_currency||"RUB";
-    }
-
-    // =========================
-    // FINANCIAL SETTINGS
-    // =========================
-
-    const {data:settings,error:settingsError}=await sb
-      .from("financial_settings")
-      .select("*")
-      .eq("user_id",user.id)
-      .maybeSingle();
-
-    if(settingsError){
-      console.error(
-        "ARISE settings load error:",
-        settingsError
-      );
-      return false;
-    }
-
-    if(settings){
-
-      A.settings={
-        ...A.settings,
-
-        basicNeeds:num(settings.basic_needs),
-        family:num(settings.family),
-        creativeMin:num(settings.creative_min),
-        creativeTarget:num(settings.creative_target),
-        freeMin:num(settings.free_min),
-        reserveTarget:num(settings.reserve_target)
-      };
-    }
-
-    // =========================
-    // GOALS
-    // =========================
-
-    const {data:goals,error:goalsError}=await sb
-      .from("goals")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("priority",{ascending:false});
-
-    if(goalsError){
-      console.error(
-        "ARISE goals load error:",
-        goalsError
-      );
-      return false;
-    }
-
-    A.goals=(goals||[]).map(g=>({
-
-      id:g.id,
-      name:g.name,
-      type:g.type,
-
-      target:num(g.target),
-      current:num(g.current),
-
-      deadline:g.deadline||"",
-      priority:num(g.priority),
-
-      status:g.status||"active"
-
-    }));
-
-    // =========================
-    // TRANSACTIONS
-    // =========================
-
-    const {
-      data:transactions,
-      error:transactionsError
-    }=await sb
-      .from("transactions")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("date",{ascending:false});
-
-    if(transactionsError){
-      console.error(
-        "ARISE transactions load error:",
-        transactionsError
-      );
-      return false;
-    }
-
-    A.transactions=(transactions||[]).map(t=>({
-
-      id:t.id,
-      type:t.type,
-      amount:num(t.amount),
-
-      source:
-        t.source||"Без источника",
-
-      date:t.date,
-      month:t.month,
-
-      createdAt:t.created_at
-
-    }));
-
-    // =========================
-    // MONTHLY PLANS
-    // =========================
-
-    const {
-      data:plans,
-      error:plansError
-    }=await sb
-      .from("monthly_plans")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("date",{ascending:false});
-
-    if(plansError){
-      console.error(
-        "ARISE monthly plans load error:",
-        plansError
-      );
-      return false;
-    }
-
-    A.monthlyPlans=(plans||[]).map(p=>({
-
-      id:p.id,
-
-      month:p.month,
-      income:num(p.income),
-
-      source:
-        p.source||"Без источника",
-
-      date:p.date,
-
-      basic:num(p.basic),
-      family:num(p.family),
-      creative:num(p.creative),
-      free:num(p.free),
-      reserve:num(p.reserve),
-
-      goals:
-        Array.isArray(p.goals)
-          ? p.goals
-          : [],
-
-      distributed:num(p.distributed),
-      remaining:num(p.remaining),
-
-      createdAt:p.created_at
-
-    }));
-
-    // =========================
-    // ALLOCATIONS
-    // =========================
-
-    const {
-      data:allocations,
-      error:allocationsError
-    }=await sb
-      .from("allocations")
-      .select("*")
-      .eq("user_id",user.id)
-      .order("created_at",{ascending:false});
-
-    if(allocationsError){
-      console.error(
-        "ARISE allocations load error:",
-        allocationsError
-      );
-      return false;
-    }
-
-    A.allocations=(allocations||[]).map(a=>({
-
-      id:a.id,
-
-      transaction_id:
-        a.transaction_id,
-
-      monthly_plan_id:
-        a.monthly_plan_id,
-
-      category:a.category,
-      amount:num(a.amount),
-
-      goal_id:a.goal_id,
-
-      createdAt:a.created_at
-
-    }));
-
-    console.log(
-      "ARISE: Supabase data loaded",
-      {
-        goals:A.goals.length,
-        transactions:A.transactions.length,
-        monthlyPlans:A.monthlyPlans.length,
-        allocations:A.allocations.length
-      }
-    );
-
-    return true;
-
-  }catch(error){
-
-    console.error(
-      "ARISE loadSupabaseData error:",
-      error
-    );
-
-    return false;
-  }
-}
-  function renderApp(){
-    document.getElementById("root").innerHTML=`
-      <div class="app">
-        <div class="shell">
-
-          <div class="top">
-            <div class="brand">
-              ARISE <span>FINANCE</span>
-            </div>
-
-            <div class="profile">
-
-  <div class="avatar">
-    ${(A.profile.name||"М").slice(0,1).toUpperCase()}
-  </div>
-
-  <span>${A.profile.name||"Мой профиль"}</span>
-
-  <button
-    id="logoutButton"
-    type="button"
-    style="
-      margin-left:10px;
-      background:none;
-      border:0;
-      color:#8d98a7;
-      cursor:pointer;
-      font-size:12px;
-    "
-  >
-    Выйти
-  </button>
-
-</div>
-          </div>
-
-          <div class="nav">
-            <button class="active" data-page="home">Главная</button>
-            <button data-page="income">Доход</button>
-            <button data-page="goals">Цели</button>
-            <button data-page="history">История</button>
-            <button data-page="profile">Профиль</button>
-          </div>
-
-          <div id="page"></div>
-
+function showInitialSetup(){
+  openModal(`
+    <div class="modal-title">
+      <div>
+        <div class="kicker">
+          ПЕРВИЧНАЯ НАСТРОЙКА
         </div>
+        <h2>Настроим ARISE под тебя</h2>
       </div>
-    `;
+    </div>
 
-    const page=document.getElementById("page");
-document
-  .getElementById("logoutButton")
-  .addEventListener("click",async()=>{
+    <div class="sub">
+      ARISE не будет придумывать за тебя финансовые цели.
+      Ты сам решаешь, что важно, куда идут деньги и
+      сколько можешь позволить себе тратить.
+    </div>
 
-    try{
+    <div class="form" style="margin-top:20px">
 
-      const {error}=await sb.auth.signOut();
+      <div class="field full">
+        <label>Имя профиля</label>
+        <input
+          id="setupName"
+          placeholder="Например, Заур"
+        >
+      </div>
 
-      if(error){
-        console.error(
-          "ARISE logout error:",
-          error
-        );
+      <div class="field">
+        <label>Валюта</label>
+
+        <select id="setupCurrency">
+
+          <option value="RUB">
+            ₽ Рубль
+          </option>
+
+          <option value="EUR">
+            € Евро
+          </option>
+
+          <option value="USD">
+            $ Доллар
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn primary"
+        id="setupSave"
+      >
+        Начать
+      </button>
+
+    </div>
+  `);
+
+  document
+    .getElementById("setupSave")
+    .addEventListener("click",()=>{
+
+      const name=
+        document
+          .getElementById("setupName")
+          .value
+          .trim();
+
+      const currency=
+        document.getElementById("setupCurrency").value;
+
+      if(!name){
+        showToast("Укажи имя профиля.");
         return;
       }
 
-      renderAuth();
+      state.profile.name=name;
+      state.profile.currency=currency;
+      state.settings.baseCurrency=currency;
 
-    }catch(error){
+      save();
+      closeModal();
+      renderApp();
 
-      console.error(
-        "ARISE logout exception:",
-        error
+      showToast("Профиль создан.");
+    });
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+function setPage(name){
+
+  document
+    .querySelectorAll(".nav button")
+    .forEach(button=>{
+      button.classList.toggle(
+        "active",
+        button.dataset.page===name
       );
-
-    }
-
-  });
-    function money(v){
-      return formatMoney(v);
-    }
-function getMonthlyStats(state=A,month=""){
-
-  const currentMonth=
-    month ||
-    new Date().toISOString().slice(0,7);
-
-  const plans=(state.monthlyPlans||[])
-    .filter(p=>{
-      if(!p)return false;
-
-      if(p.month){
-        return p.month===currentMonth;
-      }
-
-      if(p.date){
-        return String(p.date).slice(0,7)===currentMonth;
-      }
-
-      return false;
     });
 
-  const stats={
-    month:currentMonth,
-    income:0,
-    basic:0,
-    family:0,
-    creative:0,
-    free:0,
+  if(name==="home")renderHome();
+  if(name==="income")renderIncome();
+  if(name==="goals")renderGoals();
+  if(name==="history")renderHistory();
+  if(name==="statistics")renderStatistics();
+  if(name==="profile")renderProfile();
+}
+
+
+/* =========================================================
+   FINANCIAL MODEL
+   ========================================================= */
+
+function getActiveCategories(){
+  return state.settings.categories
+    .filter(c=>c && c.enabled!==false);
+}
+
+function getReserve(){
+  return getActiveCategories()
+    .find(c=>c.type==="reserve");
+}
+
+function getFreeCategory(){
+  return getActiveCategories()
+    .find(c=>c.type==="free");
+}
+
+function getFixedCategories(){
+  return getActiveCategories()
+    .filter(c=>c.fixed===true);
+}
+
+function getVariableCategories(){
+  return getActiveCategories()
+    .filter(c=>
+      c.fixed!==true &&
+      c.type!=="reserve" &&
+      c.type!=="free"
+    );
+}
+
+function getFreeReserveCategories(){
+  return getActiveCategories()
+    .filter(c=>
+      c.fixed!==true &&
+      c.type!=="reserve" &&
+      c.type!=="free"
+    );
+}
+
+function calculatePlan(income){
+
+  income=num(income);
+
+  const categories=getActiveCategories();
+
+  const result={
+    income,
+    categories:[],
+    goals:[],
+    total:0,
+    remaining:income,
     reserve:0,
-    goals:0,
-    operations:plans.length
+    free:0
   };
 
-  plans.forEach(p=>{
+  if(income<=0){
+    return result;
+  }
 
-    stats.income+=num(p.income);
+  /*
+   * ЭТАП 1
+   *
+   * Сначала фиксированные категории.
+   */
 
-    stats.basic+=num(p.basic);
-    stats.family+=num(p.family);
-    stats.creative+=num(p.creative);
-    stats.free+=num(p.free);
-    stats.reserve+=num(p.reserve);
+  let remaining=income;
 
-    if(Array.isArray(p.goals)){
-      stats.goals+=p.goals.reduce(
-        (sum,g)=>sum+num(g.amount),
-        0
-      );
-    }
+  const fixed=getFixedCategories();
 
+  fixed.forEach(category=>{
+
+    const amount=Math.max(
+      0,
+      num(category.amount)
+    );
+
+    const actual=Math.min(
+      amount,
+      remaining
+    );
+
+    result.categories.push({
+      id:category.id,
+      name:category.name,
+      amount:actual,
+      percent:0,
+      type:category.type,
+      fixed:true
+    });
+
+    remaining-=actual;
   });
 
-  return stats;
-}
-    function renderHome(){
-      const monthStats=getMonthlyStats(A);
-      const income=A.monthlyPlans?.length
-        ? A.monthlyPlans[A.monthlyPlans.length-1].income
-        : 0;
+  /*
+   * ЭТАП 2
+   *
+   * Процентные категории.
+   *
+   * Приоритет влияет на порядок,
+   * но более низкий приоритет
+   * никогда не получает больше процента,
+   * чем более высокий приоритет.
+   */
 
-      const reserve=(A.goals||[])
-        .filter(g=>g.type==="reserve")
-        .reduce((s,g)=>s+num(g.current),0);
+  const percentCategories=
+    categories
+      .filter(c=>
+        c.fixed!==true &&
+        c.type!=="free" &&
+        c.type!=="reserve"
+      )
+      .sort((a,b)=>
+        num(b.priority)-num(a.priority)
+      );
 
-      const goals=(A.goals||[])
-        .filter(g=>g.type!=="reserve" && g.status!=="completed");
+  let previousPercent=100;
 
-      page.innerHTML=`
-        <div class="grid">
+  percentCategories.forEach(category=>{
 
-          <div class="col-12">
-            <div class="card">
-              <div class="kicker">ФИНАНСОВАЯ СИСТЕМА</div>
-              <h1>Твои деньги под контролем.</h1>
-              <div class="sub">
-                ARISE распределяет доход согласно твоим приоритетам.
-              </div>
+    const requested=
+      clamp(
+        num(category.percent),
+        0,
+        100
+      );
 
-              <div class="actions">
-                <button class="btn primary" id="newIncome">
-                  Добавить доход
-                </button>
+    const allowed=
+      Math.min(
+        requested,
+        previousPercent
+      );
 
-                <button class="btn ghost" id="newGoal">
-                  Добавить цель
-                </button>
-              </div>
-            </div>
-          </div>
+    const raw=
+      remaining*(allowed/100);
 
-          <div class="col-4">
-            <div class="card">
-              <div class="kicker">ПОСЛЕДНИЙ ДОХОД</div>
-              <div class="value">${money(income)}</div>
-              <div class="sub">Последний рассчитанный доход</div>
-            </div>
-          </div>
+    const limit=
+      category.monthlyLimit===null ||
+      category.monthlyLimit===""
+        ? Infinity
+        : Math.max(
+            0,
+            num(category.monthlyLimit)
+          );
 
-          <div class="col-4">
-            <div class="card">
-              <div class="kicker">РЕЗЕРВ</div>
-              <div class="value">${money(reserve)}</div>
-              <div class="sub">
-                Цель ${money(A.settings.reserveTarget)}
-              </div>
-            </div>
-          </div>
+    const amount=
+      Math.min(
+        raw,
+        limit,
+        remaining
+      );
 
-          <div class="col-4">
-            <div class="card">
-              <div class="kicker">ЦЕЛИ</div>
-              <div class="value">${goals.length}</div>
-              <div class="sub">Активных целей</div>
-            </div>
-          </div>
-<div class="col-12">
-  <div class="card">
+    result.categories.push({
+      id:category.id,
+      name:category.name,
+      amount,
+      percent:allowed,
+      type:category.type,
+      fixed:false
+    });
 
-    <div class="kicker">СТАТИСТИКА</div>
+    remaining-=amount;
+    previousPercent=allowed;
+  });
 
-    <h2>Этот месяц</h2>
+  /*
+   * РЕЗЕРВ
+   */
 
-    <div class="sub">
-      ${monthStats.operations} ${
-        monthStats.operations===1
-          ? "поступление"
-          : "поступлений"
-      } · ${monthStats.month}
-    </div>
+  const reserve=getReserve();
 
-    <div
-      class="alloc-grid"
-      style="margin-top:14px"
-    >
+  if(
+    reserve &&
+    state.settings.reserveEnabled
+  ){
 
-      <div class="alloc">
-        <div class="kicker">ДОХОД</div>
-        <div class="amount">
-          ${money(monthStats.income)}
-        </div>
-      </div>
+    const requested=
+      clamp(
+        num(reserve.percent),
+        0,
+        100
+      );
 
-      <div class="alloc">
-        <div class="kicker">БАЗОВЫЕ</div>
-        <div class="amount">
-          ${money(monthStats.basic)}
-        </div>
-      </div>
+    const amount=
+      remaining*(requested/100);
 
-      <div class="alloc">
-        <div class="kicker">СЕМЬЯ</div>
-        <div class="amount">
-          ${money(monthStats.family)}
-        </div>
-      </div>
+    const limit=
+      reserve.monthlyLimit===null ||
+      reserve.monthlyLimit===""
+        ? Infinity
+        : Math.max(
+            0,
+            num(reserve.monthlyLimit)
+          );
 
-      <div class="alloc">
-        <div class="kicker">ТВОРЧЕСТВО</div>
-        <div class="amount">
-          ${money(monthStats.creative)}
-        </div>
-      </div>
+    const finalAmount=
+      Math.min(
+        amount,
+        limit,
+        remaining
+      );
 
-      <div class="alloc">
-        <div class="kicker">СВОБОДНЫЕ</div>
-        <div class="amount">
-          ${money(monthStats.free)}
-        </div>
-      </div>
+    result.reserve=finalAmount;
 
-      <div class="alloc">
-        <div class="kicker">РЕЗЕРВ</div>
-        <div class="amount">
-          ${money(monthStats.reserve)}
-        </div>
-      </div>
+    result.categories.push({
+      id:reserve.id,
+      name:reserve.name,
+      amount:finalAmount,
+      percent:requested,
+      type:"reserve",
+      fixed:false
+    });
 
-      <div class="alloc">
-        <div class="kicker">ЦЕЛИ</div>
-        <div class="amount">
-          ${money(monthStats.goals)}
-        </div>
-      </div>
+    remaining-=finalAmount;
+  }
 
-    </div>
+  /*
+   * ЦЕЛИ
+   *
+   * Цели получают деньги из оставшегося
+   * бюджета пропорционально приоритету
+   * и срочности.
+   */
 
-  </div>
-</div>
-          <div class="col-12">
-            <div class="card">
-              <h2>Активные цели</h2>
+  const activeGoals=
+    state.goals
+      .filter(g=>
+        g &&
+        g.status!=="completed" &&
+        num(g.target)>num(g.current)
+      );
 
-              ${
-                goals.length
-                ? goals.map(g=>{
-                    const target=num(g.target);
-                    const current=num(g.current);
-                    const percent=target>0
-                      ? Math.min(100,current/target*100)
-                      : 0;
+  if(
+    activeGoals.length &&
+    remaining>0
+  ){
 
-                    return `
-                      <div class="goal">
-                        <div class="goal-head">
-                          <div>
-                            <div class="goal-name">${g.name}</div>
-                            <div class="goal-meta">
-                              ${money(current)} из ${money(target)}
-                            </div>
-                          </div>
+    const goalWeights=
+      activeGoals.map(goal=>{
 
-                          <div class="pill">
-                            ${Math.round(percent)}%
-                          </div>
-                        </div>
+        const need=
+          Math.max(
+            0,
+            num(goal.target)-num(goal.current)
+          );
 
-                        <div class="progress">
-                          <div
-                            class="bar"
-                            style="width:${percent}%"
-                          ></div>
-                        </div>
-                      </div>
-                    `;
-                  }).join("")
-                : `
-                  <div class="empty">
-                    Пока нет активных целей.
-                  </div>
-                `
-              }
-            </div>
-          </div>
+        let urgency=1;
 
-        </div>
-      `;
+        if(goal.deadline){
 
-      document.getElementById("newIncome")
-        .addEventListener("click",()=>showIncome());
+          const days=
+            (
+              new Date(goal.deadline)-
+              new Date(today())
+            )/(1000*60*60*24);
 
-      document.getElementById("newGoal")
-        .addEventListener("click",()=>showGoal());
+          if(days<=30){
+            urgency=4;
+          }else if(days<=90){
+            urgency=3;
+          }else if(days<=180){
+            urgency=2;
+          }
+        }
+
+        return {
+          goal,
+          weight:
+            Math.max(1,num(goal.priority))*
+            urgency,
+          need
+        };
+      });
+
+    const weightTotal=
+      goalWeights.reduce(
+        (sum,item)=>sum+item.weight,
+        0
+      );
+
+    goalWeights.forEach(item=>{
+
+      const share=
+        weightTotal>0
+          ? remaining*
+            (item.weight/weightTotal)
+          : 0;
+
+      const amount=
+        Math.min(
+          share,
+          item.need
+        );
+
+      result.goals.push({
+        id:item.goal.id,
+        name:item.goal.name,
+        amount,
+        needBefore:item.need,
+        priority:item.goal.priority
+      });
+    });
+
+    const goalTotal=
+      result.goals.reduce(
+        (sum,g)=>sum+g.amount,
+        0
+      );
+
+    remaining-=goalTotal;
+  }
+
+  /*
+   * СВОБОДНЫЕ ДЕНЬГИ
+   *
+   * Все деньги, которые после
+   * настроенных обязательств,
+   * процентов, резерва и целей
+   * не были распределены,
+   * становятся свободными.
+   */
+
+  result.free=Math.max(0,remaining);
+
+  const free=getFreeCategory();
+
+  if(free){
+
+    result.categories.push({
+      id:free.id,
+      name:free.name,
+      amount:result.free,
+      percent:0,
+      type:"free",
+      fixed:false
+    });
+
+    remaining=0;
+  }
+
+  result.total=
+    result.categories.reduce(
+      (sum,c)=>sum+num(c.amount),
+      0
+    )+
+    result.goals.reduce(
+      (sum,g)=>sum+num(g.amount),
+      0
+    );
+
+  /*
+   * Финальная коррекция.
+   *
+   * Никогда не допускаем
+   * распределение выше дохода.
+   */
+
+  if(result.total>income){
+
+    const overflow=
+      result.total-income;
+
+    const freeEntry=
+      result.categories.find(
+        c=>c.type==="free"
+      );
+
+    if(freeEntry){
+      freeEntry.amount=
+        Math.max(
+          0,
+          freeEntry.amount-overflow
+        );
     }
+  }
 
-    function showIncome(){
+  result.total=
+    result.categories.reduce(
+      (sum,c)=>sum+num(c.amount),
+      0
+    )+
+    result.goals.reduce(
+      (sum,g)=>sum+num(g.amount),
+      0
+    );
+
+  result.remaining=
+    Math.max(
+      0,
+      income-result.total
+    );
+
+  return result;
+}
+
+
+/* =========================================================
+   INCOME / TRANSACTIONS
+   ========================================================= */
+
+function createTransaction({
+  income,
+  currency,
+  source,
+  date,
+  plan
+}){
+
+  return {
+    id:id(),
+
+    type:"income",
+
+    income:num(income),
+
+    currency:
+      currency||
+      state.settings.baseCurrency,
+
+    source:
+      source||
+      "",
+
+    date:
+      date||
+      today(),
+
+    month:
+      monthOf(date),
+
+    categories:
+      plan.categories.map(c=>({
+        id:c.id,
+        name:c.name,
+        amount:num(c.amount),
+        type:c.type
+      })),
+
+    goals:
+      plan.goals.map(g=>({
+        id:g.id,
+        name:g.name,
+        amount:num(g.amount)
+      })),
+
+    reserve:num(plan.reserve),
+
+    free:num(plan.free),
+
+    distributed:num(plan.total),
+
+    remaining:num(plan.remaining),
+
+    createdAt:new Date().toISOString()
+  };
+}
+
+function addTransaction(transaction){
+
+  state.transactions.push(transaction);
+
+  save();
+}
+
+
+/* =========================================================
+   INCOME SCREEN
+   ========================================================= */
+
+function renderIncome(){
+
+  const page=document.getElementById("page");
+
   page.innerHTML=`
     <div class="grid">
 
       <div class="col-12">
+
         <div class="card">
 
-          <div class="kicker">НОВЫЙ ДОХОД</div>
-          <h1>Распредели доход</h1>
-
-          <div class="sub">
-            Введи сумму и укажи источник дохода.
+          <div class="kicker">
+            НОВЫЙ ДОХОД
           </div>
 
-          <div class="form" style="margin-top:20px">
+          <h1>
+            Посмотрим, куда пойдут деньги.
+          </h1>
+
+          <div class="sub">
+            ARISE предложит распределение
+            по твоей системе. Ты можешь
+            изменить его перед сохранением.
+          </div>
+
+          <div class="form" style="margin-top:22px">
 
             <div class="field full">
-              <label>Сумма дохода</label>
+
+              <label>
+                Сумма
+              </label>
+
               <input
-                id="incomeInput"
+                id="incomeAmount"
                 type="number"
                 inputmode="decimal"
                 placeholder="150000"
               >
+
             </div>
 
             <div class="field">
-              <label>Источник дохода</label>
+
+              <label>
+                Валюта дохода
+              </label>
+
+              <select id="incomeCurrency">
+
+                <option value="RUB">
+                  ₽ Рубль
+                </option>
+
+                <option value="EUR">
+                  € Евро
+                </option>
+
+                <option value="USD">
+                  $ Доллар
+                </option>
+
+              </select>
+
+            </div>
+
+            <div class="field">
+
+              <label>
+                Источник
+              </label>
+
               <input
                 id="incomeSource"
-                type="text"
-                placeholder="Например, Работа 1"
+                placeholder="По желанию"
               >
+
             </div>
 
             <div class="field">
-              <label>Дата</label>
+
+              <label>
+                Дата
+              </label>
+
               <input
                 id="incomeDate"
                 type="date"
-                value="${new Date().toISOString().slice(0,10)}"
+                value="${today()}"
               >
+
             </div>
 
           </div>
@@ -2541,1093 +2106,1189 @@ function getMonthlyStats(state=A,month=""){
 
             <button
               class="btn primary"
-              id="calculateBtn"
+              id="calculateIncome"
             >
               Рассчитать
             </button>
 
-            <button
-              class="btn ghost"
-              id="backHome"
-            >
-              Назад
-            </button>
-
           </div>
 
-          <div id="planResult"></div>
+          <div id="incomeResult"></div>
 
         </div>
+
       </div>
 
     </div>
   `;
 
-  const input=document.getElementById("incomeInput");
-  const sourceInput=document.getElementById("incomeSource");
-  const dateInput=document.getElementById("incomeDate");
-  const result=document.getElementById("planResult");
+  document
+    .getElementById("incomeCurrency")
+    .value=state.settings.baseCurrency;
 
-  document.getElementById("backHome")
-    .addEventListener("click",renderHome);
+  document
+    .getElementById("calculateIncome")
+    .addEventListener(
+      "click",
+      calculateIncomeScreen
+    );
+}
 
-  document.getElementById("calculateBtn")
-    .addEventListener("click",calculate);
+function calculateIncomeScreen(){
 
-  input.addEventListener("keydown",e=>{
-    if(e.key==="Enter")calculate();
-  });
+  const amount=
+    num(
+      document
+        .getElementById("incomeAmount")
+        .value
+    );
 
-  function calculate(){
-    const income=num(input.value);
-    const source=sourceInput.value.trim();
-    const date=dateInput.value;
+  const currency=
+    document
+      .getElementById("incomeCurrency")
+      .value;
 
-    if(income<=0){
-      result.innerHTML=`
-        <div class="notice" style="margin-top:16px">
-          Введи доход больше 0 ₽.
-        </div>
-      `;
-      return;
-    }
+  const source=
+    document
+      .getElementById("incomeSource")
+      .value
+      .trim();
 
-    if(!source){
-      result.innerHTML=`
-        <div class="notice" style="margin-top:16px">
-          Укажи источник дохода.
-        </div>
-      `;
-      return;
-    }
+  const date=
+    document
+      .getElementById("incomeDate")
+      .value;
 
-    const plan=calculateFinancialPlan(income,A,date);
+  const result=
+    document.getElementById("incomeResult");
+
+  if(amount<=0){
 
     result.innerHTML=`
-  <div style="margin-top:20px">
+      <div
+        class="notice error"
+        style="margin-top:18px"
+      >
+        Введи реальную сумму дохода
+        больше нуля.
+      </div>
+    `;
 
-    <div class="notice">
-      План рассчитан для дохода
-      <strong>${money(income)}</strong>
-      <br>
-      Источник: <strong>${source}</strong>
-    </div>
+    return;
+  }
 
-    <div style="margin-top:14px">
+  const plan=
+    calculatePlan(amount);
 
-      <div class="kicker">РАСПРЕДЕЛЕНИЕ</div>
+  renderIncomePlan({
+    amount,
+    currency,
+    source,
+    date,
+    plan
+  });
+}
 
-      <div class="alloc-grid" style="margin-top:10px">
+function renderIncomePlan(data){
 
-        <div class="alloc">
-          <div class="kicker">БАЗОВЫЕ ПОТРЕБНОСТИ</div>
-          <input
-            class="plan-input"
-            id="editBasic"
-            type="number"
-            value="${plan.basic}"
-            data-key="basic"
-            style="margin-top:8px"
-          >
-        </div>
+  const result=
+    document.getElementById("incomeResult");
 
-        <div class="alloc">
-          <div class="kicker">СЕМЬЯ</div>
-          <input
-            class="plan-input"
-            id="editFamily"
-            type="number"
-            value="${plan.family}"
-            data-key="family"
-            style="margin-top:8px"
-          >
-        </div>
+  const {
+    amount,
+    currency,
+    source,
+    date,
+    plan
+  }=data;
 
-        <div class="alloc">
-          <div class="kicker">ТВОРЧЕСТВО</div>
-          <input
-            class="plan-input"
-            id="editCreative"
-            type="number"
-            value="${plan.creative}"
-            data-key="creative"
-            style="margin-top:8px"
-          >
-        </div>
+  result.innerHTML=`
+    <div style="margin-top:22px">
 
-        <div class="alloc">
-          <div class="kicker">СВОБОДНЫЕ</div>
-          <input
-            class="plan-input"
-            id="editFree"
-            type="number"
-            value="${plan.free}"
-            data-key="free"
-            style="margin-top:8px"
-          >
-        </div>
+      <div class="notice success">
 
-        <div class="alloc">
-          <div class="kicker">РЕЗЕРВ</div>
-          <input
-            class="plan-input"
-            id="editReserve"
-            type="number"
-            value="${plan.reserve}"
-            data-key="reserve"
-            style="margin-top:8px"
-          >
-        </div>
+        ARISE предлагает распределить
+
+        <strong>
+          ${moneyExact(amount,currency)}
+        </strong>
+
+        ${
+          source
+          ? ` · источник: <strong>${escapeHtml(source)}</strong>`
+          : ""
+        }
 
       </div>
-    </div>
 
-    <div class="card" style="margin-top:14px;padding:16px">
+      <div
+        class="alloc-grid"
+        style="margin-top:13px"
+      >
 
-      <h2>Цели</h2>
+        ${
+          plan.categories
+            .map((category,index)=>`
+
+              <div class="alloc">
+
+                <div class="kicker">
+                  ${escapeHtml(category.name)}
+                </div>
+
+                <input
+                  class="allocation-input"
+                  data-index="${index}"
+                  type="number"
+                  value="${num(category.amount).toFixed(2)}"
+                  style="margin-top:9px"
+                >
+
+              </div>
+
+            `)
+            .join("")
+        }
+
+      </div>
 
       ${
         plan.goals.length
-        ? plan.goals.map(g=>`
-            <div class="row">
+        ? `
+          <div
+            class="card"
+            style="
+              margin-top:13px;
+              padding:17px;
+            "
+          >
 
-              <div>
-                <strong>${g.name}</strong>
-
-                <div class="tiny muted">
-                  Требовалось ${money(g.needBefore)}
-                </div>
-              </div>
-
-              <input
-                class="goal-input"
-                type="number"
-                value="${g.amount}"
-                data-goal-id="${g.id}"
-                style="
-                  width:130px;
-                  text-align:right;
-                "
-              >
-
+            <div class="kicker">
+              ЦЕЛИ
             </div>
-          `).join("")
-        : `
-          <div class="empty">
-            Деньги на цели не распределены.
+
+            ${
+              plan.goals
+                .map((goal,index)=>`
+
+                  <div
+                    class="row"
+                    style="margin-top:8px"
+                  >
+
+                    <span>
+                      ${escapeHtml(goal.name)}
+                    </span>
+
+                    <input
+                      class="goal-allocation-input"
+                      data-index="${index}"
+                      type="number"
+                      value="${num(goal.amount).toFixed(2)}"
+                      style="
+                        width:130px;
+                        text-align:right;
+                      "
+                    >
+
+                  </div>
+
+                `)
+                .join("")
+            }
+
           </div>
         `
+        : ""
       }
 
-    </div>
+      <div
+        id="incomeSummary"
+        class="notice"
+        style="margin-top:13px"
+      ></div>
 
-    <div
-      id="planSummary"
-      style="
-        margin-top:12px;
-        padding:16px 18px;
-        border-radius:16px;
-        background:rgba(155,191,174,.07);
-        border:1px solid rgba(155,191,174,.14);
-      "
-    ></div>
+      <div class="actions">
 
-    <div class="actions">
+        <button
+          class="btn primary"
+          id="saveIncome"
+        >
+          Сохранить распределение
+        </button>
 
-      <button
-        class="btn primary"
-        id="applyPlan"
-      >
-        Применить план
-      </button>
+        <button
+          class="btn ghost"
+          id="resetIncome"
+        >
+          Вернуть расчёт ARISE
+        </button>
 
-      <button
-        class="btn ghost"
-        id="recalculate"
-      >
-        Вернуть расчёт ARISE
-      </button>
+      </div>
 
     </div>
+  `;
 
-  </div>
-`;
-   function getEditedPlan(){
+  function collect(){
 
-  const editedValues={
-    basic:num(document.getElementById("editBasic").value),
-    family:num(document.getElementById("editFamily").value),
-    creative:num(document.getElementById("editCreative").value),
-    free:num(document.getElementById("editFree").value),
-    reserve:num(document.getElementById("editReserve").value),
+    const categories=
+      [...document.querySelectorAll(
+        ".allocation-input"
+      )].map((input,index)=>({
 
-    goals:Array.from(
-      document.querySelectorAll(".goal-input")
-    ).map(input=>({
-      id:input.dataset.goalId,
-      amount:num(input.value)
-    }))
-  };
+        ...plan.categories[index],
 
-  const income=num(plan.income);
+        amount:
+          Math.max(
+            0,
+            num(input.value)
+          )
 
-  const editedPlan={
-    ...clone(plan),
+      }));
 
-    basic:editedValues.basic,
-    family:editedValues.family,
-    creative:editedValues.creative,
-    free:editedValues.free,
-    reserve:editedValues.reserve,
+    const goals=
+      [...document.querySelectorAll(
+        ".goal-allocation-input"
+      )].map((input,index)=>({
 
-    goals:[]
-  };
+        ...plan.goals[index],
 
-  /*
-   * Берём ВСЕ цели, которые были показаны
-   * пользователю в первоначальном плане.
-   *
-   * Поэтому 31 800 ₽ Турции не теряется
-   * при пересчёте остальных категорий.
-   */
+        amount:
+          Math.max(
+            0,
+            num(input.value)
+          )
 
-  plan.goals.forEach(goal=>{
+      }));
 
-    const editedGoal=editedValues.goals.find(
-      g=>g.id===goal.id
-    );
+    const distributed=
+      categories.reduce(
+        (sum,c)=>sum+num(c.amount),
+        0
+      )+
+      goals.reduce(
+        (sum,g)=>sum+num(g.amount),
+        0
+      );
 
-    const amount=editedGoal
-      ? Math.max(0,editedGoal.amount)
-      : Math.max(0,num(goal.amount));
+    return {
+      categories,
+      goals,
+      distributed,
+      remaining:
+        amount-distributed
+    };
+  }
 
-    const needBefore=num(goal.needBefore);
+  function updateSummary(){
 
-    editedPlan.goals.push({
-      id:goal.id,
-      name:goal.name,
-      amount,
-      needBefore,
-      needAfter:Math.max(
-        0,
-        needBefore-amount
-      )
+    const edited=collect();
+
+    const summary=
+      document.getElementById("incomeSummary");
+
+    if(edited.remaining<0){
+
+      summary.className=
+        "notice error";
+
+      summary.innerHTML=`
+        Распределение превышает доход
+        на
+        <strong>
+          ${moneyExact(
+            Math.abs(edited.remaining),
+            currency
+          )}
+        </strong>.
+        Уменьши одну или несколько сумм.
+      `;
+
+      return;
+    }
+
+    if(
+      Math.abs(edited.remaining)<0.005
+    ){
+
+      summary.className=
+        "notice success";
+
+      summary.innerHTML=`
+        Весь доход распределён.
+        <strong>
+          ${moneyExact(
+            edited.distributed,
+            currency
+          )}
+        </strong>
+      `;
+
+      return;
+    }
+
+    summary.className=
+      "notice warning";
+
+    summary.innerHTML=`
+      Осталось распределить:
+      <strong>
+        ${moneyExact(
+          edited.remaining,
+          currency
+        )}
+      </strong>
+    `;
+  }
+
+  document
+    .querySelectorAll(
+      ".allocation-input,.goal-allocation-input"
+    )
+    .forEach(input=>{
+      input.addEventListener(
+        "input",
+        updateSummary
+      );
     });
 
-  });
-
-  /*
-   * Финальный расчёт.
-   * ВСЕ категории + ВСЕ цели должны
-   * участвовать в общей сумме.
-   */
-
-  editedPlan.distributed=
-    editedPlan.basic+
-    editedPlan.family+
-    editedPlan.creative+
-    editedPlan.free+
-    editedPlan.reserve+
-    editedPlan.goals.reduce(
-      (total,goal)=>total+num(goal.amount),
-      0
+  document
+    .getElementById("resetIncome")
+    .addEventListener(
+      "click",
+      ()=>{
+        renderIncomePlan(data);
+      }
     );
 
-  editedPlan.remaining=
-    income-editedPlan.distributed;
+  document
+    .getElementById("saveIncome")
+    .addEventListener(
+      "click",
+      ()=>{
 
-  return editedPlan;
-}
-function validateEditedPlan(plan){
+        const edited=collect();
 
-  if(!plan){
-    return {
-      valid:false,
-      reason:"План отсутствует."
-    };
-  }
+        if(
+          edited.remaining<-.005
+        ){
 
-  const income=num(plan.income);
-  const distributed=num(plan.distributed);
-  const remaining=income-distributed;
+          showToast(
+            "Нельзя распределить больше дохода."
+          );
 
-  if(income<=0){
-    return {
-      valid:false,
-      reason:"Доход должен быть больше 0 ₽."
-    };
-  }
+          return;
+        }
 
-  if(distributed<0){
-    return {
-      valid:false,
-      reason:"Распределение не может быть отрицательным."
-    };
-  }
+        if(
+          Math.abs(edited.remaining)>.005
+        ){
 
-  if(remaining<0){
-    return {
-      valid:false,
-      reason:"Распределено больше, чем доступный доход."
-    };
-  }
+          showToast(
+            "Распредели весь доход перед сохранением."
+          );
 
-  return {
-    valid:true,
-    reason:"",
-    income,
-    distributed,
-    remaining
-  };
-}
+          return;
+        }
 
-function renderEditedSummary(){
+        /*
+         * Проверяем свободные деньги.
+         *
+         * Если пользователь вручную
+         * пытается потратить больше
+         * свободной категории — это
+         * отдельная логика расходов,
+         * а не изменение дохода.
+         */
 
-  const edited=getEditedPlan();
+        const transaction={
+          ...createTransaction({
+            income:amount,
+            currency,
+            source,
+            date,
+            plan:{
+              ...plan,
+              categories:edited.categories,
+              goals:edited.goals,
+              total:edited.distributed,
+              remaining:edited.remaining,
+              reserve:
+                edited.categories
+                  .filter(c=>c.type==="reserve")
+                  .reduce(
+                    (s,c)=>s+num(c.amount),
+                    0
+                  ),
+              free:
+                edited.categories
+                  .filter(c=>c.type==="free")
+                  .reduce(
+                    (s,c)=>s+num(c.amount),
+                    0
+                  )
+            }
+          })
+        };
 
-  const summary=document.getElementById("planSummary");
+        /*
+         * Обновляем прогресс целей.
+         */
 
-  const difference=edited.remaining;
+        edited.goals.forEach(g=>{
 
-  let status="";
+          const goal=
+            state.goals.find(
+              item=>item.id===g.id
+            );
 
-  if(difference===0){
+          if(!goal)return;
 
-    status=`
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-      ">
-        <span class="muted">
-          Распределено
-        </span>
+          goal.current=
+            Math.max(
+              0,
+              num(goal.current)+num(g.amount)
+            );
 
-        <strong>
-          ${money(edited.distributed)}
-        </strong>
-      </div>
+          if(
+            goal.current>=goal.target
+          ){
 
-      <div style="
-        margin-top:7px;
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-      ">
-        <span class="muted">
-          Остаток
-        </span>
+            goal.current=goal.target;
+            goal.status="completed";
+            goal.completedAt=today();
+          }
 
-        <strong class="positive">
-          0 ₽
-        </strong>
-      </div>
-    `;
+        });
 
-  }else if(difference>0){
+        addTransaction(transaction);
 
-    status=`
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-      ">
-        <span class="muted">
-          Распределено
-        </span>
+        showToast(
+          "Доход сохранён."
+        );
 
-        <strong>
-          ${money(edited.distributed)}
-        </strong>
-      </div>
+        setTimeout(
+          ()=>{
+            setPage("home");
+          },
+          350
+        );
 
-      <div style="
-        margin-top:7px;
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-      ">
-        <span class="muted">
-          Осталось распределить
-        </span>
-
-        <strong class="warning">
-          ${money(difference)}
-        </strong>
-      </div>
-    `;
-
-  }else{
-
-    status=`
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-      ">
-        <span class="muted">
-          Распределено
-        </span>
-
-        <strong>
-          ${money(edited.distributed)}
-        </strong>
-      </div>
-
-      <div style="
-        margin-top:7px;
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-      ">
-        <span class="muted">
-          Перераспределено сверх дохода
-        </span>
-
-        <strong class="negative">
-          ${money(Math.abs(difference))}
-        </strong>
-      </div>
-    `;
-  }
-
-  summary.innerHTML=status;
-}
-
-function updatePlanFromInputs(){
-
-  renderEditedSummary();
-}
-
-document.querySelectorAll(".plan-input")
-  .forEach(input=>{
-    input.addEventListener(
-      "input",
-      updatePlanFromInputs
+      }
     );
-  });
 
-document.querySelectorAll(".goal-input")
-  .forEach(input=>{
-    input.addEventListener(
-      "input",
-      renderEditedSummary
-    );
-  });
+  updateSummary();
+}
 
-renderEditedSummary();
 
-    document.getElementById("recalculate")
-      .addEventListener("click",calculate);
+/* =========================================================
+   HOME
+   ========================================================= */
 
-    document.getElementById("applyPlan")
-  .addEventListener("click",()=>{
+function monthTransactions(month=currentMonth()){
 
-    const editedPlan=getEditedPlan();
-const validation=validateEditedPlan(editedPlan);
-
-if(!validation.valid || validation.remaining!==0){
-
-  result.insertAdjacentHTML(
-    "afterbegin",
-    `
-      <div class="notice" style="
-        margin-top:16px;
-        border-color:rgba(212,183,140,.25);
-      ">
-        Нельзя применить план:
-        ${validation.reason || "доход должен быть распределён полностью."}
-        <br>
-        Остаток:
-        <strong>${money(validation.remaining)}</strong>
-      </div>
-    `
+  return state.transactions.filter(
+    transaction=>
+      transaction.month===month
   );
-
-  return;
 }
 
-    applyFinancialPlan(editedPlan,A,{
-      source,
-      date
-    });
+function sumTransactions(transactions,field){
 
-    result.innerHTML=`
-      <div class="notice" style="margin-top:16px">
-        ✓ Доход сохранён и распределён.
-      </div>
-    `;
-
-    setTimeout(renderHome,700);
-  });
-
-        
-  }
+  return transactions.reduce(
+    (sum,t)=>
+      sum+num(t[field]),
+    0
+  );
 }
 
-    function showGoal(){
-      page.innerHTML=`
-        <div class="grid">
+function totalGoalMoney(transactions){
 
-          <div class="col-12">
-            <div class="card">
+  return transactions.reduce(
+    (sum,t)=>
+      sum+
+      (Array.isArray(t.goals)
+        ? t.goals.reduce(
+            (s,g)=>s+num(g.amount),
+            0
+          )
+        : 0),
+    0
+  );
+}
 
-              <div class="kicker">НОВАЯ ЦЕЛЬ</div>
-              <h1>Создать цель</h1>
+function totalCategoryMoney(
+  transactions,
+  categoryId
+){
 
-              <div class="form" style="margin-top:20px">
+  return transactions.reduce(
+    (sum,t)=>{
 
-                <div class="field full">
-                  <label>Название</label>
-                  <input
-                    id="goalName"
-                    placeholder="Например, отпуск"
-                  >
-                </div>
+      const category=
+        Array.isArray(t.categories)
+        ? t.categories.find(
+            c=>c.id===categoryId
+          )
+        : null;
 
-                <div class="field">
-                  <label>Сумма цели</label>
-                  <input
-                    id="goalTarget"
-                    type="number"
-                    inputmode="decimal"
-                    placeholder="125000"
-                  >
-                </div>
+      return sum+
+        num(category?.amount);
 
-                <div class="field">
-                  <label>Приоритет</label>
-                  <select id="goalPriority">
-                    <option value="5">5 — очень высокий</option>
-                    <option value="4" selected>4 — высокий</option>
-                    <option value="3">3 — обычный</option>
-                    <option value="2">2 — низкий</option>
-                    <option value="1">1 — минимальный</option>
-                  </select>
-                </div>
+    },
+    0
+  );
+}
 
+function renderHome(){
+
+  const page=
+    document.getElementById("page");
+
+  const month=currentMonth();
+
+  const transactions=
+    monthTransactions(month);
+
+  const income=
+    sumTransactions(
+      transactions,
+      "income"
+    );
+
+  const reserve=
+    sumTransactions(
+      transactions,
+      "reserve"
+    );
+
+  const free=
+    sumTransactions(
+      transactions,
+      "free"
+    );
+
+  const goalMoney=
+    totalGoalMoney(transactions);
+
+  const activeGoals=
+    state.goals.filter(
+      g=>g.status!=="completed"
+    );
+
+  const completedGoals=
+    state.goals.filter(
+      g=>g.status==="completed"
+    );
+
+  page.innerHTML=`
+    <div class="grid">
+
+      <div class="col-12">
+
+        <div class="card">
+
+          <div class="hero-grid">
+
+            <div>
+
+              <div class="kicker">
+                ФИНАНСОВАЯ СИСТЕМА
+              </div>
+
+              <h1>
+                Деньги должны быть видны,
+                а не держаться в голове.
+              </h1>
+
+              <div class="sub">
+                ARISE показывает, сколько пришло,
+                куда распределено, сколько накоплено
+                и сколько ты действительно можешь
+                потратить без нарушения собственной системы.
               </div>
 
               <div class="actions">
 
                 <button
                   class="btn primary"
-                  id="saveGoal"
+                  id="homeIncome"
                 >
-                  Создать цель
+                  Добавить доход
                 </button>
 
                 <button
                   class="btn ghost"
-                  id="cancelGoal"
+                  id="homeGoal"
                 >
-                  Назад
+                  Создать цель
                 </button>
 
               </div>
 
             </div>
-          </div>
 
-        </div>
-      `;
+            <div>
 
-      document.getElementById("cancelGoal")
-        .addEventListener("click",renderHome);
-
-      document.getElementById("saveGoal")
-        .addEventListener("click",()=>{
-          const name=document.getElementById("goalName").value.trim();
-          const target=num(document.getElementById("goalTarget").value);
-          const priority=num(document.getElementById("goalPriority").value);
-
-          if(!name || target<=0){
-            alert("Заполни название и сумму цели.");
-            return;
-          }
-
-          A.goals.push({
-            id:safeId(),
-            name,
-            type:"goal",
-            target,
-            current:0,
-            deadline:"",
-            priority,
-            status:"active"
-          });
-
-          saveLocal();
-
-          renderGoals();
-        });
-    }
-
-    function renderGoals(){
-      page.innerHTML=`
-        <div class="grid">
-
-          <div class="col-12">
-            <div class="card">
-
-              <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                gap:10px;
-              ">
-                <div>
-                  <div class="kicker">ЦЕЛИ</div>
-                  <h1>Мои цели</h1>
-                </div>
-
-                <button class="btn primary" id="addGoal">
-                  + Цель
-                </button>
-              </div>
-
-              <div style="margin-top:18px">
-
-                ${
-                  A.goals.length
-                  ? A.goals.map(g=>{
-
-                      const target=num(g.target);
-                      const current=num(g.current);
-                      const percent=target
-                        ? Math.min(100,current/target*100)
-                        : 0;
-
-                      return `
-                        <div class="goal">
-
-                          <div class="goal-head">
-
-                            <div>
-                              <div class="goal-name">
-                                ${g.name}
-                              </div>
-
-                              <div class="goal-meta">
-                                ${money(current)}
-                                из
-                                ${money(target)}
-                              </div>
-                            </div>
-
-                            <div class="pill">
-                              Приоритет ${g.priority}
-                            </div>
-
-                          </div>
-
-                          <div class="progress">
-                            <div
-                              class="bar"
-                              style="width:${percent}%"
-                            ></div>
-                          </div>
-
-                        </div>
-                      `;
-
-                    }).join("")
-                  : `
-                    <div class="empty">
-                      Целей пока нет.
-                    </div>
-                  `
-                }
-
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      `;
-
-      document.getElementById("addGoal")
-        .addEventListener("click",showGoal);
-    }
-
-    function renderHistory(){
-    
-  const plans=A.monthlyPlans||[];
-
-  // Собираем доступные месяцы из истории
-  const months=[...new Set(
-    plans
-      .map(p=>p.month || (p.date||"").slice(0,7))
-      .filter(Boolean)
-  )].sort().reverse();
-
-  const currentMonth=months[0] || new Date().toISOString().slice(0,7);
-
-  function monthLabel(month){
-    if(!month) return "";
-    const [year,monthNum]=month.split("-");
-    const names=[
-      "Январь","Февраль","Март","Апрель",
-      "Май","Июнь","Июль","Август",
-      "Сентябрь","Октябрь","Ноябрь","Декабрь"
-    ];
-    return `${names[Number(monthNum)-1]||monthNum} ${year}`;
-  }
-
-  function renderMonth(month){
-
-    const monthPlans=plans.filter(p=>{
-      const pMonth=p.month || (p.date||"").slice(0,7);
-      return pMonth===month;
-    });
-
-    const totalIncome=monthPlans.reduce(
-      (sum,p)=>sum+num(p.income),
-      0
-    );
-
-    const totalDistributed=monthPlans.reduce(
-      (sum,p)=>sum+num(p.distributed),
-      0
-    );
-
-    const totalBasic=monthPlans.reduce(
-      (sum,p)=>sum+num(p.basic),
-      0
-    );
-
-    const totalFamily=monthPlans.reduce(
-      (sum,p)=>sum+num(p.family),
-      0
-    );
-
-    const totalCreative=monthPlans.reduce(
-      (sum,p)=>sum+num(p.creative),
-      0
-    );
-
-    const totalFree=monthPlans.reduce(
-      (sum,p)=>sum+num(p.free),
-      0
-    );
-
-    const totalReserve=monthPlans.reduce(
-      (sum,p)=>sum+num(p.reserve),
-      0
-    );
-
-    const totalGoals=monthPlans.reduce(
-      (sum,p)=>sum+
-        (Array.isArray(p.goals)
-          ? p.goals.reduce(
-              (s,g)=>s+num(g.amount),
-              0
-            )
-          : 0),
-      0
-    );
-
-    const totalRemaining=totalIncome-totalDistributed;
-
-    const operations=monthPlans.length;
-
-    const summary=`
-      <div
-        class="alloc-grid"
-        style="
-          margin-top:18px;
-          grid-template-columns:repeat(2,1fr);
-        "
-      >
-
-        <div class="alloc">
-          <div class="kicker">ДОХОД</div>
-          <div class="amount">
-            ${money(totalIncome)}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">ПОСТУПЛЕНИЙ</div>
-          <div class="amount">
-            ${operations}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">РАСПРЕДЕЛЕНО</div>
-          <div class="amount">
-            ${money(totalDistributed)}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">ОСТАТОК</div>
-          <div class="amount">
-            ${money(totalRemaining)}
-          </div>
-        </div>
-
-      </div>
-
-      <div
-        class="alloc-grid"
-        style="
-          margin-top:10px;
-          grid-template-columns:repeat(2,1fr);
-        "
-      >
-
-        <div class="alloc">
-          <div class="kicker">БАЗОВЫЕ ПОТРЕБНОСТИ</div>
-          <div class="amount">
-            ${money(totalBasic)}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">СЕМЬЯ</div>
-          <div class="amount">
-            ${money(totalFamily)}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">ТВОРЧЕСТВО</div>
-          <div class="amount">
-            ${money(totalCreative)}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">СВОБОДНЫЕ</div>
-          <div class="amount">
-            ${money(totalFree)}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">РЕЗЕРВ</div>
-          <div class="amount">
-            ${money(totalReserve)}
-          </div>
-        </div>
-
-        <div class="alloc">
-          <div class="kicker">ЦЕЛИ</div>
-          <div class="amount">
-            ${money(totalGoals)}
-          </div>
-        </div>
-
-      </div>
-    `;
-
-    const operationHtml=monthPlans.length
-      ? [...monthPlans].reverse().map(p=>{
-
-          const goalsHtml=
-            Array.isArray(p.goals)&&p.goals.length
-            ? `
-              <div
-                style="
-                  margin-top:12px;
-                  padding:13px;
-                  border:1px solid var(--line);
-                  border-radius:15px;
-                  background:rgba(255,255,255,.015);
-                "
-              >
+              <div class="notice">
 
                 <div class="kicker">
-                  ЦЕЛИ
+                  ${monthLabel(month)}
                 </div>
 
-                ${p.goals.map(g=>`
-                  <div class="row">
-
-                    <span>
-                      ${g.name}
-                    </span>
-
-                    <strong>
-                      ${money(g.amount)}
-                    </strong>
-
-                  </div>
-                `).join("")}
-
-              </div>
-            `
-            : "";
-
-          return `
-            <div
-              class="event"
-              style="
-                display:block;
-                padding:18px 0;
-              "
-            >
-
-              <div
-                style="
-                  display:flex;
-                  justify-content:space-between;
-                  gap:15px;
-                  align-items:flex-start;
-                "
-              >
-
-                <div>
-
-                  <strong style="font-size:18px">
-                    ${money(p.income)}
-                  </strong>
-
-                  <div
-                    class="tiny muted"
-                    style="margin-top:5px"
-                  >
-                    ${p.source||"Без источника"}
-                  </div>
-
-                  <div
-                    class="tiny muted"
-                    style="margin-top:3px"
-                  >
-                    ${p.date||p.month||""}
-                  </div>
-
+                <div class="value">
+                  ${money(income)}
                 </div>
 
-                <div style="text-align:right">
-
-                  <div class="pill">
-                    Распределено
-                  </div>
-
-                  <strong
-                    style="
-                      display:block;
-                      margin-top:5px;
-                    "
-                  >
-                    ${money(p.distributed)}
-                  </strong>
+                <div class="sub">
+                  ${transactions.length}
+                  ${
+                    transactions.length===1
+                    ? " поступление"
+                    : " поступлений"
+                  }
 
                 </div>
-
-              </div>
-
-              <div
-                class="alloc-grid"
-                style="
-                  margin-top:14px;
-                  grid-template-columns:repeat(2,1fr);
-                "
-              >
-
-                <div class="alloc">
-                  <div class="kicker">
-                    БАЗОВЫЕ ПОТРЕБНОСТИ
-                  </div>
-
-                  <div class="amount">
-                    ${money(p.basic)}
-                  </div>
-                </div>
-
-                <div class="alloc">
-                  <div class="kicker">
-                    СЕМЬЯ
-                  </div>
-
-                  <div class="amount">
-                    ${money(p.family)}
-                  </div>
-                </div>
-
-                <div class="alloc">
-                  <div class="kicker">
-                    ТВОРЧЕСТВО
-                  </div>
-
-                  <div class="amount">
-                    ${money(p.creative)}
-                  </div>
-                </div>
-
-                <div class="alloc">
-                  <div class="kicker">
-                    СВОБОДНЫЕ
-                  </div>
-
-                  <div class="amount">
-                    ${money(p.free)}
-                  </div>
-                </div>
-
-                <div class="alloc">
-                  <div class="kicker">
-                    РЕЗЕРВ
-                  </div>
-
-                  <div class="amount">
-                    ${money(p.reserve)}
-                  </div>
-                </div>
-
-              </div>
-
-              ${goalsHtml}
-
-              <div
-                class="row"
-                style="margin-top:8px"
-              >
-
-                <span class="muted">
-                  Остаток
-                </span>
-
-                <strong>
-                  ${money(p.remaining)}
-                </strong>
 
               </div>
 
             </div>
-          `;
 
-        }).join("")
-      : `
-        <div class="empty">
-          В этом месяце операций пока нет.
+          </div>
+
         </div>
-      `;
-
-    return `
-      ${summary}
-
-      <div
-        style="
-          margin-top:22px;
-          padding-top:18px;
-          border-top:1px solid var(--line);
-        "
-      >
-
-        <div class="kicker">
-          ОПЕРАЦИИ
-        </div>
-
-        ${operationHtml}
 
       </div>
-    `;
-  }
+
+      <div class="col-4">
+
+        <div class="card">
+
+          <div class="kicker">
+            СВОБОДНЫЕ ДЕНЬГИ
+          </div>
+
+          <div class="value">
+            ${money(free)}
+          </div>
+
+          <div class="sub">
+            Деньги, которые можно
+            потратить без нарушения
+            текущего плана.
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-4">
+
+        <div class="card">
+
+          <div class="kicker">
+            РЕЗЕРВ
+          </div>
+
+          <div class="value">
+            ${money(
+              getReserveTotal()
+            )}
+          </div>
+
+          <div class="sub">
+            Цель:
+            ${money(
+              state.settings.reserveTarget
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-4">
+
+        <div class="card">
+
+          <div class="kicker">
+            ЦЕЛИ
+          </div>
+
+          <div class="value">
+            ${activeGoals.length}
+          </div>
+
+          <div class="sub">
+            Активных ·
+            ${completedGoals.length}
+            выполнено
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-12">
+
+        <div class="card">
+
+          <div class="kicker">
+            ЭТОТ МЕСЯЦ
+          </div>
+
+          <h2>
+            Куда ушёл доход
+          </h2>
+
+          <div class="alloc-grid" style="margin-top:16px">
+
+            ${
+              getActiveCategories()
+                .map(category=>`
+
+                  <div class="alloc">
+
+                    <div class="kicker">
+                      ${escapeHtml(category.name)}
+                    </div>
+
+                    <div class="amount">
+                      ${money(
+                        totalCategoryMoney(
+                          transactions,
+                          category.id
+                        )
+                      )}
+                    </div>
+
+                  </div>
+
+                `)
+                .join("")
+            }
+
+            <div class="alloc">
+
+              <div class="kicker">
+                ЦЕЛИ
+              </div>
+
+              <div class="amount">
+                ${money(goalMoney)}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-8">
+
+        <div class="card">
+
+          <div class="kicker">
+            ЦЕЛИ
+          </div>
+
+          <h2>
+            Сейчас в работе
+          </h2>
+
+          ${
+            activeGoals.length
+            ? activeGoals
+              .slice(0,5)
+              .map(goalHtml)
+              .join("")
+            : `
+              <div class="empty">
+                Пока нет целей.
+                Создай первую — ARISE
+                поможет контролировать её путь.
+              </div>
+            `
+          }
+
+        </div>
+
+      </div>
+
+      <div class="col-4">
+
+        <div class="card">
+
+          <div class="kicker">
+            ФИНАНСОВАЯ ГРАМОТНОСТЬ
+          </div>
+
+          <h2>
+            Правило ARISE
+          </h2>
+
+          <div class="sub">
+            Свободные деньги — это не
+            «деньги, которые остались».
+            Это сумма, которую система
+            заранее разрешила тебе потратить.
+          </div>
+
+          <div
+            class="notice"
+            style="margin-top:16px"
+          >
+            Если свободные деньги закончились,
+            проблема не в математике ARISE.
+            Нужно пересмотреть собственную систему.
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  document
+    .getElementById("homeIncome")
+    .addEventListener(
+      "click",
+      ()=>setPage("income")
+    );
+
+  document
+    .getElementById("homeGoal")
+    .addEventListener(
+      "click",
+      ()=>showGoalModal()
+    );
+}
+
+function goalHtml(goal){
+
+  const target=num(goal.target);
+  const current=num(goal.current);
+
+  const percent=
+    target>0
+    ? clamp(
+        current/target*100,
+        0,
+        100
+      )
+    : 0;
+
+  const forecast=
+    goalForecast(goal);
+
+  return `
+    <div class="goal">
+
+      <div class="goal-head">
+
+        <div>
+
+          <div class="goal-name">
+            ${escapeHtml(goal.name)}
+          </div>
+
+          <div class="goal-meta">
+            ${money(current)}
+            из
+            ${money(target)}
+          </div>
+
+        </div>
+
+        <div class="pill">
+          ${Math.round(percent)}%
+        </div>
+
+      </div>
+
+      <div class="progress">
+
+        <div
+          class="bar"
+          style="width:${percent}%"
+        ></div>
+
+      </div>
+
+      ${
+        forecast
+        ? `
+          <div
+            class="tiny muted"
+            style="margin-top:7px"
+          >
+            Прогноз:
+            ${forecast}
+          </div>
+        `
+        : ""
+      }
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   GOALS
+   ========================================================= */
+
+function showGoalModal(){
+
+  openModal(`
+    <div class="modal-title">
+
+      <div>
+
+        <div class="kicker">
+          НОВАЯ ЦЕЛЬ
+        </div>
+
+        <h2>
+          Создать цель
+        </h2>
+
+      </div>
+
+      <button
+        class="close"
+        id="closeGoal"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="form" style="margin-top:20px">
+
+      <div class="field full">
+
+        <label>
+          Название
+        </label>
+
+        <input
+          id="goalName"
+          placeholder="Например, отпуск"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Целевая сумма
+        </label>
+
+        <input
+          id="goalTarget"
+          type="number"
+          inputmode="decimal"
+          placeholder="125000"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Приоритет
+        </label>
+
+        <select id="goalPriority">
+
+          <option value="5">
+            5 — очень высокий
+          </option>
+
+          <option value="4">
+            4 — высокий
+          </option>
+
+          <option value="3" selected>
+            3 — обычный
+          </option>
+
+          <option value="2">
+            2 — низкий
+          </option>
+
+          <option value="1">
+            1 — минимальный
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Дедлайн
+        </label>
+
+        <input
+          id="goalDeadline"
+          type="date"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Уже накоплено
+        </label>
+
+        <input
+          id="goalCurrent"
+          type="number"
+          value="0"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn primary"
+        id="saveGoal"
+      >
+        Создать
+      </button>
+
+    </div>
+  `);
+
+  document
+    .getElementById("closeGoal")
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById("saveGoal")
+    .addEventListener(
+      "click",
+      ()=>{
+
+        const name=
+          document
+            .getElementById("goalName")
+            .value
+            .trim();
+
+        const target=
+          num(
+            document
+              .getElementById("goalTarget")
+              .value
+          );
+
+        const priority=
+          num(
+            document
+              .getElementById("goalPriority")
+              .value
+          );
+
+        const deadline=
+          document
+            .getElementById("goalDeadline")
+            .value;
+
+        const current=
+          num(
+            document
+              .getElementById("goalCurrent")
+              .value
+          );
+
+        if(!name){
+
+          showToast(
+            "Укажи название цели."
+          );
+
+          return;
+        }
+
+        if(target<=0){
+
+          showToast(
+            "Целевая сумма должна быть больше нуля."
+          );
+
+          return;
+        }
+
+        const goal={
+          id:id(),
+          name,
+          target,
+          current:
+            clamp(
+              current,
+              0,
+              target
+            ),
+          priority:
+            clamp(
+              priority,
+              1,
+              5
+            ),
+          deadline,
+          status:
+            current>=target
+            ? "completed"
+            : "active",
+          createdAt:today(),
+          completedAt:
+            current>=target
+            ? today()
+            : null
+        };
+
+        state.goals.push(goal);
+
+        save();
+
+        closeModal();
+        renderGoals();
+
+        showToast(
+          "Цель создана."
+        );
+      }
+    );
+}
+
+function renderGoals(){
+
+  const page=
+    document.getElementById("page");
+
+  const active=
+    state.goals.filter(
+      g=>g.status!=="completed"
+    );
+
+  const completed=
+    state.goals.filter(
+      g=>g.status==="completed"
+    );
 
   page.innerHTML=`
     <div class="grid">
@@ -3640,59 +3301,1465 @@ if(!validation.valid || validation.remaining!==0){
             style="
               display:flex;
               justify-content:space-between;
-              align-items:flex-start;
               gap:15px;
-              flex-wrap:wrap;
+              align-items:flex-start;
             "
           >
 
             <div>
 
               <div class="kicker">
-                ИСТОРИЯ
+                ЦЕЛИ
               </div>
 
               <h1>
-                Финансовые операции
+                Мои цели
               </h1>
 
               <div class="sub">
-                Полная статистика поступлений и распределений.
+                Здесь находятся только
+                цели, которые создал ты.
               </div>
 
             </div>
 
-            <div style="min-width:170px">
+            <button
+              class="btn primary"
+              id="addGoal"
+            >
+              + Цель
+            </button>
 
-              <label
-                style="
-                  display:block;
-                  margin-bottom:7px;
-                  color:#8d98a7;
-                  font-size:11px;
-                "
-              >
-                Месяц
+          </div>
+
+          ${
+            active.length
+            ? active.map(goal=>`
+
+                <div class="goal">
+
+                  <div class="goal-head">
+
+                    <div>
+
+                      <div class="goal-name">
+                        ${escapeHtml(goal.name)}
+                      </div>
+
+                      <div class="goal-meta">
+
+                        ${money(goal.current)}
+                        из
+                        ${money(goal.target)}
+
+                        · приоритет
+                        ${goal.priority}
+
+                        ${
+                          goal.deadline
+                          ? ` · до ${goal.deadline}`
+                          : ""
+                        }
+
+                      </div>
+
+                    </div>
+
+                    <div
+                      style="
+                        display:flex;
+                        gap:6px;
+                      "
+                    >
+
+                      <button
+                        class="btn ghost small"
+                        data-edit-goal="${goal.id}"
+                      >
+                        Изменить
+                      </button>
+
+                      <button
+                        class="btn danger small"
+                        data-delete-goal="${goal.id}"
+                      >
+                        Удалить
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                  <div class="progress">
+
+                    <div
+                      class="bar"
+                      style="
+                        width:${
+                          goal.target
+                          ? clamp(
+                              goal.current/
+                              goal.target*
+                              100,
+                              0,
+                              100
+                            )
+                          : 0
+                        }%
+                      "
+                    ></div>
+
+                  </div>
+
+                  ${
+                    goalForecast(goal)
+                    ? `
+                      <div
+                        class="tiny muted"
+                        style="margin-top:7px"
+                      >
+                        ${goalForecast(goal)}
+                      </div>
+                    `
+                    : ""
+                  }
+
+                </div>
+
+              `).join("")
+            : `
+              <div class="empty">
+                Целей пока нет.
+              </div>
+            `
+          }
+
+        </div>
+
+      </div>
+
+      <div class="col-12">
+
+        <div class="card">
+
+          <div class="kicker">
+            ИСТОРИЯ ЦЕЛЕЙ
+          </div>
+
+          <h2>
+            Выполненные цели
+          </h2>
+
+          ${
+            completed.length
+            ? completed.map(goal=>`
+
+                <div class="goal">
+
+                  <div class="goal-head">
+
+                    <div>
+
+                      <div class="goal-name">
+                        ${escapeHtml(goal.name)}
+                      </div>
+
+                      <div class="goal-meta">
+                        ${money(goal.target)}
+                        · выполнена
+                        ${goal.completedAt||""}
+                      </div>
+
+                    </div>
+
+                    <div class="pill">
+                      100%
+                    </div>
+
+                  </div>
+
+                  <div class="progress">
+                    <div
+                      class="bar"
+                      style="width:100%"
+                    ></div>
+                  </div>
+
+                </div>
+
+              `).join("")
+            : `
+              <div class="empty">
+                Выполненных целей пока нет.
+              </div>
+            `
+          }
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  document
+    .getElementById("addGoal")
+    .addEventListener(
+      "click",
+      showGoalModal
+    );
+
+  document
+    .querySelectorAll("[data-edit-goal]")
+    .forEach(button=>{
+      button.addEventListener(
+        "click",
+        ()=>{
+          editGoal(
+            button.dataset.editGoal
+          );
+        }
+      );
+    });
+
+  document
+    .querySelectorAll("[data-delete-goal]")
+    .forEach(button=>{
+      button.addEventListener(
+        "click",
+        ()=>{
+          deleteGoal(
+            button.dataset.deleteGoal
+          );
+        }
+      );
+    });
+}
+
+function editGoal(goalId){
+
+  const goal=
+    state.goals.find(
+      g=>g.id===goalId
+    );
+
+  if(!goal)return;
+
+  openModal(`
+    <div class="modal-title">
+
+      <div>
+
+        <div class="kicker">
+          ЦЕЛЬ
+        </div>
+
+        <h2>
+          Изменить
+        </h2>
+
+      </div>
+
+      <button
+        class="close"
+        id="closeEditGoal"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="form" style="margin-top:20px">
+
+      <div class="field full">
+
+        <label>
+          Название
+        </label>
+
+        <input
+          id="editGoalName"
+          value="${escapeHtml(goal.name)}"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Целевая сумма
+        </label>
+
+        <input
+          id="editGoalTarget"
+          type="number"
+          value="${goal.target}"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Текущее накопление
+        </label>
+
+        <input
+          id="editGoalCurrent"
+          type="number"
+          value="${goal.current}"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Приоритет
+        </label>
+
+        <select id="editGoalPriority">
+
+          ${
+            [5,4,3,2,1]
+              .map(value=>`
+                <option
+                  value="${value}"
+                  ${num(goal.priority)===value
+                    ? "selected"
+                    : ""}
+                >
+                  ${value}
+                </option>
+              `)
+              .join("")
+          }
+
+        </select>
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Дедлайн
+        </label>
+
+        <input
+          id="editGoalDeadline"
+          type="date"
+          value="${goal.deadline||""}"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn primary"
+        id="updateGoal"
+      >
+        Сохранить
+      </button>
+
+    </div>
+  `);
+
+  document
+    .getElementById("closeEditGoal")
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById("updateGoal")
+    .addEventListener(
+      "click",
+      ()=>{
+
+        const target=
+          num(
+            document
+              .getElementById("editGoalTarget")
+              .value
+          );
+
+        const current=
+          num(
+            document
+              .getElementById("editGoalCurrent")
+              .value
+          );
+
+        if(target<=0){
+
+          showToast(
+            "Целевая сумма должна быть больше нуля."
+          );
+
+          return;
+        }
+
+        goal.name=
+          document
+            .getElementById("editGoalName")
+            .value
+            .trim()||
+          goal.name;
+
+        goal.target=target;
+
+        goal.current=
+          clamp(
+            current,
+            0,
+            target
+          );
+
+        goal.priority=
+          num(
+            document
+              .getElementById("editGoalPriority")
+              .value
+          );
+
+        goal.deadline=
+          document
+            .getElementById("editGoalDeadline")
+            .value;
+
+        if(goal.current>=goal.target){
+
+          goal.current=goal.target;
+          goal.status="completed";
+
+          if(!goal.completedAt){
+            goal.completedAt=today();
+          }
+
+        }else{
+
+          goal.status="active";
+          goal.completedAt=null;
+        }
+
+        save();
+        closeModal();
+        renderGoals();
+
+        showToast(
+          "Цель обновлена."
+        );
+      }
+    );
+}
+
+function deleteGoal(goalId){
+
+  const goal=
+    state.goals.find(
+      g=>g.id===goalId
+    );
+
+  if(!goal)return;
+
+  openModal(`
+    <div class="kicker">
+      УДАЛЕНИЕ
+    </div>
+
+    <h2>
+      Удалить «${escapeHtml(goal.name)}»?
+    </h2>
+
+    <div class="sub">
+      История уже совершённых распределений
+      останется в транзакциях.
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn danger"
+        id="confirmDeleteGoal"
+      >
+        Удалить
+      </button>
+
+      <button
+        class="btn ghost"
+        id="cancelDeleteGoal"
+      >
+        Отмена
+      </button>
+
+    </div>
+  `);
+
+  document
+    .getElementById("cancelDeleteGoal")
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById("confirmDeleteGoal")
+    .addEventListener(
+      "click",
+      ()=>{
+
+        state.goals=
+          state.goals.filter(
+            g=>g.id!==goalId
+          );
+
+        save();
+        closeModal();
+        renderGoals();
+
+        showToast(
+          "Цель удалена."
+        );
+      }
+    );
+}
+
+
+/* =========================================================
+   GOAL FORECAST
+   ========================================================= */
+
+function goalAverageMonthlyContribution(goalId){
+
+  const months={};
+
+  state.transactions.forEach(transaction=>{
+
+    const goal=
+      Array.isArray(transaction.goals)
+      ? transaction.goals.find(
+          g=>g.id===goalId
+        )
+      : null;
+
+    if(!goal)return;
+
+    const month=
+      transaction.month;
+
+    months[month]=
+      num(months[month])+
+      num(goal.amount);
+  });
+
+  const values=
+    Object.values(months)
+      .filter(value=>value>0);
+
+  if(!values.length){
+    return 0;
+  }
+
+  return values.reduce(
+    (sum,value)=>sum+value,
+    0
+  )/values.length;
+}
+
+function goalForecast(goal){
+
+  if(goal.status==="completed"){
+    return "Цель достигнута.";
+  }
+
+  const remaining=
+    Math.max(
+      0,
+      num(goal.target)-
+      num(goal.current)
+    );
+
+  if(remaining<=0){
+    return "Цель достигнута.";
+  }
+
+  const average=
+    goalAverageMonthlyContribution(
+      goal.id
+    );
+
+  if(average<=0){
+    return "Пока недостаточно данных для прогноза.";
+  }
+
+  const months=
+    Math.ceil(
+      remaining/average
+    );
+
+  return `примерно ${months} мес. при текущем среднем пополнении`;
+}
+
+
+/* =========================================================
+   RESERVE
+   ========================================================= */
+
+function getReserveTotal(){
+
+  return state.transactions.reduce(
+    (sum,t)=>
+      sum+num(t.reserve),
+    0
+  );
+}
+
+function getAverageMonthlyFree(){
+
+  const months={};
+
+  state.transactions.forEach(t=>{
+
+    months[t.month]=
+      num(months[t.month])+
+      num(t.free);
+  });
+
+  const values=
+    Object.values(months);
+
+  if(!values.length)return 0;
+
+  return values.reduce(
+    (sum,v)=>sum+v,
+    0
+  )/values.length;
+}
+
+function reserveMonths(){
+
+  const reserve=
+    getReserveTotal();
+
+  const averageFree=
+    getAverageMonthlyFree();
+
+  if(averageFree<=0){
+    return null;
+  }
+
+  return reserve/averageFree;
+}
+
+
+/* =========================================================
+   HISTORY
+   ========================================================= */
+
+function renderHistory(){
+
+  const page=
+    document.getElementById("page");
+
+  const months=[
+    ...new Set(
+      state.transactions
+        .map(t=>t.month)
+        .filter(Boolean)
+    )
+  ].sort().reverse();
+
+  const selected=
+    months[0]||currentMonth();
+
+  page.innerHTML=`
+    <div class="grid">
+
+      <div class="col-12">
+
+        <div class="card">
+
+          <div>
+
+            <div class="kicker">
+              ИСТОРИЯ
+            </div>
+
+            <h1>
+              Все финансовые операции
+            </h1>
+
+            <div class="sub">
+              Каждое поступление хранится отдельно.
+              Месячная статистика собирается поверх
+              этих реальных операций.
+            </div>
+
+          </div>
+
+          <div
+            class="month-tabs"
+            id="historyMonths"
+          >
+
+            ${
+              months.length
+              ? months.map(month=>`
+                  <button
+                    class="month-tab ${
+                      month===selected
+                      ? "active"
+                      : ""
+                    }"
+                    data-month="${month}"
+                  >
+                    ${monthLabel(month)}
+                  </button>
+                `).join("")
+              : `
+                <button
+                  class="month-tab active"
+                >
+                  ${monthLabel(selected)}
+                </button>
+              `
+            }
+
+          </div>
+
+          <div id="historyContent"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  function renderMonth(month){
+
+    const transactions=
+      monthTransactions(month)
+        .slice()
+        .reverse();
+
+    const income=
+      sumTransactions(
+        transactions,
+        "income"
+      );
+
+    const distributed=
+      sumTransactions(
+        transactions,
+        "distributed"
+      );
+
+    const free=
+      sumTransactions(
+        transactions,
+        "free"
+      );
+
+    const reserve=
+      sumTransactions(
+        transactions,
+        "reserve"
+      );
+
+    const goals=
+      totalGoalMoney(transactions);
+
+    document
+      .getElementById("historyContent")
+      .innerHTML=`
+
+        <div
+          class="alloc-grid"
+          style="margin-top:18px"
+        >
+
+          <div class="alloc">
+            <div class="kicker">
+              ДОХОД
+            </div>
+            <div class="amount">
+              ${money(income)}
+            </div>
+          </div>
+
+          <div class="alloc">
+            <div class="kicker">
+              РАСПРЕДЕЛЕНО
+            </div>
+            <div class="amount">
+              ${money(distributed)}
+            </div>
+          </div>
+
+          <div class="alloc">
+            <div class="kicker">
+              СВОБОДНЫЕ
+            </div>
+            <div class="amount">
+              ${money(free)}
+            </div>
+          </div>
+
+          <div class="alloc">
+            <div class="kicker">
+              РЕЗЕРВ
+            </div>
+            <div class="amount">
+              ${money(reserve)}
+            </div>
+          </div>
+
+          <div class="alloc">
+            <div class="kicker">
+              ЦЕЛИ
+            </div>
+            <div class="amount">
+              ${money(goals)}
+            </div>
+          </div>
+
+        </div>
+
+        <div
+          style="
+            margin-top:25px;
+            padding-top:18px;
+            border-top:1px solid var(--line);
+          "
+        >
+
+          <div class="kicker">
+            ОПЕРАЦИИ
+          </div>
+
+          ${
+            transactions.length
+            ? transactions
+              .map(transaction=>`
+
+                <div class="event">
+
+                  <div class="event-head">
+
+                    <div>
+
+                      <div class="event-title">
+                        ${moneyExact(
+                          transaction.income,
+                          transaction.currency
+                        )}
+                      </div>
+
+                      <div class="event-source">
+
+                        ${
+                          transaction.source
+                          ? escapeHtml(
+                              transaction.source
+                            )
+                          : "Источник не указан"
+                        }
+
+                      </div>
+
+                      <div class="event-date">
+                        ${transaction.date}
+                      </div>
+
+                    </div>
+
+                    <div class="pill">
+                      ${
+                        escapeHtml(
+                          transaction.currency
+                        )
+                      }
+                    </div>
+
+                  </div>
+
+                  <div
+                    class="alloc-grid"
+                    style="margin-top:12px"
+                  >
+
+                    ${
+                      transaction.categories
+                        .map(category=>`
+
+                          <div class="alloc">
+
+                            <div class="kicker">
+                              ${escapeHtml(
+                                category.name
+                              )}
+                            </div>
+
+                            <div class="amount">
+                              ${moneyExact(
+                                category.amount,
+                                transaction.currency
+                              )}
+                            </div>
+
+                          </div>
+
+                        `).join("")
+                    }
+
+                  </div>
+
+                  ${
+                    transaction.goals?.length
+                    ? `
+                      <div
+                        class="notice"
+                        style="margin-top:10px"
+                      >
+
+                        <div class="kicker">
+                          ЦЕЛИ
+                        </div>
+
+                        ${
+                          transaction.goals
+                            .map(goal=>`
+                              <div class="row">
+
+                                <span>
+                                  ${escapeHtml(
+                                    goal.name
+                                  )}
+                                </span>
+
+                                <strong>
+                                  ${moneyExact(
+                                    goal.amount,
+                                    transaction.currency
+                                  )}
+                                </strong>
+
+                              </div>
+                            `)
+                            .join("")
+                        }
+
+                      </div>
+                    `
+                    : ""
+                  }
+
+                  <div
+                    class="row"
+                    style="margin-top:8px"
+                  >
+
+                    <span class="muted">
+                      Остаток
+                    </span>
+
+                    <strong>
+                      ${moneyExact(
+                        transaction.remaining,
+                        transaction.currency
+                      )}
+                    </strong>
+
+                  </div>
+
+                </div>
+
+              `).join("")
+            : `
+              <div class="empty">
+                В этом месяце операций нет.
+              </div>
+            `
+          }
+
+        </div>
+      `;
+  }
+
+  renderMonth(selected);
+
+  document
+    .querySelectorAll(
+      "#historyMonths .month-tab"
+    )
+    .forEach(button=>{
+
+      button.addEventListener(
+        "click",
+        ()=>{
+
+          document
+            .querySelectorAll(
+              "#historyMonths .month-tab"
+            )
+            .forEach(item=>
+              item.classList.remove("active")
+            );
+
+          button.classList.add("active");
+
+          renderMonth(
+            button.dataset.month
+          );
+        }
+      );
+
+    });
+}
+
+
+/* =========================================================
+   STATISTICS
+   ========================================================= */
+
+function renderStatistics(){
+
+  const page=
+    document.getElementById("page");
+
+  const months=[
+    ...new Set(
+      state.transactions
+        .map(t=>t.month)
+        .filter(Boolean)
+    )
+  ].sort();
+
+  const monthly=
+    months.map(month=>{
+
+      const transactions=
+        monthTransactions(month);
+
+      return {
+        month,
+        income:
+          sumTransactions(
+            transactions,
+            "income"
+          ),
+        free:
+          sumTransactions(
+            transactions,
+            "free"
+          ),
+        reserve:
+          sumTransactions(
+            transactions,
+            "reserve"
+          ),
+        goals:
+          totalGoalMoney(
+            transactions
+          )
+      };
+
+    });
+
+  const totalIncome=
+    sumTransactions(
+      state.transactions,
+      "income"
+    );
+
+  const totalFree=
+    sumTransactions(
+      state.transactions,
+      "free"
+    );
+
+  const totalReserve=
+    getReserveTotal();
+
+  const totalGoals=
+    totalGoalMoney(
+      state.transactions
+    );
+
+  page.innerHTML=`
+    <div class="grid">
+
+      <div class="col-12">
+
+        <div class="card">
+
+          <div class="kicker">
+            СТАТИСТИКА
+          </div>
+
+          <h1>
+            Полная картина денег
+          </h1>
+
+          <div class="sub">
+            Только реальные данные,
+            которые пользователь внёс в ARISE.
+          </div>
+
+          <div
+            class="alloc-grid"
+            style="margin-top:18px"
+          >
+
+            <div class="alloc">
+
+              <div class="kicker">
+                ОБЩИЙ ДОХОД
+              </div>
+
+              <div class="amount">
+                ${money(totalIncome)}
+              </div>
+
+            </div>
+
+            <div class="alloc">
+
+              <div class="kicker">
+                СВОБОДНЫЕ ДЕНЬГИ
+              </div>
+
+              <div class="amount">
+                ${money(totalFree)}
+              </div>
+
+            </div>
+
+            <div class="alloc">
+
+              <div class="kicker">
+                РЕЗЕРВ
+              </div>
+
+              <div class="amount">
+                ${money(totalReserve)}
+              </div>
+
+            </div>
+
+            <div class="alloc">
+
+              <div class="kicker">
+                НА ЦЕЛИ
+              </div>
+
+              <div class="amount">
+                ${money(totalGoals)}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-8">
+
+        <div class="card">
+
+          <div class="kicker">
+            ДОХОД ПО МЕСЯЦАМ
+          </div>
+
+          <h2>
+            Как менялся доход
+          </h2>
+
+          ${
+            monthly.length
+            ? `
+              <div class="chart">
+
+                <div class="chart-grid">
+
+                  <div class="chart-line"></div>
+                  <div class="chart-line"></div>
+                  <div class="chart-line"></div>
+                  <div class="chart-line"></div>
+
+                </div>
+
+                <div class="chart-bars">
+
+                  ${
+                    monthly.map(item=>{
+
+                      const max=
+                        Math.max(
+                          ...monthly.map(
+                            x=>x.income
+                          ),
+                          1
+                        );
+
+                      const height=
+                        clamp(
+                          item.income/max*100,
+                          2,
+                          100
+                        );
+
+                      return `
+
+                        <div class="chart-item">
+
+                          <div class="chart-value">
+                            ${money(item.income)}
+                          </div>
+
+                          <div
+                            class="chart-bar"
+                            style="
+                              height:${height}%;
+                            "
+                          ></div>
+
+                          <div class="chart-label">
+                            ${item.month.slice(5)}
+                          </div>
+
+                        </div>
+
+                      `;
+
+                    }).join("")
+                  }
+
+                </div>
+
+              </div>
+            `
+            : `
+              <div class="empty">
+                Пока недостаточно данных
+                для графика.
+              </div>
+            `
+          }
+
+        </div>
+
+      </div>
+
+      <div class="col-4">
+
+        <div class="card">
+
+          <div class="kicker">
+            РЕЗЕРВ
+          </div>
+
+          <h2>
+            На сколько хватит
+          </h2>
+
+          <div class="value">
+            ${
+              reserveMonths()
+              ? `${reserveMonths().toFixed(1)} мес.`
+              : "—"
+            }
+          </div>
+
+          <div class="sub">
+            Оценка строится на среднем
+            уровне свободных денег
+            по внесённой истории.
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-12">
+
+        <div class="card">
+
+          <div class="kicker">
+            ПО МЕСЯЦАМ
+          </div>
+
+          ${
+            monthly.length
+            ? monthly
+              .slice()
+              .reverse()
+              .map(item=>`
+
+                <div class="event">
+
+                  <div class="event-head">
+
+                    <div>
+
+                      <div class="event-title">
+                        ${monthLabel(item.month)}
+                      </div>
+
+                    </div>
+
+                    <strong>
+                      ${money(item.income)}
+                    </strong>
+
+                  </div>
+
+                  <div
+                    class="alloc-grid"
+                    style="margin-top:12px"
+                  >
+
+                    <div class="alloc">
+
+                      <div class="kicker">
+                        СВОБОДНЫЕ
+                      </div>
+
+                      <div class="amount">
+                        ${money(item.free)}
+                      </div>
+
+                    </div>
+
+                    <div class="alloc">
+
+                      <div class="kicker">
+                        РЕЗЕРВ
+                      </div>
+
+                      <div class="amount">
+                        ${money(item.reserve)}
+                      </div>
+
+                    </div>
+
+                    <div class="alloc">
+
+                      <div class="kicker">
+                        ЦЕЛИ
+                      </div>
+
+                      <div class="amount">
+                        ${money(item.goals)}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              `).join("")
+            : `
+              <div class="empty">
+                История пока пуста.
+              </div>
+            `
+          }
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   PROFILE / FINANCIAL SETTINGS
+   ========================================================= */
+
+function renderProfile(){
+
+  const page=
+    document.getElementById("page");
+
+  page.innerHTML=`
+    <div class="grid">
+
+      <div class="col-6">
+
+        <div class="card">
+
+          <div class="kicker">
+            ПРОФИЛЬ
+          </div>
+
+          <h1>
+            ${escapeHtml(
+              state.profile.name
+            )}
+          </h1>
+
+          <div class="form" style="margin-top:20px">
+
+            <div class="field full">
+
+              <label>
+                Имя профиля
               </label>
 
-              <select id="historyMonth">
+              <input
+                id="profileName"
+                value="${escapeHtml(
+                  state.profile.name
+                )}"
+              >
 
-                ${
-                  months.length
-                  ? months.map(month=>`
-                      <option
-                        value="${month}"
-                        ${month===currentMonth?"selected":""}
-                      >
-                        ${monthLabel(month)}
-                      </option>
-                    `).join("")
-                  : `
-                    <option value="${currentMonth}">
-                      ${monthLabel(currentMonth)}
-                    </option>
-                  `
-                }
+            </div>
+
+            <div class="field">
+
+              <label>
+                Базовая валюта
+              </label>
+
+              <select id="profileCurrency">
+
+                <option
+                  value="RUB"
+                  ${state.settings.baseCurrency==="RUB"
+                    ? "selected"
+                    : ""}
+                >
+                  ₽ Рубль
+                </option>
+
+                <option
+                  value="EUR"
+                  ${state.settings.baseCurrency==="EUR"
+                    ? "selected"
+                    : ""}
+                >
+                  € Евро
+                </option>
+
+                <option
+                  value="USD"
+                  ${state.settings.baseCurrency==="USD"
+                    ? "selected"
+                    : ""}
+                >
+                  $ Доллар
+                </option>
 
               </select>
 
@@ -3700,8 +4767,257 @@ if(!validation.valid || validation.remaining!==0){
 
           </div>
 
-          <div id="historyContent">
-            ${renderMonth(currentMonth)}
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              id="saveProfile"
+            >
+              Сохранить
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-6">
+
+        <div class="card">
+
+          <div class="kicker">
+            РЕЗЕРВ
+          </div>
+
+          <h2>
+            Финансовая подушка
+          </h2>
+
+          <div class="sub">
+            Резерв не является обычной категорией.
+            Это отдельный показатель безопасности.
+          </div>
+
+          <div
+            class="form"
+            style="margin-top:18px"
+          >
+
+            <div class="field">
+
+              <label>
+                Целевая сумма
+              </label>
+
+              <input
+                id="reserveTarget"
+                type="number"
+                value="${state.settings.reserveTarget}"
+              >
+
+            </div>
+
+            <div class="field">
+
+              <label>
+                Отчисления
+              </label>
+
+              <input
+                id="reservePercent"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value="${
+                  getReserve()?.percent||0
+                }"
+              >
+
+            </div>
+
+          </div>
+
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              id="saveReserve"
+            >
+              Сохранить резерв
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-12">
+
+        <div class="card">
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              gap:15px;
+              align-items:flex-start;
+            "
+          >
+
+            <div>
+
+              <div class="kicker">
+                ФИНАНСОВАЯ СИСТЕМА
+              </div>
+
+              <h2>
+                Категории распределения
+              </h2>
+
+              <div class="sub">
+                ARISE использует их как
+                первоначальную систему.
+                Ты можешь менять её полностью.
+              </div>
+
+            </div>
+
+            <button
+              class="btn primary"
+              id="addCategory"
+            >
+              + Категория
+            </button>
+
+          </div>
+
+          <div style="margin-top:15px">
+
+            ${
+              getActiveCategories()
+                .map(category=>`
+
+                  <div
+                    class="event"
+                    style="padding:15px 0"
+                  >
+
+                    <div class="event-head">
+
+                      <div>
+
+                        <div class="event-title">
+                          ${escapeHtml(
+                            category.name
+                          )}
+                        </div>
+
+                        <div class="event-source">
+
+                          ${
+                            category.fixed
+                            ? "Фиксированная"
+                            : category.type==="reserve"
+                            ? "Резерв"
+                            : category.type==="free"
+                            ? "Свободные деньги"
+                            : "Процентная категория"
+                          }
+
+                          ${
+                            category.type!=="free" &&
+                            category.type!=="reserve"
+                            ? ` · приоритет ${category.priority}`
+                            : ""
+                          }
+
+                        </div>
+
+                      </div>
+
+                      <div
+                        style="
+                          display:flex;
+                          gap:6px;
+                        "
+                      >
+
+                        <button
+                          class="btn ghost small"
+                          data-edit-category="${category.id}"
+                        >
+                          Изменить
+                        </button>
+
+                        ${
+                          !["basic","family","free","reserve"]
+                            .includes(category.id)
+                          ? `
+                            <button
+                              class="btn danger small"
+                              data-delete-category="${category.id}"
+                            >
+                              Удалить
+                            </button>
+                          `
+                          : ""
+                        }
+
+                      </div>
+
+                    </div>
+
+                    <div
+                      class="alloc-grid"
+                      style="margin-top:10px"
+                    >
+
+                      <div class="alloc">
+
+                        <div class="kicker">
+                          ПРОЦЕНТ
+                        </div>
+
+                        <div class="amount">
+                          ${
+                            category.fixed
+                            ? "Фикс."
+                            : formatPercent(
+                                category.percent
+                              )
+                          }
+                        </div>
+
+                      </div>
+
+                      <div class="alloc">
+
+                        <div class="kicker">
+                          ЛИМИТ
+                        </div>
+
+                        <div class="amount">
+                          ${
+                            category.monthlyLimit===null
+                            ? "Без лимита"
+                            : money(
+                                category.monthlyLimit
+                              )
+                          }
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                `).join("")
+            }
+
           </div>
 
         </div>
@@ -3711,149 +5027,834 @@ if(!validation.valid || validation.remaining!==0){
     </div>
   `;
 
-  document.getElementById("historyMonth")
-    .addEventListener("change",e=>{
-      document.getElementById("historyContent").innerHTML=
-        renderMonth(e.target.value);
+  document
+    .getElementById("saveProfile")
+    .addEventListener(
+      "click",
+      ()=>{
+
+        const name=
+          document
+            .getElementById("profileName")
+            .value
+            .trim();
+
+        const currency=
+          document
+            .getElementById("profileCurrency")
+            .value;
+
+        if(!name){
+
+          showToast(
+            "Имя профиля не может быть пустым."
+          );
+
+          return;
+        }
+
+        state.profile.name=name;
+        state.profile.currency=currency;
+        state.settings.baseCurrency=currency;
+
+        save();
+        renderApp();
+
+        showToast(
+          "Профиль обновлён."
+        );
+      }
+    );
+
+  document
+    .getElementById("saveReserve")
+    .addEventListener(
+      "click",
+      ()=>{
+
+        state.settings.reserveTarget=
+          Math.max(
+            0,
+            num(
+              document
+                .getElementById("reserveTarget")
+                .value
+            )
+          );
+
+        const reserve=
+          getReserve();
+
+        if(reserve){
+
+          reserve.percent=
+            clamp(
+              num(
+                document
+                  .getElementById("reservePercent")
+                  .value
+              ),
+              0,
+              100
+            );
+        }
+
+        save();
+        renderProfile();
+
+        showToast(
+          "Настройки резерва сохранены."
+        );
+      }
+    );
+
+  document
+    .getElementById("addCategory")
+    .addEventListener(
+      "click",
+      showCategoryModal
+    );
+
+  document
+    .querySelectorAll(
+      "[data-edit-category]"
+    )
+    .forEach(button=>{
+      button.addEventListener(
+        "click",
+        ()=>{
+          editCategory(
+            button.dataset.editCategory
+          );
+        }
+      );
+    });
+
+  document
+    .querySelectorAll(
+      "[data-delete-category]"
+    )
+    .forEach(button=>{
+      button.addEventListener(
+        "click",
+        ()=>{
+          deleteCategory(
+            button.dataset.deleteCategory
+          );
+        }
+      );
     });
 }
 
-    function renderProfile(){
-      page.innerHTML=`
-        <div class="grid">
 
-          <div class="col-12">
-            <div class="card">
+/* =========================================================
+   CATEGORY MANAGEMENT
+   ========================================================= */
 
-              <div class="kicker">ПРОФИЛЬ</div>
-              <h1>${A.profile.name}</h1>
+function showCategoryModal(){
 
-              <div class="row">
-                <span class="muted">Валюта</span>
-                <strong>${A.profile.baseCurrency}</strong>
-              </div>
+  openModal(`
+    <div class="modal-title">
 
-              <div class="row">
-  <span class="muted">Базовые потребности</span>
-  <strong>${money(A.settings.basicNeeds)}</strong>
-</div>
+      <div>
 
-<div class="row">
-  <span class="muted">Семья</span>
-  <strong>${money(A.settings.family)}</strong>
-</div>
+        <div class="kicker">
+          НОВАЯ КАТЕГОРИЯ
+        </div>
 
-              <div class="row">
-                <span class="muted">Творчество</span>
-                <strong>${money(A.settings.creativeTarget)}</strong>
-              </div>
+        <h2>
+          Добавить
+        </h2>
 
-              <div class="row">
-                <span class="muted">Свободные деньги</span>
-                <strong>${money(A.settings.freeMin)}</strong>
-              </div>
+      </div>
 
-              <div class="row">
-                <span class="muted">Цель резерва</span>
-                <strong>${money(A.settings.reserveTarget)}</strong>
-              </div>
+      <button
+        class="close"
+        id="closeCategory"
+      >
+        ×
+      </button>
 
-            </div>
+    </div>
+
+    <div class="form" style="margin-top:20px">
+
+      <div class="field full">
+
+        <label>
+          Название
+        </label>
+
+        <input
+          id="categoryName"
+          placeholder="Например, Обучение"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Тип
+        </label>
+
+        <select id="categoryType">
+
+          <option value="category">
+            Обычная категория
+          </option>
+
+          <option value="fixed">
+            Фиксированная
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Приоритет
+        </label>
+
+        <select id="categoryPriority">
+
+          <option value="5">
+            5
+          </option>
+
+          <option value="4">
+            4
+          </option>
+
+          <option value="3" selected>
+            3
+          </option>
+
+          <option value="2">
+            2
+          </option>
+
+          <option value="1">
+            1
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Процент
+        </label>
+
+        <select id="categoryPercent">
+
+          ${
+            PERCENT_STEPS.map(value=>`
+              <option value="${value}">
+                ${value}%
+              </option>
+            `).join("")
+          }
+
+        </select>
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Лимит в месяц
+        </label>
+
+        <input
+          id="categoryLimit"
+          type="number"
+          placeholder="Необязательно"
+        >
+
+      </div>
+
+      <div class="field full">
+
+        <label>
+          Фиксированная сумма
+        </label>
+
+        <input
+          id="categoryFixedAmount"
+          type="number"
+          placeholder="Используется для фиксированных категорий"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn primary"
+        id="saveCategory"
+      >
+        Создать
+      </button>
+
+    </div>
+  `);
+
+  document
+    .getElementById("closeCategory")
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById("saveCategory")
+    .addEventListener(
+      "click",
+      ()=>{
+
+        const name=
+          document
+            .getElementById("categoryName")
+            .value
+            .trim();
+
+        if(!name){
+
+          showToast(
+            "Укажи название категории."
+          );
+
+          return;
+        }
+
+        const type=
+          document
+            .getElementById("categoryType")
+            .value;
+
+        const fixed=
+          type==="fixed";
+
+        const category={
+          id:id(),
+          name,
+          type,
+          fixed,
+          amount:
+            fixed
+            ? Math.max(
+                0,
+                num(
+                  document
+                    .getElementById(
+                      "categoryFixedAmount"
+                    )
+                    .value
+                )
+              )
+            : 0,
+          percent:
+            fixed
+            ? 0
+            : num(
+                document
+                  .getElementById(
+                    "categoryPercent"
+                  )
+                  .value
+              ),
+          priority:
+            num(
+              document
+                .getElementById(
+                  "categoryPriority"
+                )
+                .value
+            ),
+          monthlyLimit:
+            document
+              .getElementById(
+                "categoryLimit"
+              )
+              .value
+              ? Math.max(
+                  0,
+                  num(
+                    document
+                      .getElementById(
+                        "categoryLimit"
+                      )
+                      .value
+                  )
+                )
+              : null,
+          enabled:true
+        };
+
+        state.settings.categories.push(
+          category
+        );
+
+        save();
+        closeModal();
+        renderProfile();
+
+        showToast(
+          "Категория создана."
+        );
+      }
+    );
+}
+
+function editCategory(categoryId){
+
+  const category=
+    state.settings.categories.find(
+      c=>c.id===categoryId
+    );
+
+  if(!category)return;
+
+  openModal(`
+    <div class="modal-title">
+
+      <div>
+
+        <div class="kicker">
+          КАТЕГОРИЯ
+        </div>
+
+        <h2>
+          Изменить
+        </h2>
+
+      </div>
+
+      <button
+        class="close"
+        id="closeEditCategory"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="form" style="margin-top:20px">
+
+      <div class="field full">
+
+        <label>
+          Название
+        </label>
+
+        <input
+          id="editCategoryName"
+          value="${escapeHtml(
+            category.name
+          )}"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Приоритет
+        </label>
+
+        <select id="editCategoryPriority">
+
+          ${
+            [5,4,3,2,1]
+              .map(value=>`
+                <option
+                  value="${value}"
+                  ${num(category.priority)===value
+                    ? "selected"
+                    : ""}
+                >
+                  ${value}
+                </option>
+              `)
+              .join("")
+          }
+
+        </select>
+
+      </div>
+
+      <div class="field">
+
+        <label>
+          Процент
+        </label>
+
+        <select id="editCategoryPercent">
+
+          ${
+            PERCENT_STEPS.map(value=>`
+              <option
+                value="${value}"
+                ${num(category.percent)===value
+                  ? "selected"
+                  : ""}
+              >
+                ${value}%
+              </option>
+            `).join("")
+          }
+
+        </select>
+
+      </div>
+
+      <div class="field full">
+
+        <label>
+          Лимит в месяц
+        </label>
+
+        <input
+          id="editCategoryLimit"
+          type="number"
+          value="${
+            category.monthlyLimit===null
+            ? ""
+            : category.monthlyLimit
+          }"
+        >
+
+      </div>
+
+      ${
+        category.fixed
+        ? `
+          <div class="field full">
+
+            <label>
+              Фиксированная сумма
+            </label>
+
+            <input
+              id="editCategoryAmount"
+              type="number"
+              value="${category.amount}"
+            >
+
           </div>
+        `
+        : ""
+      }
+
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn primary"
+        id="updateCategory"
+      >
+        Сохранить
+      </button>
+
+    </div>
+  `);
+
+  document
+    .getElementById("closeEditCategory")
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById("updateCategory")
+    .addEventListener(
+      "click",
+      ()=>{
+
+        category.name=
+          document
+            .getElementById(
+              "editCategoryName"
+            )
+            .value
+            .trim()||
+          category.name;
+
+        category.priority=
+          num(
+            document
+              .getElementById(
+                "editCategoryPriority"
+              )
+              .value
+          );
+
+        category.percent=
+          num(
+            document
+              .getElementById(
+                "editCategoryPercent"
+              )
+              .value
+          );
+
+        const limit=
+          document
+            .getElementById(
+              "editCategoryLimit"
+            )
+            .value;
+
+        category.monthlyLimit=
+          limit===""
+          ? null
+          : Math.max(
+              0,
+              num(limit)
+            );
+
+        if(category.fixed){
+
+          const amount=
+            document
+              .getElementById(
+                "editCategoryAmount"
+              );
+
+          if(amount){
+
+            category.amount=
+              Math.max(
+                0,
+                num(amount.value)
+              );
+          }
+        }
+
+        save();
+        closeModal();
+        renderProfile();
+
+        showToast(
+          "Категория обновлена."
+        );
+      }
+    );
+}
+
+function deleteCategory(categoryId){
+
+  const category=
+    state.settings.categories.find(
+      c=>c.id===categoryId
+    );
+
+  if(!category)return;
+
+  openModal(`
+    <div class="kicker">
+      УДАЛЕНИЕ
+    </div>
+
+    <h2>
+      Удалить «${escapeHtml(category.name)}»?
+    </h2>
+
+    <div class="sub">
+      Старые транзакции сохранят название
+      категории в своей истории.
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn danger"
+        id="confirmDeleteCategory"
+      >
+        Удалить
+      </button>
+
+      <button
+        class="btn ghost"
+        id="cancelDeleteCategory"
+      >
+        Отмена
+      </button>
+
+    </div>
+  `);
+
+  document
+    .getElementById(
+      "cancelDeleteCategory"
+    )
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById(
+      "confirmDeleteCategory"
+    )
+    .addEventListener(
+      "click",
+      ()=>{
+
+        state.settings.categories=
+          state.settings.categories.filter(
+            c=>c.id!==categoryId
+          );
+
+        save();
+        closeModal();
+        renderProfile();
+
+        showToast(
+          "Категория удалена."
+        );
+      }
+    );
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+function openModal(content){
+
+  document
+    .getElementById("modalRoot")
+    .innerHTML=`
+      <div class="modal open" id="mainModal">
+
+        <div class="modal-card">
+
+          ${content}
 
         </div>
-      `;
+
+      </div>
+    `;
+
+  const modal=
+    document.getElementById("mainModal");
+
+  modal.addEventListener(
+    "click",
+    event=>{
+      if(event.target===modal){
+        closeModal();
+      }
     }
+  );
+}
 
-    function setPage(name){
-      document.querySelectorAll(".nav button")
-        .forEach(btn=>{
-          btn.classList.toggle(
-            "active",
-            btn.dataset.page===name
-          );
-        });
+function closeModal(){
 
-      if(name==="home")renderHome();
-      if(name==="income")showIncome();
-      if(name==="goals")renderGoals();
-      if(name==="history")renderHistory();
-      if(name==="profile")renderProfile();
-    }
+  document
+    .getElementById("modalRoot")
+    .innerHTML="";
+}
 
-    document.querySelectorAll(".nav button")
-      .forEach(button=>{
-        button.addEventListener("click",()=>{
-          setPage(button.dataset.page);
-        });
-      });
 
-    renderHome();
-  }
+/* =========================================================
+   AUTH PLACEHOLDER
+   =========================================================
 
-  console.log("ARISE: state loaded", A);
-console.log("ARISE: engine test", ENGINE_TEST);
-console.log("ARISE: renderApp start");
+   Пока этот файл работает local-first.
 
-initSupabaseAuth().then(async user=>{
+   Когда подключаем Supabase:
+   - Google
+   - Apple
+   - phone OTP
 
-  if(user){
+   будут подключены поверх account.id.
 
-    console.log(
-      "ARISE: authenticated, current local state:",
-      A
-    );
+   Финансовые профили при этом остаются
+   отдельными сущностями внутри аккаунта.
+   ========================================================= */
 
-    const loaded=await loadSupabaseData(user);
+function renderAuth(){
 
-    console.log(
-      "ARISE: Supabase load result:",
-      loaded
-    );
+  root.innerHTML=`
+    <div class="auth">
 
-    console.log(
-      "ARISE: state after Supabase load:",
-      A
-    );
+      <div class="auth-card">
 
-    if(!loaded){
-      console.warn(
-        "ARISE: Supabase data load failed, using local state"
-      );
-    }
-const migrated=await migrateLocalDataToSupabase(user);
+        <div class="auth-logo">
+          ARISE <span>FINANCE</span>
+        </div>
 
-console.log(
-  "ARISE: migration result:",
-  migrated
-);
-    renderApp();
+        <div class="auth-title">
+          Твои деньги.
+          Твоя система.
+        </div>
 
-  }else{
+        <div class="auth-sub">
+          ARISE помогает построить финансовую
+          систему, которую ты сам настроил,
+          понимаешь и можешь контролировать.
+        </div>
 
-    renderAuth();
+        <div
+          class="notice"
+          style="margin-top:22px"
+        >
+          Сейчас приложение работает
+          локально. Авторизация и синхронизация
+          подключаются следующим слоем.
+        </div>
 
-  }
+        <div class="actions">
 
-});
+          <button
+            class="btn primary"
+            id="localStart"
+            style="width:100%"
+          >
+            Продолжить
+          </button>
 
-console.log("ARISE: renderApp done");
-  
+        </div>
 
-}catch(error){
+      </div>
 
-  document.getElementById("root").innerHTML=`
-    <pre style="
-      white-space:pre-wrap;
-      padding:30px;
-      color:#fff;
-      background:#000;
-      font:16px monospace;
-    ">JS ERROR
-
-${String(error&&error.stack||error)}</pre>
+    </div>
   `;
 
+  document
+    .getElementById("localStart")
+    .addEventListener(
+      "click",
+      ()=>{
+        renderApp();
+
+        if(needsInitialSetup()){
+          showInitialSetup();
+        }
+      }
+    );
 }
+
+
+/* =========================================================
+   START
+   ========================================================= */
+
+renderAuth();
+
 </script>
-</body></html>
+
+</body>
+</html>
