@@ -6830,19 +6830,70 @@ function renderSettings(){
             </div>
 
             <div class="field full">
-              <label>
-                URL фотографии
-              </label>
+  <label>
+    Фотография
+  </label>
 
-              <input
-                id="accountAvatar"
-                value="${escapeHTML(
-                  state.account.avatar ||
-                  ""
-                )}"
-                placeholder="https://..."
-              >
-            </div>
+  <div
+    style="
+      display:flex;
+      align-items:center;
+      gap:15px;
+      flex-wrap:wrap
+    "
+  >
+
+    ${
+      state.account.avatar
+      ?
+      `
+        <img
+          src="${state.account.avatar}"
+          alt="Фото профиля"
+          style="
+            width:64px;
+            height:64px;
+            border-radius:50%;
+            object-fit:cover;
+            border:1px solid rgba(255,255,255,.12)
+          "
+        >
+      `
+      :
+      `
+        <div
+          style="
+            width:64px;
+            height:64px;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:rgba(255,255,255,.06);
+            color:var(--muted)
+          "
+        >
+          ?
+        </div>
+      `
+    }
+
+    <label
+      class="btn"
+      style="cursor:pointer"
+    >
+      Изменить фото
+
+      <input
+        id="accountAvatar"
+        type="file"
+        accept="image/*"
+        style="display:none"
+      >
+    </label>
+
+  </div>
+</div>
 
           </div>
 
@@ -7228,18 +7279,55 @@ function renderSettings(){
       ).value.trim() ||
       "Пользователь";
 
-    state.account.avatar =
-      document.getElementById(
-        "accountAvatar"
-      ).value.trim();
+    const avatarInput =
+  document.getElementById(
+    "accountAvatar"
+  );
 
-    saveState();
+const saveAccountData = (
+  avatar
+)=>{
+  state.account.name =
+    document.getElementById(
+      "accountName"
+    ).value.trim() ||
+    "Пользователь";
 
-    toast(
-      "Аккаунт сохранён."
+  state.account.avatar =
+    avatar;
+
+  saveState();
+
+  toast(
+    "Аккаунт сохранён."
+  );
+
+  render();
+};
+
+const file =
+  avatarInput.files?.[0];
+
+if(file){
+  const reader =
+    new FileReader();
+
+  reader.onload=()=>{
+    saveAccountData(
+      reader.result
     );
+  };
 
-    render();
+  reader.readAsDataURL(file);
+}else{
+  saveAccountData(
+    state.account.avatar || ""
+  );
+}
+
+return;
+
+    
   };
 
   document.getElementById(
