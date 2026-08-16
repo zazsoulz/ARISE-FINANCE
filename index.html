@@ -1483,7 +1483,174 @@ function normalizeState(raw){
 
   return result;
 }
+function renderAuth(){
+  const root =
+    document.getElementById("root");
 
+  root.innerHTML = `
+    <div class="login">
+      <section class="login-card">
+
+        <div class="login-logo">
+          ARISE <span>FINANCE</span>
+        </div>
+
+        <h1>
+          Создай аккаунт
+        </h1>
+
+        <div class="sub">
+          Твои финансовые профили
+          будут храниться внутри аккаунта.
+        </div>
+
+        <div
+          class="form"
+          style="margin-top:22px"
+        >
+
+          <div class="field full">
+            <label>Имя</label>
+            <input
+              id="registerName"
+              type="text"
+              placeholder="Как тебя зовут"
+            >
+          </div>
+
+          <div class="field full">
+            <label>Почта</label>
+            <input
+              id="registerEmail"
+              type="email"
+              placeholder="name@example.com"
+            >
+          </div>
+
+          <div class="field full">
+            <label>Пароль</label>
+            <input
+              id="registerPassword"
+              type="password"
+              placeholder="Минимум 6 символов"
+            >
+          </div>
+
+          <div class="field full">
+            <label>Фотография</label>
+
+            <input
+              id="registerAvatar"
+              type="file"
+              accept="image/*"
+            >
+          </div>
+
+        </div>
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            id="registerSubmit"
+          >
+            Создать аккаунт
+          </button>
+
+        </div>
+
+      </section>
+    </div>
+  `;
+
+  document.getElementById(
+    "registerSubmit"
+  ).onclick =
+    registerAccount;
+}
+  function registerAccount(){
+  const name =
+    document.getElementById(
+      "registerName"
+    ).value.trim();
+
+  const email =
+    document.getElementById(
+      "registerEmail"
+    ).value.trim();
+
+  const password =
+    document.getElementById(
+      "registerPassword"
+    ).value;
+
+  const avatarInput =
+    document.getElementById(
+      "registerAvatar"
+    );
+
+  if(!name){
+    alert("Укажи имя.");
+    return;
+  }
+
+  if(!email){
+    alert("Укажи почту.");
+    return;
+  }
+
+  if(password.length < 6){
+    alert(
+      "Пароль должен содержать минимум 6 символов."
+    );
+    return;
+  }
+
+  const finishRegistration = (
+    avatar=""
+  )=>{
+    state.account.name =
+      name;
+
+    state.account.email =
+      email;
+
+    state.account.password =
+      password;
+
+    state.account.avatar =
+      avatar;
+
+    state.account.notifications =
+      true;
+
+    state.account.registered =
+      true;
+
+    saveState();
+
+    render();
+  };
+
+  const file =
+    avatarInput.files?.[0];
+
+  if(!file){
+    finishRegistration();
+    return;
+  }
+
+  const reader =
+    new FileReader();
+
+  reader.onload=()=>{
+    finishRegistration(
+      reader.result
+    );
+  };
+
+  reader.readAsDataURL(file);
+}
 function loadState(){
   try{
     const raw = localStorage.getItem(
@@ -7839,9 +8006,13 @@ document.addEventListener(
    INITIALIZATION
 ========================================================= */
 
-saveState();
-
-render();
+if(
+  state.account.registered
+){
+  render();
+}else{
+  renderAuth();
+}
 
 </script>
 </body>
