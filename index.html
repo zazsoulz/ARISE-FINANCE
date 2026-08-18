@@ -1953,17 +1953,6 @@ function calculateIncomePlan(
       total-distributed
     );
 
-  if(remainderCategory){
-  allocations.push({
-    categoryId:remainderCategory.id,
-    name:remainderCategory.name,
-    amount:remainder,
-    percent:0,
-    fixed:false,
-    remainder:true
-  });
-}
-
 distributed += remainder;
 
   return {
