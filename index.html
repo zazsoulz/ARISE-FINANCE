@@ -1954,26 +1954,17 @@ function calculateIncomePlan(
     );
 
   if(remainderCategory){
-    allocations.push({
-      categoryId:remainderCategory.id,
-      name:remainderCategory.name,
-      amount:remainder,
-      percent:0,
-      fixed:false,
-      remainder:true
-    });
-  }else{
-    allocations.push({
-      categoryId:null,
-      name:"Свободные деньги",
-      amount:remainder,
-      percent:0,
-      fixed:false,
-      remainder:true
-    });
-  }
+  allocations.push({
+    categoryId:remainderCategory.id,
+    name:remainderCategory.name,
+    amount:remainder,
+    percent:0,
+    fixed:false,
+    remainder:true
+  });
+}
 
-  distributed += remainder;
+distributed += remainder;
 
   return {
     valid:true,
@@ -1990,19 +1981,19 @@ function validatePlan(plan){
   const total = integer(plan.total);
 
   const distributed =
-    plan.allocations.reduce(
-      (sum,item)=>
-        sum +
-        Math.max(
-          0,
-          integer(item.amount)
-        ),
-      0
-    ) +
-    Math.max(
-      0,
-      integer(plan.reserve)
-    );
+  plan.allocations.reduce(
+    (sum,item)=>
+      sum +
+      Math.max(
+        0,
+        integer(item.amount)
+      ),
+    0
+  ) +
+  Math.max(
+    0,
+    integer(plan.reserve)
+  );
 
   return {
     distributed,
@@ -2051,6 +2042,8 @@ function createIncomeTransaction(
 
     reserve:
       integer(data.reserve || 0),
+    remainder:
+  integer(data.remainder || 0),
 
     createdAt:
       new Date().toISOString()
