@@ -24,6 +24,7 @@ jobs:
           node --check financial-core.js
           node --check financial-runtime.js
           node --check financial-integration.js
+          node --check reserve-analytics.js
           node --check product-rules.js
           node --check arise-v3.js
           node --check financial-bootstrap.js
