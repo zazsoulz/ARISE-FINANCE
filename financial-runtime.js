@@ -1,10 +1,39 @@
 (function(root){
   "use strict";
 
+  const core=root.ARISE_FINANCE_CORE;
+
+  function expenseFunding(profile,{amount,date,categoryId}){
+    const total=Math.max(0,integer(amount));
+    const normalizedCategoryId=categoryId||null;
+
+    if(normalizedCategoryId){
+      return {
+        fundingSource:"category",
+        fundingSourceId:normalizedCategoryId,
+        controlledAmount:total,
+        uncontrolledAmount:0
+      };
+    }
+
+    const available=core&&typeof core.availableFree==="function"
+      ? Math.max(0,integer(core.availableFree(profile,date)))
+      : 0;
+    const controlledAmount=Math.min(total,available);
+
+    return {
+      fundingSource:"unallocated",
+      fundingSourceId:null,
+      controlledAmount,
+      uncontrolledAmount:Math.max(0,total-controlledAmount)
+    };
+  }
+
   root.createExpenseTransaction=function(profile,data){
     const amount=Math.max(0,integer(data.amount));
     const date=data.date||today();
     const categoryId=data.categoryId||null;
+    const funding=expenseFunding(profile,{amount,date,categoryId});
     const tx={
       id:uid(),
       type:"expense",
@@ -14,6 +43,10 @@
       source:String(data.source||"").trim(),
       categoryId,
       categoryName:categoryId?String(data.categoryName||"Без категории"):"Нераспределено",
+      fundingSource:funding.fundingSource,
+      fundingSourceId:funding.fundingSourceId,
+      controlledAmount:funding.controlledAmount,
+      uncontrolledAmount:funding.uncontrolledAmount,
       currency:data.currency||profile.settings.currency,
       note:String(data.note||"").trim(),
       createdAt:new Date().toISOString()
@@ -68,4 +101,6 @@
       completedAt:""
     };
   };
+
+  root.ARISE_EXPENSE_FUNDING={expenseFunding};
 })(typeof globalThis!=="undefined"?globalThis:window);
