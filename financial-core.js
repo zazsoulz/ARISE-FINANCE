@@ -294,13 +294,28 @@
       }else if(tx.type==="expense"){
         const amount=nonneg(tx.amount);
         expenses+=amount;
+        const explicitControlled=Number.isFinite(Number(tx.controlledAmount));
+        const explicitUncontrolled=Number.isFinite(Number(tx.uncontrolledAmount));
         if(tx.categoryId){
-          categorySpent[tx.categoryId]=(categorySpent[tx.categoryId]||0)+amount;
+          const available=Math.max(0,(categoryAllocated[tx.categoryId]||0)-(categorySpent[tx.categoryId]||0));
+          const controlled=explicitControlled
+            ? Math.min(amount,available,nonneg(tx.controlledAmount))
+            : Math.min(amount,available);
+          const uncontrolledAmount=explicitUncontrolled
+            ? Math.max(0,amount-controlled,nonneg(tx.uncontrolledAmount))
+            : Math.max(0,amount-controlled);
+          categorySpent[tx.categoryId]=(categorySpent[tx.categoryId]||0)+controlled;
+          uncontrolled+=uncontrolledAmount;
         }else{
           const available=Math.max(0,freeGenerated-freeSpent);
-          const controlled=Math.min(amount,available);
+          const controlled=explicitControlled
+            ? Math.min(amount,available,nonneg(tx.controlledAmount))
+            : Math.min(amount,available);
+          const uncontrolledAmount=explicitUncontrolled
+            ? Math.max(0,amount-controlled,nonneg(tx.uncontrolledAmount))
+            : Math.max(0,amount-controlled);
           freeSpent+=controlled;
-          uncontrolled+=amount-controlled;
+          uncontrolled+=uncontrolledAmount;
         }
       }else if(tx.type==="goal_contribution"){
         const amount=nonneg(tx.amount);
