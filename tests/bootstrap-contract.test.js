@@ -9,6 +9,22 @@ const financialMarker=`/* ======================================================
 const uiMarker=`/* =========================================================\n   UI\n========================================================= */`;
 const initMarker=`/* =========================================================\n   INITIALIZATION\n========================================================= */`;
 
+function stripLegacyFinancialRuntime(source){
+  const financialStart=source.indexOf(financialMarker);
+  const uiStart=source.indexOf(uiMarker);
+  assert.ok(financialStart>=0);
+  assert.ok(uiStart>financialStart);
+  let html=source.slice(0,financialStart)+source.slice(uiStart);
+
+  const scriptClose='</scr'+'ipt>';
+  const initStart=html.indexOf(initMarker);
+  const scriptEnd=html.lastIndexOf(scriptClose);
+  assert.ok(initStart>=0);
+  assert.ok(scriptEnd>initStart);
+  html=html.slice(0,initStart)+html.slice(scriptEnd);
+  return html;
+}
+
 test('shell boundaries required by the loader still exist',()=>{
   const financial=shell.indexOf(financialMarker);
   const ui=shell.indexOf(uiMarker);
@@ -39,4 +55,15 @@ test('runtime files exist',()=>{
   for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
+});
+
+test('effective shell contains no legacy financial engine or eager initialization',()=>{
+  const effective=stripLegacyFinancialRuntime(shell);
+  assert.equal(effective.includes('function calculateIncomePlan('),false);
+  assert.equal(effective.includes('function validatePlan('),false);
+  assert.equal(effective.includes('function createIncomeTransaction('),false);
+  assert.equal(effective.includes('function monthStats('),false);
+  assert.equal(effective.includes('function goalRemaining('),false);
+  assert.equal(effective.includes(initMarker),false);
+  assert.equal(effective.includes(uiMarker),true);
 });
