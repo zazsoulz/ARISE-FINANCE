@@ -8,16 +8,18 @@
   const integer=value=>Number.isFinite(Number(value))?Math.round(Number(value)):0;
   const nonneg=value=>Math.max(0,integer(value));
 
-  function reconcileExpense({amount,categoryId,availableUnallocated}){
+  function reconcileExpense({amount,categoryId,availableUnallocated,availableCategory}){
     const total=nonneg(amount);
     const normalizedCategoryId=categoryId||null;
 
     if(normalizedCategoryId){
+      const available=nonneg(availableCategory);
+      const controlledAmount=Math.min(total,available);
       return {
         fundingSource:"category",
         fundingSourceId:normalizedCategoryId,
-        controlledAmount:total,
-        uncontrolledAmount:0
+        controlledAmount,
+        uncontrolledAmount:Math.max(0,total-controlledAmount)
       };
     }
 
