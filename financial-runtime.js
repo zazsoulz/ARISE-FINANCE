@@ -12,7 +12,7 @@
       amount,
       source:String(data.source||"").trim(),
       categoryId:data.categoryId||null,
-      categoryName:String(data.categoryName||"Свободные деньги"),
+      categoryName:String(data.categoryName||"Нераспределено"),
       currency:data.currency||profile.settings.currency,
       note:String(data.note||"").trim(),
       createdAt:new Date().toISOString()
