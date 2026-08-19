@@ -33,5 +33,38 @@
     };
   }
 
-  return {reserveRunway};
+  function reserveProgress({reserveBalance,targetBalance}={}){
+    const balance=amount(reserveBalance);
+    const target=amount(targetBalance);
+
+    if(target<=0){
+      return {
+        status:"no_target",
+        reserveBalance:balance,
+        targetBalance:target,
+        remaining:null,
+        progress:null,
+        percent:null,
+        complete:false,
+        surplus:0
+      };
+    }
+
+    const remaining=Math.max(0,target-balance);
+    const surplus=Math.max(0,balance-target);
+    const progress=Math.min(1,balance/target);
+
+    return {
+      status:"ok",
+      reserveBalance:balance,
+      targetBalance:target,
+      remaining,
+      progress,
+      percent:progress*100,
+      complete:balance>=target,
+      surplus
+    };
+  }
+
+  return {reserveRunway,reserveProgress};
 });
