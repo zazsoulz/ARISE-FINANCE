@@ -20,6 +20,8 @@ jobs:
       - name: Syntax check
         run: |
           node --check financial-core.js
+          node --check financial-runtime.js
           node --check financial-integration.js
-      - name: Financial core tests
-        run: node --test tests/financial-core.test.js
+          node --check financial-bootstrap.js
+      - name: Regression tests
+        run: node --test tests/*.test.js
