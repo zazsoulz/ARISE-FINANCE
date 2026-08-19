@@ -65,16 +65,13 @@ test('registered runtime uses the core planner with goal allocations',()=>{
   const accounted=plan.allocations.reduce((s,a)=>s+a.amount,0)+plan.goalAllocations.reduce((s,a)=>s+a.amount,0)+plan.reserve+plan.remainder; assert.equal(accounted,50000); dom.window.close();
 });
 
-test('funded goal cannot be destructively deleted before balance reconciliation',()=>{
+test('A1-V3 does not expose destructive deletion for a funded goal',()=>{
   const {dom,context}=boot({registered:true});
   execute(context,`(()=>{const profile=activeProfile(); const goal=createGoal({name:'Отпуск',target:100000,current:25000,priority:5,deadline:'2026-12-31',monthlyContribution:20000}); profile.goals=[goal]; activePage='goals'; render();})()`,'funded-goal.js');
   const document=dom.window.document;
-  const before=execute(context,'activeProfile().goals.length','before-goal-delete.js');
-  const button=document.querySelector('[data-goal-delete]');
-  assert.ok(button,'goal delete button missing');
-  button.click();
-  assert.equal(execute(context,'activeProfile().goals.length','after-goal-delete.js'),before);
-  assert.match(document.getElementById('toast').textContent,/Сначала нужно выбрать, куда перевести эти деньги/);
+  assert.ok(document.querySelector('.arise-v3-goals'));
+  assert.equal(document.querySelector('[data-goal-delete]'),null);
+  assert.equal(execute(context,'activeProfile().goals.length','funded-goal-count.js'),1);
   dom.window.close();
 });
 
