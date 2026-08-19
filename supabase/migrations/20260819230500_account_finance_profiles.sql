@@ -34,7 +34,6 @@ create table if not exists public.finance_profiles (
   updated_at timestamptz not null default now(),
   archived_at timestamptz
 );
-
 create index if not exists finance_profiles_user_id_idx on public.finance_profiles(user_id);
 
 create table if not exists public.finance_categories (
@@ -52,7 +51,6 @@ create table if not exists public.finance_categories (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create index if not exists finance_categories_profile_id_idx on public.finance_categories(profile_id);
 create index if not exists finance_categories_user_id_idx on public.finance_categories(user_id);
 
@@ -74,7 +72,6 @@ create table if not exists public.finance_goals (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create index if not exists finance_goals_profile_id_idx on public.finance_goals(profile_id);
 create index if not exists finance_goals_user_id_idx on public.finance_goals(user_id);
 
@@ -101,7 +98,6 @@ create table if not exists public.finance_transactions (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
-
 create unique index if not exists finance_transactions_user_mutation_uidx
   on public.finance_transactions(user_id,client_mutation_id)
   where client_mutation_id is not null;
@@ -121,7 +117,6 @@ create table if not exists public.finance_allocations (
   rule_snapshot jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
-
 create index if not exists finance_allocations_transaction_id_idx on public.finance_allocations(transaction_id);
 create index if not exists finance_allocations_profile_id_idx on public.finance_allocations(profile_id);
 
@@ -135,10 +130,8 @@ create table if not exists public.sync_receipts (
   device_id text,
   received_at timestamptz not null default now()
 );
-
 create index if not exists sync_receipts_user_id_idx on public.sync_receipts(user_id);
 
--- Prevent clients from writing another user's id into profile-scoped rows.
 create or replace function public.assert_finance_profile_owner()
 returns trigger
 language plpgsql
@@ -156,21 +149,146 @@ begin
 end;
 $$;
 
+-- Ownership guards.
 drop trigger if exists finance_categories_owner_guard on public.finance_categories;
 create trigger finance_categories_owner_guard before insert or update on public.finance_categories
 for each row execute function public.assert_finance_profile_owner();
-
 drop trigger if exists finance_goals_owner_guard on public.finance_goals;
 create trigger finance_goals_owner_guard before insert or update on public.finance_goals
 for each row execute function public.assert_finance_profile_owner();
-
 drop trigger if exists finance_transactions_owner_guard on public.finance_transactions;
 create trigger finance_transactions_owner_guard before insert or update on public.finance_transactions
 for each row execute function public.assert_finance_profile_owner();
-
 drop trigger if exists finance_allocations_owner_guard on public.finance_allocations;
 create trigger finance_allocations_owner_guard before insert or update on public.finance_allocations
 for each row execute function public.assert_finance_profile_owner();
 
--- updated_at triggers
-foreach_dummy: begin end;
+-- updated_at triggers.
+drop trigger if exists accounts_set_updated_at on public.accounts;
+create trigger accounts_set_updated_at before update on public.accounts
+for each row execute function public.set_updated_at();
+drop trigger if exists finance_profiles_set_updated_at on public.finance_profiles;
+create trigger finance_profiles_set_updated_at before update on public.finance_profiles
+for each row execute function public.set_updated_at();
+drop trigger if exists finance_categories_set_updated_at on public.finance_categories;
+create trigger finance_categories_set_updated_at before update on public.finance_categories
+for each row execute function public.set_updated_at();
+drop trigger if exists finance_goals_set_updated_at on public.finance_goals;
+create trigger finance_goals_set_updated_at before update on public.finance_goals
+for each row execute function public.set_updated_at();
+drop trigger if exists finance_transactions_set_updated_at on public.finance_transactions;
+create trigger finance_transactions_set_updated_at before update on public.finance_transactions
+for each row execute function public.set_updated_at();
+
+-- New auth user bootstrap. Account information remains separate from finance profiles.
+create or replace function public.bootstrap_arise_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  fp_id uuid;
+  display_name text;
+begin
+  display_name := coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'full_name', split_part(coalesce(new.email,''),'@',1), '');
+
+  insert into public.accounts(user_id,name,avatar_url)
+  values(new.id,display_name,coalesce(new.raw_user_meta_data->>'avatar_url',new.raw_user_meta_data->>'picture'))
+  on conflict (user_id) do nothing;
+
+  if not exists (select 1 from public.finance_profiles where user_id=new.id and archived_at is null) then
+    insert into public.finance_profiles(user_id,name,base_currency)
+    values(new.id,'Основной','RUB')
+    returning id into fp_id;
+
+    insert into public.finance_categories(profile_id,user_id,name,rule_type,percent,fixed_amount,priority,sort_order)
+    values
+      (fp_id,new.id,'Обязательные расходы','fixed',0,0,5,10),
+      (fp_id,new.id,'Семья','percentage',15,0,4,20),
+      (fp_id,new.id,'Свободные деньги','percentage',20,0,3,30);
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created_arise on auth.users;
+create trigger on_auth_user_created_arise
+after insert on auth.users
+for each row execute function public.bootstrap_arise_user();
+
+-- Backfill existing auth users without touching legacy finance data.
+insert into public.accounts(user_id,name,avatar_url)
+select
+  u.id,
+  coalesce(u.raw_user_meta_data->>'name',u.raw_user_meta_data->>'full_name',p.name,split_part(coalesce(u.email,''),'@',1),''),
+  coalesce(u.raw_user_meta_data->>'avatar_url',u.raw_user_meta_data->>'picture')
+from auth.users u
+left join public.profiles p on p.id=u.id
+on conflict (user_id) do nothing;
+
+do $$
+declare
+  r record;
+  fp_id uuid;
+begin
+  for r in
+    select u.id as user_id, coalesce(p.name,'Основной') as profile_name, coalesce(p.base_currency,'RUB') as base_currency
+    from auth.users u
+    left join public.profiles p on p.id=u.id
+    where not exists (select 1 from public.finance_profiles fp where fp.user_id=u.id and fp.archived_at is null)
+  loop
+    insert into public.finance_profiles(user_id,name,base_currency)
+    values(r.user_id,r.profile_name,case when r.base_currency in ('RUB','USD','EUR') then r.base_currency else 'RUB' end)
+    returning id into fp_id;
+
+    insert into public.finance_categories(profile_id,user_id,name,rule_type,percent,fixed_amount,priority,sort_order)
+    values
+      (fp_id,r.user_id,'Обязательные расходы','fixed',0,0,5,10),
+      (fp_id,r.user_id,'Семья','percentage',15,0,4,20),
+      (fp_id,r.user_id,'Свободные деньги','percentage',20,0,3,30);
+  end loop;
+end $$;
+
+-- RLS: every account/profile/financial row belongs to the authenticated auth.uid().
+alter table public.accounts enable row level security;
+alter table public.finance_profiles enable row level security;
+alter table public.finance_categories enable row level security;
+alter table public.finance_goals enable row level security;
+alter table public.finance_transactions enable row level security;
+alter table public.finance_allocations enable row level security;
+alter table public.sync_receipts enable row level security;
+
+-- Account policies.
+drop policy if exists accounts_select_own on public.accounts;
+create policy accounts_select_own on public.accounts for select to authenticated using (user_id=auth.uid());
+drop policy if exists accounts_insert_own on public.accounts;
+create policy accounts_insert_own on public.accounts for insert to authenticated with check (user_id=auth.uid());
+drop policy if exists accounts_update_own on public.accounts;
+create policy accounts_update_own on public.accounts for update to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+
+-- Profile policies.
+drop policy if exists finance_profiles_select_own on public.finance_profiles;
+create policy finance_profiles_select_own on public.finance_profiles for select to authenticated using (user_id=auth.uid());
+drop policy if exists finance_profiles_insert_own on public.finance_profiles;
+create policy finance_profiles_insert_own on public.finance_profiles for insert to authenticated with check (user_id=auth.uid());
+drop policy if exists finance_profiles_update_own on public.finance_profiles;
+create policy finance_profiles_update_own on public.finance_profiles for update to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+drop policy if exists finance_profiles_delete_own on public.finance_profiles;
+create policy finance_profiles_delete_own on public.finance_profiles for delete to authenticated using (user_id=auth.uid());
+
+-- Reusable direct user_id ownership policies for profile-scoped tables.
+drop policy if exists finance_categories_all_own on public.finance_categories;
+create policy finance_categories_all_own on public.finance_categories for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+drop policy if exists finance_goals_all_own on public.finance_goals;
+create policy finance_goals_all_own on public.finance_goals for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+drop policy if exists finance_transactions_all_own on public.finance_transactions;
+create policy finance_transactions_all_own on public.finance_transactions for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+drop policy if exists finance_allocations_all_own on public.finance_allocations;
+create policy finance_allocations_all_own on public.finance_allocations for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+drop policy if exists sync_receipts_all_own on public.sync_receipts;
+create policy sync_receipts_all_own on public.sync_receipts for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+
+revoke all on table public.accounts,public.finance_profiles,public.finance_categories,public.finance_goals,public.finance_transactions,public.finance_allocations,public.sync_receipts from anon;
+grant select,insert,update,delete on table public.accounts,public.finance_profiles,public.finance_categories,public.finance_goals,public.finance_transactions,public.finance_allocations,public.sync_receipts to authenticated;
