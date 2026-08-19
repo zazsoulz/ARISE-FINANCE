@@ -150,10 +150,6 @@
       allocations[name]=(allocations[name]||0)+value;
     }
 
-    const categoryUncontrolled=(profile.transactions||[])
-      .filter(tx=>tx&&tx.type==="expense"&&tx.categoryId&&monthKey(tx.month||tx.date)===month)
-      .reduce((total,tx)=>total+Math.max(0,integer(tx.uncontrolledAmount||0)),0);
-
     return {
       income:raw.income,
       expenses:raw.expenses,
@@ -163,7 +159,7 @@
       operations:raw.operationCount,
       unallocated:raw.free,
       free:raw.free,
-      uncontrolled:raw.uncontrolled+categoryUncontrolled,
+      uncontrolled:raw.uncontrolled,
       goalAllocated:raw.goalAllocated
     };
   };
@@ -268,8 +264,6 @@
 
   root.ARISE_PRODUCT_RULES={
     addCategoryDeleteControls,
-    guardFundedGoalDeletion,
-    addReserveTargetControls,
     currentUnallocatedMoney:root.currentUnallocatedMoney
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
