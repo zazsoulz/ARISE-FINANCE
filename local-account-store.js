@@ -30,6 +30,9 @@
     const key=activeAccountId?accountKey(activeAccountId):GUEST_KEY;
     if(state.account) delete state.account.password;
     localStorage.setItem(key,JSON.stringify(state));
+    if(!root.ARISE_SYNC_SILENT&&root.dispatchEvent){
+      root.dispatchEvent(new CustomEvent("arise:local-change",{detail:{accountId:activeAccountId,at:new Date().toISOString()}}));
+    }
   }
 
   root.saveState=write;
