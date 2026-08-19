@@ -33,6 +33,7 @@ jobs:
           node --check supabase-client.js
           node --check local-account-store.js
           node --check sync-engine.js
+          node --check sync-conflict-policy.js
           node --check sync-pull.js
           node --check auth-ui.js
           node --check account-settings.js
