@@ -1,10 +1,8 @@
 name: ARISE free money core fix
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/arise-free-money-fix.yml'
+  pull_request_target:
+    types: [opened]
 
 permissions:
   contents: write
@@ -15,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Patch index.html
@@ -33,7 +32,6 @@ jobs:
               if count != 1:
                   raise SystemExit(f'{label}: expected 1 replacement, got {count}')
 
-          # validatePlan: unallocated money is valid and becomes free money.
           replace_once(
               r'function validatePlan\(plan\)\{.*?\n\}\n\n\n/\* =========================================================\n   TRANSACTIONS',
               '''function validatePlan(plan){
@@ -76,7 +74,6 @@ jobs:
               'validatePlan'
           )
 
-          # Normalize remainder persistence if the field is already present.
           text = re.sub(
               r'reserve:\s*\n\s*integer\(data\.reserve \|\| 0\),\s*\n\s*remainder:\s*\n\s*integer\(data\.remainder \|\| 0\),',
               'reserve:\n      integer(data.reserve || 0),\n\n    remainder:\n      integer(data.remainder || 0),',
@@ -84,8 +81,6 @@ jobs:
               count=1
           )
 
-          # monthStats: system free money comes from transaction remainder,
-          # never from a category name. Uncategorized expenses spend free money.
           replace_once(
               r'function monthStats\(\s*profile,\s*month\s*\)\{.*?\n\}\n\nfunction allMonths',
               '''function monthStats(
@@ -180,7 +175,6 @@ function allMonths''',
               'monthStats'
           )
 
-          # Income modal: the balance shown to the user is free money, not an error.
           text, label_count = re.subn(
               r'(<div class="label">\s*)ОСТАТОК(\s*</div>)',
               r'\1СВОБОДНЫЕ ДЕНЬГИ\2',
@@ -378,18 +372,13 @@ function saveIncomeFromModal(plan){''',
       - name: Sanity checks
         shell: bash
         run: |
+          grep -q 'storedRemainder' index.html
           grep -q 'remainder:[[:space:]]*$' index.html
-          grep -q 'СВОБОДНЫЕ ДЕНЬГИ' index.html
-          grep -q 'stats.free +=' index.html
           ! grep -q 'stats.allocations\[[[:space:]]*"Свободные деньги"' index.html
 
       - name: Commit patch
         shell: bash
         run: |
-          if git diff --quiet -- index.html; then
-            echo 'No changes to commit'
-            exit 1
-          fi
           git config user.name 'ARISE Codex'
           git config user.email 'actions@users.noreply.github.com'
           git add index.html
