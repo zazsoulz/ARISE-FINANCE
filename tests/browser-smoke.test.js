@@ -28,7 +28,7 @@ function boot({registered=false}={}){
   const {window}=dom; window.alert=()=>{}; window.confirm=()=>true;
   const context=dom.getInternalVMContext(); execute(context,effectiveShellScript(),'app-shell-effective.js');
   if(registered) execute(context,`state.account.registered=true; state.account.name='QA'; state.account.email='qa@example.com'; saveState();`,'seed-state.js');
-  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','arise-v3.js','financial-bootstrap.js']) executeFile(context,path);
+  for(const path of ['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','financial-bootstrap.js']) executeFile(context,path);
   return {dom,context};
 }
 
@@ -78,15 +78,17 @@ test('uncategorized overspend persists controlled and uncontrolled funding expli
   dom.window.close();
 });
 
-test('categorized expense persists typed category funding source',()=>{
+test('categorized expense uses actual category balance and records overspend',()=>{
   const {dom,context}=boot({registered:true});
   const result=execute(context,`(()=>{
     const profile=activeProfile();
-    profile.categories=[{id:'life',name:'На жизнь',type:'fixed',fixedAmount:30000,percent:0,priority:3,limit:null,enabled:true}];
-    const tx=createExpenseTransaction(profile,{amount:5000,date:'2026-08-19',categoryId:'life',categoryName:'На жизнь',source:'Кафе',currency:'RUB'});
-    return {fundingSource:tx.fundingSource,fundingSourceId:tx.fundingSourceId,controlledAmount:tx.controlledAmount,uncontrolledAmount:tx.uncontrolledAmount};
+    profile.categories=[{id:'life',name:'На жизнь',type:'fixed',fixedAmount:20000,percent:0,priority:3,limit:null,enabled:true}];
+    profile.transactions=[{id:'i1',type:'income',date:'2026-08-19',month:'2026-08',amount:20000,currency:'RUB',allocations:[{categoryId:'life',name:'На жизнь',amount:20000,fixed:true,percent:0}],goalAllocations:[],reserve:0,remainder:0}];
+    const tx=createExpenseTransaction(profile,{amount:30000,date:'2026-08-19',categoryId:'life',categoryName:'На жизнь',source:'Покупка',currency:'RUB'});
+    const stats=monthStats(profile,'2026-08');
+    return {fundingSource:tx.fundingSource,fundingSourceId:tx.fundingSourceId,controlledAmount:tx.controlledAmount,uncontrolledAmount:tx.uncontrolledAmount,uncontrolled:stats.uncontrolled};
   })()`,'category-expense-funding.js');
-  assert.deepEqual({...result},{fundingSource:'category',fundingSourceId:'life',controlledAmount:5000,uncontrolledAmount:0});
+  assert.deepEqual({...result},{fundingSource:'category',fundingSourceId:'life',controlledAmount:20000,uncontrolledAmount:10000,uncontrolled:10000});
   dom.window.close();
 });
 
