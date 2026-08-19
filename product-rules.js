@@ -2,6 +2,7 @@
   "use strict";
 
   const core=root.ARISE_FINANCE_CORE;
+  const reserveAnalytics=root.ARISE_RESERVE_ANALYTICS;
 
   function categoryName(profile,id){
     const current=(profile.categories||[]).find(item=>String(item.id)===String(id));
@@ -70,6 +71,68 @@
     page.querySelectorAll(".sub").forEach(el=>{
       if(el.innerHTML.includes("Свободные:")) el.innerHTML=el.innerHTML.replace(/Свободные:/g,"Не распределено:");
     });
+  }
+
+  function addReserveTargetControls(){
+    const profile=activeProfile();
+    const percent=document.getElementById("reservePercent");
+    const saveButton=document.getElementById("saveReserve");
+    if(!percent||!saveButton||document.getElementById("reserveTargetBalance")) return;
+
+    profile.settings||={};
+    profile.settings.reserve||={enabled:false,percent:0,limit:null};
+    const reserve=profile.settings.reserve;
+    const target=Math.max(0,integer(reserve.targetBalance||0));
+    const balance=core.reserveBalance(profile);
+    const form=percent.closest(".form");
+
+    if(form){
+      const field=document.createElement("div");
+      field.className="field full";
+      field.innerHTML=`
+        <label>Целевой размер резерва</label>
+        <input id="reserveTargetBalance" type="number" min="0" inputmode="numeric" value="${target||""}" placeholder="Например, 300000">
+      `;
+      form.appendChild(field);
+
+      const status=document.createElement("div");
+      status.id="reserveTargetStatus";
+      status.className="notice";
+      status.style.marginTop="14px";
+
+      if(reserveAnalytics){
+        const progress=reserveAnalytics.reserveProgress({reserveBalance:balance,targetBalance:target});
+        if(progress.status==="ok"){
+          status.innerHTML=`
+            Сейчас в резерве <strong>${money(balance)}</strong> из <strong>${money(target)}</strong> · ${Math.round(progress.percent)}%.
+            ${progress.complete?"Целевой размер достигнут.":`Осталось ${money(progress.remaining)}.`}
+          `;
+        }else{
+          status.innerHTML=`Сейчас в резерве <strong>${money(balance)}</strong>. Задай целевой размер, чтобы ARISE показывал прогресс.`;
+        }
+      }else{
+        status.innerHTML=`Сейчас в резерве <strong>${money(balance)}</strong>.`;
+      }
+      form.insertAdjacentElement("afterend",status);
+
+      const runway=document.createElement("div");
+      runway.className="sub";
+      runway.style.marginTop="9px";
+      runway.textContent="Запас в месяцах появится после того, как будет определено, какие расходы считать обязательными. ARISE не будет угадывать это за тебя.";
+      status.insertAdjacentElement("afterend",runway);
+    }
+
+    const originalSave=saveButton.onclick;
+    saveButton.onclick=()=>{
+      const input=document.getElementById("reserveTargetBalance");
+      const raw=input?input.value.trim():"";
+      reserve.targetBalance=raw===""?null:Math.max(0,integer(raw));
+      if(typeof originalSave==="function") originalSave();
+      else{
+        saveState();
+        render();
+      }
+    };
   }
 
   root.monthStats=function(profile,month){
@@ -196,11 +259,13 @@
   root.renderSettings=function(){
     originalRenderSettings();
     addCategoryDeleteControls();
+    addReserveTargetControls();
   };
 
   root.ARISE_PRODUCT_RULES={
     addCategoryDeleteControls,
     guardFundedGoalDeletion,
+    addReserveTargetControls,
     currentUnallocatedMoney:root.currentUnallocatedMoney
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
