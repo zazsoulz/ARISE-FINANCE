@@ -32,7 +32,15 @@
           state.account.notifications=account?account.notifications_enabled!==false:state.account.notifications!==false;
           state.account.registered=true;
           delete state.account.password;
-          saveState();
+
+          if(globalThis.ARISE_SYNC_PULL){
+            try{await globalThis.ARISE_SYNC_PULL.pullAll();}
+            catch(error){console.error("ARISE server pull",error);}
+          }
+
+          globalThis.ARISE_SYNC_SILENT=true;
+          try{saveState();}finally{globalThis.ARISE_SYNC_SILENT=false;}
+          if(globalThis.ARISE_SYNC) globalThis.ARISE_SYNC.schedule();
         }else if(auth.available){
           state.account.registered=false;
           saveState();
