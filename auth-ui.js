@@ -34,6 +34,7 @@
     delete state.account.password;
     saveState();
     render();
+    if(root.ARISE_SYNC) root.ARISE_SYNC.schedule();
   }
 
   function bindAuth(){
@@ -65,9 +66,7 @@
       const email=document.getElementById("authEmail").value.trim();
       const password=document.getElementById("authPassword").value;
       const accountName=document.getElementById("authName")?.value.trim()||"";
-      if(!email||!password||(mode==="register"&&!accountName)){
-        setMessage("Заполни обязательные поля.","warning");return;
-      }
+      if(!email||!password||(mode==="register"&&!accountName)){setMessage("Заполни обязательные поля.","warning");return;}
       submit.disabled=true;
       setMessage(mode==="register"?"Создаю аккаунт…":"Вхожу…");
       try{
@@ -79,12 +78,8 @@
           const data=await root.ARISE_SUPABASE.signIn({email,password});
           await finishAuthenticatedSession(data.session);
         }
-      }catch(error){
-        console.error("ARISE auth",error);
-        setMessage(humanAuthError(error),"danger");
-      }finally{
-        submit.disabled=false;
-      }
+      }catch(error){console.error("ARISE auth",error);setMessage(humanAuthError(error),"danger");}
+      finally{submit.disabled=false;}
     };
 
     syncMode();
@@ -93,25 +88,23 @@
   root.renderAuth=function(){
     const container=document.getElementById("root");
     container.innerHTML=`
-      <div class="login">
-        <section class="login-card">
-          <div class="login-logo">ARISE</div>
-          <div class="kicker" style="margin-top:22px">АККАУНТ</div>
-          <h1 class="title" id="authTitle" style="font-size:30px">Войти в ARISE</h1>
-          <div class="sub" style="margin-top:9px">Аккаунт хранит только твою личную информацию. Финансовые профили живут отдельно внутри него.</div>
-          <div class="form" style="margin-top:22px">
-            <div class="field full" id="authNameField" style="display:none"><label>Имя</label><input id="authName" autocomplete="name" placeholder="Имя"></div>
-            <div class="field full"><label>Почта</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com"></div>
-            <div class="field full"><label>Пароль</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль"></div>
-          </div>
-          <div id="authMessage" class="notice" style="display:none;margin-top:14px"></div>
-          <div class="actions">
-            <button class="btn primary" id="authSubmit">Войти</button>
-            <button class="btn" id="authToggle" type="button">Нет аккаунта? Создать</button>
-            <button class="btn" id="authReset" type="button">Забыли пароль?</button>
-          </div>
-        </section>
-      </div>`;
+      <div class="login"><section class="login-card">
+        <div class="login-logo">ARISE</div>
+        <div class="kicker" style="margin-top:22px">АККАУНТ</div>
+        <h1 class="title" id="authTitle" style="font-size:30px">Войти в ARISE</h1>
+        <div class="sub" style="margin-top:9px">Аккаунт хранит только твою личную информацию. Финансовые профили живут отдельно внутри него.</div>
+        <div class="form" style="margin-top:22px">
+          <div class="field full" id="authNameField" style="display:none"><label>Имя</label><input id="authName" autocomplete="name" placeholder="Имя"></div>
+          <div class="field full"><label>Почта</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com"></div>
+          <div class="field full"><label>Пароль</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль"></div>
+        </div>
+        <div id="authMessage" class="notice" style="display:none;margin-top:14px"></div>
+        <div class="actions">
+          <button class="btn primary" id="authSubmit">Войти</button>
+          <button class="btn" id="authToggle" type="button">Нет аккаунта? Создать</button>
+          <button class="btn" id="authReset" type="button">Забыли пароль?</button>
+        </div>
+      </section></div>`;
     bindAuth();
   };
 
