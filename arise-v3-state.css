@@ -1,0 +1,5 @@
+.v3-alert{margin:14px 0;padding:14px 15px;border:1px solid rgba(198,168,107,.16);border-radius:16px;background:linear-gradient(135deg,rgba(198,168,107,.075),rgba(255,255,255,.018));box-shadow:0 16px 42px rgba(0,0,0,.18)}
+.v3-alert strong{display:block;color:#dccb9f;font-size:11px;font-weight:560}
+.v3-alert span{display:block;margin-top:5px;color:#77736d;font-size:9px;line-height:1.55}
+.v3-goal-main small.v3-warning{color:#b89b68}
+@media (max-width:540px){.v3-alert{margin-left:2px;margin-right:2px}.v3-goal-main small{line-height:1.45}}
