@@ -17,11 +17,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install smoke-test dependency
+        run: npm install --no-save jsdom@26.1.0
       - name: Syntax check
         run: |
           node --check financial-core.js
           node --check financial-runtime.js
           node --check financial-integration.js
           node --check financial-bootstrap.js
-      - name: Regression tests
+      - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
