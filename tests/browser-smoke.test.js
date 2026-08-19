@@ -92,6 +92,44 @@ test('categorized expense uses actual category balance and records overspend',()
   dom.window.close();
 });
 
+test('expense overspend requires explicit uncontrolled acceptance in the UI',()=>{
+  const {dom,context}=boot({registered:true});
+  execute(context,`(()=>{
+    const profile=activeProfile();
+    profile.transactions=[{id:'i1',type:'income',date:'2026-08-19',month:'2026-08',amount:20000,currency:'RUB',allocations:[],goalAllocations:[],reserve:0,remainder:20000}];
+    showExpenseModal();
+    const amount=document.getElementById('expenseAmount'); amount.value='30000'; amount.dispatchEvent(new Event('input',{bubbles:true}));
+  })()`,'expense-reconciliation-ui.js');
+  const document=dom.window.document;
+  const save=document.getElementById('saveExpense');
+  const accept=document.getElementById('acceptUncontrolledExpense');
+  assert.ok(accept,'uncontrolled acceptance checkbox missing');
+  assert.equal(save.disabled,true);
+  assert.match(document.getElementById('expensePreview').textContent,/10[\s\u00a0]?000/);
+  accept.checked=true;
+  accept.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  assert.equal(save.disabled,false);
+  dom.window.close();
+});
+
+test('expense reconciliation clears when a selected source fully covers the amount',()=>{
+  const {dom,context}=boot({registered:true});
+  execute(context,`(()=>{
+    const profile=activeProfile();
+    profile.categories=[{id:'life',name:'На жизнь',type:'fixed',fixedAmount:30000,percent:0,priority:3,limit:null,enabled:true}];
+    profile.transactions=[{id:'i1',type:'income',date:'2026-08-19',month:'2026-08',amount:30000,currency:'RUB',allocations:[{categoryId:'life',name:'На жизнь',amount:30000,fixed:true,percent:0}],goalAllocations:[],reserve:0,remainder:0}];
+    showExpenseModal();
+    const category=document.getElementById('expenseCategory'); category.value='life';
+    const amount=document.getElementById('expenseAmount'); amount.value='20000';
+    category.dispatchEvent(new Event('change',{bubbles:true})); amount.dispatchEvent(new Event('input',{bubbles:true}));
+  })()`,'expense-reconciliation-covered-ui.js');
+  const document=dom.window.document;
+  assert.equal(document.getElementById('acceptUncontrolledExpense'),null);
+  assert.equal(document.getElementById('saveExpense').disabled,false);
+  assert.match(document.getElementById('expensePreview').textContent,/полностью покрывается/i);
+  dom.window.close();
+});
+
 test('A1-V3 does not expose destructive deletion for a funded goal',()=>{
   const {dom,context}=boot({registered:true});
   execute(context,`(()=>{const profile=activeProfile(); const goal=createGoal({name:'Отпуск',target:100000,current:25000,priority:5,deadline:'2026-12-31',monthlyContribution:20000}); profile.goals=[goal]; activePage='goals'; render();})()`,'funded-goal.js');
