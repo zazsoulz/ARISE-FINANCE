@@ -36,6 +36,7 @@ jobs:
           node --check sync-pull.js
           node --check auth-ui.js
           node --check account-settings.js
+          node --check profile-lifecycle.js
           node --check financial-bootstrap.js
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
