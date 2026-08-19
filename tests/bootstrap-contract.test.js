@@ -15,7 +15,6 @@ function stripLegacyFinancialRuntime(source){
   assert.ok(financialStart>=0);
   assert.ok(uiStart>financialStart);
   let html=source.slice(0,financialStart)+source.slice(uiStart);
-
   const scriptClose='</scr'+'ipt>';
   const initStart=html.indexOf(initMarker);
   const scriptEnd=html.lastIndexOf(scriptClose);
@@ -34,17 +33,20 @@ test('shell boundaries required by the loader still exist',()=>{
   assert.ok(init>ui,'initialization marker must follow UI');
 });
 
-test('loader wires the complete runtime in order',()=>{
+test('loader wires financial, product and A1-V3 layers in order',()=>{
   const core=index.indexOf('./financial-core.js');
   const runtime=index.indexOf('./financial-runtime.js');
   const integration=index.indexOf('./financial-integration.js');
   const productRules=index.indexOf('./product-rules.js');
+  const v3=index.indexOf('./arise-v3.js');
   const bootstrap=index.indexOf('./financial-bootstrap.js');
   assert.ok(core>=0);
   assert.ok(runtime>core);
   assert.ok(integration>runtime);
   assert.ok(productRules>integration);
-  assert.ok(bootstrap>productRules);
+  assert.ok(v3>productRules);
+  assert.ok(bootstrap>v3);
+  assert.ok(index.includes('./arise-v3.css'));
 });
 
 test('index inline bootstrap JavaScript parses',()=>{
@@ -54,7 +56,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','financial-bootstrap.js']){
+  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','arise-v3.js','arise-v3.css','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });
