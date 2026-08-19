@@ -34,15 +34,17 @@ test('shell boundaries required by the loader still exist',()=>{
   assert.ok(init>ui,'initialization marker must follow UI');
 });
 
-test('loader wires the complete financial runtime in order',()=>{
+test('loader wires the complete runtime in order',()=>{
   const core=index.indexOf('./financial-core.js');
   const runtime=index.indexOf('./financial-runtime.js');
   const integration=index.indexOf('./financial-integration.js');
+  const productRules=index.indexOf('./product-rules.js');
   const bootstrap=index.indexOf('./financial-bootstrap.js');
   assert.ok(core>=0);
   assert.ok(runtime>core);
   assert.ok(integration>runtime);
-  assert.ok(bootstrap>integration);
+  assert.ok(productRules>integration);
+  assert.ok(bootstrap>productRules);
 });
 
 test('index inline bootstrap JavaScript parses',()=>{
@@ -52,7 +54,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','financial-bootstrap.js']){
+  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });
