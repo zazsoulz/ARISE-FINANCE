@@ -65,6 +65,31 @@ test('registered runtime uses the core planner with goal allocations',()=>{
   const accounted=plan.allocations.reduce((s,a)=>s+a.amount,0)+plan.goalAllocations.reduce((s,a)=>s+a.amount,0)+plan.reserve+plan.remainder; assert.equal(accounted,50000); dom.window.close();
 });
 
+test('uncategorized overspend persists controlled and uncontrolled funding explicitly',()=>{
+  const {dom,context}=boot({registered:true});
+  const result=execute(context,`(()=>{
+    const profile=activeProfile();
+    profile.transactions=[{id:'i1',type:'income',date:'2026-08-19',month:'2026-08',amount:20000,currency:'RUB',allocations:[],goalAllocations:[],reserve:0,remainder:20000}];
+    const tx=createExpenseTransaction(profile,{amount:30000,date:'2026-08-19',categoryId:null,source:'Покупка',currency:'RUB'});
+    const stats=monthStats(profile,'2026-08');
+    return {fundingSource:tx.fundingSource,fundingSourceId:tx.fundingSourceId,controlledAmount:tx.controlledAmount,uncontrolledAmount:tx.uncontrolledAmount,free:stats.unallocated,uncontrolled:stats.uncontrolled};
+  })()`,'expense-funding.js');
+  assert.deepEqual({...result},{fundingSource:'unallocated',fundingSourceId:null,controlledAmount:20000,uncontrolledAmount:10000,free:0,uncontrolled:10000});
+  dom.window.close();
+});
+
+test('categorized expense persists typed category funding source',()=>{
+  const {dom,context}=boot({registered:true});
+  const result=execute(context,`(()=>{
+    const profile=activeProfile();
+    profile.categories=[{id:'life',name:'На жизнь',type:'fixed',fixedAmount:30000,percent:0,priority:3,limit:null,enabled:true}];
+    const tx=createExpenseTransaction(profile,{amount:5000,date:'2026-08-19',categoryId:'life',categoryName:'На жизнь',source:'Кафе',currency:'RUB'});
+    return {fundingSource:tx.fundingSource,fundingSourceId:tx.fundingSourceId,controlledAmount:tx.controlledAmount,uncontrolledAmount:tx.uncontrolledAmount};
+  })()`,'category-expense-funding.js');
+  assert.deepEqual({...result},{fundingSource:'category',fundingSourceId:'life',controlledAmount:5000,uncontrolledAmount:0});
+  dom.window.close();
+});
+
 test('A1-V3 does not expose destructive deletion for a funded goal',()=>{
   const {dom,context}=boot({registered:true});
   execute(context,`(()=>{const profile=activeProfile(); const goal=createGoal({name:'Отпуск',target:100000,current:25000,priority:5,deadline:'2026-12-31',monthlyContribution:20000}); profile.goals=[goal]; activePage='goals'; render();})()`,'funded-goal.js');
