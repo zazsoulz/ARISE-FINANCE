@@ -1,6 +1,20 @@
 (function(root){
   "use strict";
 
+  const core=root.ARISE_FINANCE_CORE;
+
+  function categoryName(profile,id){
+    const current=(profile.categories||[]).find(item=>String(item.id)===String(id));
+    if(current&&current.name) return current.name;
+    for(const tx of profile.transactions||[]){
+      for(const allocation of tx.allocations||[]){
+        if(String(allocation.categoryId)===String(id)&&allocation.name) return allocation.name;
+      }
+      if(String(tx.categoryId)===String(id)&&tx.categoryName) return tx.categoryName;
+    }
+    return "Без категории";
+  }
+
   function addCategoryDeleteControls(){
     const profile=activeProfile();
     document.querySelectorAll("[data-category-editor]").forEach(editor=>{
@@ -38,18 +52,41 @@
     });
   }
 
-  const originalMonthStats=root.monthStats;
   root.monthStats=function(profile,month){
-    const stats=originalMonthStats(profile,month);
-    if(stats.allocations&&Object.prototype.hasOwnProperty.call(stats.allocations,"Свободные деньги")){
-      delete stats.allocations["Свободные деньги"];
+    const raw=core.monthStats(profile,month);
+    const allocations={};
+
+    for(const [id,value] of Object.entries(raw.categoryBalances||{})){
+      const name=categoryName(profile,id);
+      allocations[name]=(allocations[name]||0)+value;
     }
-    stats.unallocated=stats.free;
-    return stats;
+
+    for(const [id,value] of Object.entries(raw.goalAllocated||{})){
+      const goal=(profile.goals||[]).find(item=>String(item.id)===String(id));
+      const name=`Цель · ${goal&&goal.name?goal.name:"Без названия"}`;
+      allocations[name]=(allocations[name]||0)+value;
+    }
+
+    return {
+      income:raw.income,
+      expenses:raw.expenses,
+      reserve:raw.reserve,
+      reserveWithdrawn:raw.reserveWithdrawn,
+      allocations,
+      operations:raw.operationCount,
+      unallocated:raw.free,
+      free:raw.free,
+      uncontrolled:raw.uncontrolled,
+      goalAllocated:raw.goalAllocated
+    };
   };
 
   root.currentUnallocatedMoney=function(profile,month=activeMonth){
     return root.monthStats(profile,month).unallocated;
+  };
+
+  root.currentFreeMoney=function(profile,month=activeMonth){
+    return root.currentUnallocatedMoney(profile,month);
   };
 
   const originalRenderHome=root.renderHome;
