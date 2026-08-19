@@ -4,6 +4,7 @@
   root.createExpenseTransaction=function(profile,data){
     const amount=Math.max(0,integer(data.amount));
     const date=data.date||today();
+    const categoryId=data.categoryId||null;
     const tx={
       id:uid(),
       type:"expense",
@@ -11,8 +12,8 @@
       month:monthKey(date),
       amount,
       source:String(data.source||"").trim(),
-      categoryId:data.categoryId||null,
-      categoryName:String(data.categoryName||"Нераспределено"),
+      categoryId,
+      categoryName:categoryId?String(data.categoryName||"Без категории"):"Нераспределено",
       currency:data.currency||profile.settings.currency,
       note:String(data.note||"").trim(),
       createdAt:new Date().toISOString()
