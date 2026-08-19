@@ -65,6 +65,19 @@ test('registered runtime uses the core planner with goal allocations',()=>{
   const accounted=plan.allocations.reduce((s,a)=>s+a.amount,0)+plan.goalAllocations.reduce((s,a)=>s+a.amount,0)+plan.reserve+plan.remainder; assert.equal(accounted,50000); dom.window.close();
 });
 
+test('funded goal cannot be destructively deleted before balance reconciliation',()=>{
+  const {dom,context}=boot({registered:true});
+  execute(context,`(()=>{const profile=activeProfile(); const goal=createGoal({name:'Отпуск',target:100000,current:25000,priority:5,deadline:'2026-12-31',monthlyContribution:20000}); profile.goals=[goal]; activePage='goals'; render();})()`,'funded-goal.js');
+  const document=dom.window.document;
+  const before=execute(context,'activeProfile().goals.length','before-goal-delete.js');
+  const button=document.querySelector('[data-goal-delete]');
+  assert.ok(button,'goal delete button missing');
+  button.click();
+  assert.equal(execute(context,'activeProfile().goals.length','after-goal-delete.js'),before);
+  assert.match(document.getElementById('toast').textContent,/Сначала нужно выбрать, куда перевести эти деньги/);
+  dom.window.close();
+});
+
 test('unallocated balance is not a category and category names are unrestricted',()=>{
   const {dom,context}=boot({registered:true});
   const result=execute(context,`(()=>{const profile=activeProfile(); profile.categories=[{id:'user-free',name:'Свободные деньги',type:'fixed',fixedAmount:400,percent:0,priority:3,limit:null,enabled:true}]; profile.transactions=[{id:'income-1',type:'income',date:'2026-08-19',month:'2026-08',amount:1000,currency:'RUB',allocations:[{categoryId:'user-free',name:'Свободные деньги',amount:400,fixed:true,percent:0}],goalAllocations:[],reserve:0,remainder:600}]; const stats=monthStats(profile,'2026-08'); return {categoryValue:stats.allocations['Свободные деньги'],unallocated:stats.unallocated,keys:Object.keys(stats.allocations)};})()`,'unallocated-smoke.js');
