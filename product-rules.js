@@ -135,6 +135,62 @@
     };
   }
 
+  function expenseFundingPreview(){
+    const amount=Math.max(0,integer(document.getElementById("expenseAmount")?.value));
+    const categoryId=document.getElementById("expenseCategory")?.value||null;
+    const date=document.getElementById("expenseDate")?.value||today();
+    if(amount<=0) return null;
+
+    const fundingApi=root.ARISE_EXPENSE_FUNDING;
+    if(!fundingApi||typeof fundingApi.expenseFunding!=="function") return null;
+    return fundingApi.expenseFunding(activeProfile(),{amount,date,categoryId});
+  }
+
+  function renderExpenseReconciliation(){
+    const preview=document.getElementById("expensePreview");
+    const saveButton=document.getElementById("saveExpense");
+    if(!preview||!saveButton) return;
+
+    const funding=expenseFundingPreview();
+    if(!funding){
+      preview.innerHTML="";
+      saveButton.disabled=false;
+      return;
+    }
+
+    if(funding.uncontrolledAmount>0){
+      preview.innerHTML=`
+        <div class="notice warning">
+          Из выбранного источника можно объяснить <strong>${money(funding.controlledAmount)}</strong> из <strong>${money(funding.controlledAmount+funding.uncontrolledAmount)}</strong>.
+          Ещё <strong>${money(funding.uncontrolledAmount)}</strong> не имеют подтверждённого источника.
+          Выбери другой источник выше или явно прими эту часть как неконтролируемые средства.
+          <label class="check" style="margin-top:12px">
+            <input id="acceptUncontrolledExpense" type="checkbox">
+            Принять ${money(funding.uncontrolledAmount)} как неконтролируемые средства
+          </label>
+        </div>
+      `;
+      const accept=document.getElementById("acceptUncontrolledExpense");
+      saveButton.disabled=true;
+      if(accept){
+        accept.onchange=()=>{
+          saveButton.disabled=!accept.checked;
+        };
+      }
+      return;
+    }
+
+    saveButton.disabled=false;
+    const categoryId=document.getElementById("expenseCategory")?.value||null;
+    const profile=activeProfile();
+    if(categoryId){
+      const name=profile.categories.find(item=>String(item.id)===String(categoryId))?.name||"категории";
+      preview.innerHTML=`<div class="notice">Расход полностью покрывается категорией <strong>${escapeHTML(name)}</strong>. После операции в ней останется примерно <strong>${money(Math.max(0,(core.monthStats(profile,monthKey(document.getElementById("expenseDate")?.value||today())).categoryBalances||{})[categoryId]-funding.controlledAmount))}</strong>.</div>`;
+    }else{
+      preview.innerHTML=`<div class="notice">Расход полностью покрывается нераспределённым остатком. После операции останется примерно <strong>${money(Math.max(0,root.currentUnallocatedMoney(profile,monthKey(document.getElementById("expenseDate")?.value||today()))-funding.controlledAmount))}</strong>.</div>`;
+    }
+  }
+
   root.monthStats=function(profile,month){
     const raw=core.monthStats(profile,month);
     const allocations={};
@@ -201,17 +257,30 @@
     originalShowExpenseModal();
     const option=document.querySelector('#expenseCategory option[value=""]');
     if(option) option.textContent="Нераспределено";
+
+    const amount=document.getElementById("expenseAmount");
+    const category=document.getElementById("expenseCategory");
+    const date=document.getElementById("expenseDate");
+    const save=document.getElementById("saveExpense");
+    const originalSave=save&&save.onclick;
+
+    if(amount) amount.oninput=renderExpenseReconciliation;
+    if(category) category.onchange=renderExpenseReconciliation;
+    if(date) date.onchange=renderExpenseReconciliation;
+    if(save){
+      save.onclick=()=>{
+        const funding=expenseFundingPreview();
+        if(funding&&funding.uncontrolledAmount>0&&!document.getElementById("acceptUncontrolledExpense")?.checked){
+          toast("Подтверди неконтролируемую часть расхода или выбери другой источник.");
+          return;
+        }
+        if(typeof originalSave==="function") originalSave();
+      };
+    }
+    renderExpenseReconciliation();
   };
 
-  const originalUpdateExpensePreview=root.updateExpensePreview;
-  root.updateExpensePreview=function(){
-    originalUpdateExpensePreview();
-    const preview=document.getElementById("expensePreview");
-    if(!preview) return;
-    preview.innerHTML=preview.innerHTML
-      .replace(/свободные деньги/gi,"нераспределённый остаток")
-      .replace(/свободными/gi,"нераспределёнными");
-  };
+  root.updateExpensePreview=renderExpenseReconciliation;
 
   const originalExpenseRow=root.expenseRow;
   root.expenseRow=function(tx){
@@ -264,6 +333,7 @@
 
   root.ARISE_PRODUCT_RULES={
     addCategoryDeleteControls,
-    currentUnallocatedMoney:root.currentUnallocatedMoney
+    currentUnallocatedMoney:root.currentUnallocatedMoney,
+    renderExpenseReconciliation
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
