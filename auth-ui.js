@@ -2,7 +2,6 @@
   "use strict";
 
   let mode="login";
-  const originalRenderSettings=root.renderSettings;
 
   function humanAuthError(error){
     const text=String(error&&error.message||"").toLowerCase();
@@ -11,7 +10,7 @@
     if(text.includes("user already registered")) return "Аккаунт с такой почтой уже существует.";
     if(text.includes("password")&&text.includes("characters")) return "Пароль слишком короткий.";
     if(text.includes("rate limit")) return "Слишком много попыток. Попробуй немного позже.";
-    return "Не удалось выполнить действие. Проверь данные и соединение.";
+    return "Не удалось выполнить вход. Проверь данные и соединение.";
   }
 
   function setMessage(text,type=""){
@@ -91,118 +90,6 @@
     syncMode();
   }
 
-  function augmentAccountSettings(){
-    const nameInput=document.getElementById("accountName");
-    const saveButton=document.getElementById("saveAccount");
-    if(!nameInput||!saveButton||document.getElementById("accountSessionControls")) return;
-
-    const accountSection=nameInput.closest("section");
-    const form=nameInput.closest(".form");
-    const actions=saveButton.closest(".actions");
-    if(!accountSection||!form||!actions) return;
-
-    const emailField=document.createElement("div");
-    emailField.className="field full";
-    emailField.innerHTML=`<label>Почта</label><input id="accountEmail" type="email" value="${escapeHTML(state.account.email||"")}" disabled>`;
-    form.appendChild(emailField);
-
-    const notificationsField=document.createElement("label");
-    notificationsField.className="check";
-    notificationsField.innerHTML=`<input id="accountNotifications" type="checkbox" ${state.account.notifications!==false?"checked":""}> Уведомления аккаунта`;
-    form.appendChild(notificationsField);
-
-    const sessionControls=document.createElement("div");
-    sessionControls.id="accountSessionControls";
-    sessionControls.innerHTML=`
-      <div class="kicker" style="margin-top:22px">БЕЗОПАСНОСТЬ</div>
-      <div class="form" style="margin-top:12px">
-        <div class="field full"><label>Новый пароль</label><input id="accountNewPassword" type="password" autocomplete="new-password" placeholder="Минимум 6 символов"></div>
-      </div>
-      <div class="actions">
-        <button class="btn" id="changeAccountPassword" type="button">Изменить пароль</button>
-        <button class="btn danger" id="logoutAccount" type="button">Выйти из аккаунта</button>
-      </div>
-      <div id="accountSettingsMessage" class="notice" style="display:none;margin-top:14px"></div>`;
-    accountSection.appendChild(sessionControls);
-
-    const showAccountMessage=(text,type="")=>{
-      const el=document.getElementById("accountSettingsMessage");
-      if(!el) return;
-      el.className="notice"+(type?" "+type:"");
-      el.textContent=text||"";
-      el.style.display=text?"block":"none";
-    };
-
-    saveButton.onclick=async()=>{
-      const remote=root.ARISE_SUPABASE;
-      const nextName=nameInput.value.trim()||"Пользователь";
-      const notifications=document.getElementById("accountNotifications").checked;
-      const avatarInput=document.getElementById("accountAvatar");
-      saveButton.disabled=true;
-      showAccountMessage("Сохраняю аккаунт…");
-      try{
-        if(!remote||!remote.currentSession()) throw new Error("Нужно войти в аккаунт.");
-        let avatar=state.account.avatar||"";
-        const file=avatarInput&&avatarInput.files&&avatarInput.files[0];
-        if(file) avatar=await remote.uploadAvatar(file);
-        const account=await remote.updateAccount({name:nextName,notifications_enabled:notifications});
-        state.account.name=(account&&account.name)||nextName;
-        state.account.notifications=account?account.notifications_enabled!==false:notifications;
-        state.account.avatar=(account&&account.avatar_display_url)||avatar;
-        saveState();
-        toast("Аккаунт сохранён.");
-        render();
-      }catch(error){
-        console.error("ARISE account save",error);
-        showAccountMessage(humanAuthError(error),"danger");
-      }finally{
-        saveButton.disabled=false;
-      }
-    };
-
-    document.getElementById("changeAccountPassword").onclick=async()=>{
-      const button=document.getElementById("changeAccountPassword");
-      const password=document.getElementById("accountNewPassword").value;
-      if(password.length<6){showAccountMessage("Новый пароль должен содержать минимум 6 символов.","warning");return;}
-      button.disabled=true;
-      showAccountMessage("Меняю пароль…");
-      try{
-        await root.ARISE_SUPABASE.updatePassword(password);
-        document.getElementById("accountNewPassword").value="";
-        showAccountMessage("Пароль изменён.");
-      }catch(error){
-        console.error("ARISE password update",error);
-        showAccountMessage(humanAuthError(error),"danger");
-      }finally{
-        button.disabled=false;
-      }
-    };
-
-    document.getElementById("logoutAccount").onclick=async()=>{
-      const button=document.getElementById("logoutAccount");
-      button.disabled=true;
-      showAccountMessage("Выхожу…");
-      try{
-        await root.ARISE_SUPABASE.signOut();
-      }catch(error){
-        console.error("ARISE remote sign out",error);
-      }finally{
-        if(root.ARISE_LOCAL_ACCOUNTS) root.ARISE_LOCAL_ACCOUNTS.deactivate();
-        state.account.registered=false;
-        delete state.account.password;
-        saveState();
-        renderAuth();
-      }
-    };
-  }
-
-  if(typeof originalRenderSettings==="function"){
-    root.renderSettings=function(){
-      originalRenderSettings();
-      augmentAccountSettings();
-    };
-  }
-
   root.renderAuth=function(){
     const container=document.getElementById("root");
     container.innerHTML=`
@@ -228,5 +115,5 @@
     bindAuth();
   };
 
-  root.ARISE_AUTH_UI={finishAuthenticatedSession,humanAuthError,augmentAccountSettings};
+  root.ARISE_AUTH_UI={finishAuthenticatedSession,humanAuthError};
 })(typeof globalThis!=="undefined"?globalThis:window);
