@@ -31,7 +31,9 @@ jobs:
           node --check arise-v3.js
           node --check supabase-public-config.js
           node --check supabase-client.js
+          node --check local-account-store.js
           node --check auth-ui.js
+          node --check account-settings.js
           node --check financial-bootstrap.js
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
