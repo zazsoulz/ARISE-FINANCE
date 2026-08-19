@@ -41,6 +41,23 @@
     });
   }
 
+  function guardFundedGoalDeletion(){
+    const profile=activeProfile();
+    document.querySelectorAll("[data-goal-delete]").forEach(button=>{
+      const goalId=button.dataset.goalDelete;
+      const goal=(profile.goals||[]).find(item=>String(item.id)===String(goalId));
+      if(!goal) return;
+      const balance=core.goalBalance(profile,goal);
+      if(balance<=0) return;
+      button.onclick=event=>{
+        event.preventDefault();
+        event.stopPropagation();
+        toast(`В цели «${goal.name||"Без названия"}» есть ${money(balance)}. Сначала нужно выбрать, куда перевести эти деньги.`);
+      };
+      button.title="Нельзя удалить цель с деньгами без перевода баланса";
+    });
+  }
+
   function relabelSystemUnallocated(){
     const page=document.getElementById("page");
     if(!page) return;
@@ -102,6 +119,12 @@
   root.renderExpenses=function(){
     originalRenderExpenses();
     relabelSystemUnallocated();
+  };
+
+  const originalRenderGoals=root.renderGoals;
+  root.renderGoals=function(){
+    originalRenderGoals();
+    guardFundedGoalDeletion();
   };
 
   const originalRenderHistory=root.renderHistory;
@@ -177,6 +200,7 @@
 
   root.ARISE_PRODUCT_RULES={
     addCategoryDeleteControls,
+    guardFundedGoalDeletion,
     currentUnallocatedMoney:root.currentUnallocatedMoney
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
