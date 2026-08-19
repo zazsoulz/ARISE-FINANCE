@@ -26,14 +26,26 @@ test('unallocated expense is fully controlled when balance covers it',()=>{
   );
 });
 
-test('explicit category remains a typed funding source',()=>{
+test('explicit category uses only its real controlled balance',()=>{
   assert.deepEqual(
-    reconciliation.reconcileExpense({amount:8500,categoryId:'food',availableUnallocated:50000}),
+    reconciliation.reconcileExpense({amount:8500,categoryId:'food',availableCategory:10000,availableUnallocated:50000}),
     {
       fundingSource:'category',
       fundingSourceId:'food',
       controlledAmount:8500,
       uncontrolledAmount:0
+    }
+  );
+});
+
+test('category overspend becomes uncontrolled instead of invented category money',()=>{
+  assert.deepEqual(
+    reconciliation.reconcileExpense({amount:30000,categoryId:'food',availableCategory:20000,availableUnallocated:50000}),
+    {
+      fundingSource:'category',
+      fundingSourceId:'food',
+      controlledAmount:20000,
+      uncontrolledAmount:10000
     }
   );
 });
