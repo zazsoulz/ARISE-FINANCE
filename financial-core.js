@@ -267,6 +267,7 @@
       if(tx.type==="income") balance+=nonneg(tx.reserve);
       else if(tx.type==="reserve_deposit") balance+=nonneg(tx.amount);
       else if(tx.type==="reserve_withdrawal") balance-=nonneg(tx.amount);
+      else if(tx.type==="goal_contribution"&&tx.sourceAccount==="reserve") balance-=nonneg(tx.amount);
     }
     return Math.max(0,balance);
   }
@@ -304,7 +305,9 @@
       }else if(tx.type==="goal_contribution"){
         const amount=nonneg(tx.amount);
         if(tx.goalId) goalAllocated[tx.goalId]=(goalAllocated[tx.goalId]||0)+amount;
-        if(!tx.sourceAccount||tx.sourceAccount==="free"){
+        if(tx.sourceAccount==="reserve"){
+          reserveWithdrawn+=amount;
+        }else if(!tx.sourceAccount||tx.sourceAccount==="free"){
           const available=Math.max(0,freeGenerated-freeSpent);
           const controlled=Math.min(amount,available);
           freeSpent+=controlled;
