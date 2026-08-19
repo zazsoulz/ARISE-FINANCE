@@ -11,26 +11,27 @@
   function reconcileExpense({amount,categoryId,availableUnallocated,availableCategory}){
     const total=nonneg(amount);
     const normalizedCategoryId=categoryId||null;
+    const categoryAvailable=normalizedCategoryId?nonneg(availableCategory):0;
+    const unallocatedAvailable=nonneg(availableUnallocated);
 
-    if(normalizedCategoryId){
-      const available=nonneg(availableCategory);
-      const controlledAmount=Math.min(total,available);
-      return {
-        fundingSource:"category",
-        fundingSourceId:normalizedCategoryId,
-        controlledAmount,
-        uncontrolledAmount:Math.max(0,total-controlledAmount)
-      };
-    }
-
-    const available=nonneg(availableUnallocated);
-    const controlledAmount=Math.min(total,available);
+    const categoryAmount=Math.min(total,categoryAvailable);
+    const afterCategory=total-categoryAmount;
+    const unallocatedAmount=Math.min(afterCategory,unallocatedAvailable);
+    const uncontrolledAmount=Math.max(0,afterCategory-unallocatedAmount);
+    const controlledAmount=categoryAmount+unallocatedAmount;
 
     return {
-      fundingSource:"unallocated",
-      fundingSourceId:null,
+      fundingSource:normalizedCategoryId?"category":"unallocated",
+      fundingSourceId:normalizedCategoryId,
       controlledAmount,
-      uncontrolledAmount:Math.max(0,total-controlledAmount)
+      categoryControlledAmount:categoryAmount,
+      unallocatedControlledAmount:unallocatedAmount,
+      uncontrolledAmount,
+      fundingBreakdown:{
+        category:categoryAmount,
+        unallocated:unallocatedAmount,
+        uncontrolled:uncontrolledAmount
+      }
     };
   }
 
