@@ -23,22 +23,22 @@
       try{
         const auth=await remote.init();
         if(auth.available&&auth.session){
+          if(globalThis.ARISE_LOCAL_ACCOUNTS) globalThis.ARISE_LOCAL_ACCOUNTS.activate(auth.session.user.id);
           let account=null;
           try{account=await remote.loadAccount();}catch(error){console.error("ARISE account hydrate",error);}
           state.account.name=(account&&account.name)||auth.session.user.user_metadata?.name||auth.session.user.email?.split("@")[0]||state.account.name||"";
           state.account.email=auth.session.user.email||state.account.email||"";
-          state.account.avatar=(account&&account.avatar_url)||auth.session.user.user_metadata?.avatar_url||auth.session.user.user_metadata?.picture||state.account.avatar||"";
+          state.account.avatar=(account&&account.avatar_display_url)||(account&&account.avatar_url)||auth.session.user.user_metadata?.avatar_url||auth.session.user.user_metadata?.picture||state.account.avatar||"";
           state.account.notifications=account?account.notifications_enabled!==false:state.account.notifications!==false;
           state.account.registered=true;
+          delete state.account.password;
           saveState();
         }else if(auth.available){
-          // Online/SDK-ready without a real session: require real authentication.
-          // Financial profile data remains local and is not deleted.
           state.account.registered=false;
           saveState();
         }
       }catch(error){
-        // Offline or temporary Supabase failure: keep already authenticated local state usable.
+        // Offline/temporary service failure: the preloaded last authenticated vault remains usable.
         console.error("ARISE auth bootstrap",error);
       }
     }
