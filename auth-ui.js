@@ -23,11 +23,12 @@
 
   async function finishAuthenticatedSession(session){
     const remote=root.ARISE_SUPABASE;
+    if(root.ARISE_LOCAL_ACCOUNTS) root.ARISE_LOCAL_ACCOUNTS.activate(session.user.id);
     let account=null;
     try{account=await remote.loadAccount();}catch(error){console.error("ARISE account load",error);}
     state.account.name=(account&&account.name)||session.user.user_metadata?.name||session.user.email?.split("@")[0]||"";
     state.account.email=session.user.email||"";
-    state.account.avatar=(account&&account.avatar_url)||session.user.user_metadata?.avatar_url||session.user.user_metadata?.picture||"";
+    state.account.avatar=(account&&account.avatar_display_url)||(account&&account.avatar_url)||session.user.user_metadata?.avatar_url||session.user.user_metadata?.picture||"";
     state.account.notifications=account?account.notifications_enabled!==false:true;
     state.account.registered=true;
     delete state.account.password;
