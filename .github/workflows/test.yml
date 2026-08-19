@@ -22,6 +22,7 @@ jobs:
       - name: Syntax check
         run: |
           node --check financial-core.js
+          node --check expense-reconciliation.js
           node --check financial-runtime.js
           node --check financial-integration.js
           node --check reserve-analytics.js
