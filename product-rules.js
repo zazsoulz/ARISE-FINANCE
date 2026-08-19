@@ -50,6 +50,9 @@
     page.querySelectorAll(".kicker").forEach(el=>{
       if(el.textContent.trim()==="СВОБОДНЫЕ ДЕНЬГИ") el.textContent="НЕ РАСПРЕДЕЛЕНО";
     });
+    page.querySelectorAll(".sub").forEach(el=>{
+      if(el.innerHTML.includes("Свободные:")) el.innerHTML=el.innerHTML.replace(/Свободные:/g,"Не распределено:");
+    });
   }
 
   root.monthStats=function(profile,month){
@@ -122,6 +125,13 @@
     preview.innerHTML=preview.innerHTML
       .replace(/свободные деньги/gi,"нераспределённый остаток")
       .replace(/свободными/gi,"нераспределёнными");
+  };
+
+  const originalExpenseRow=root.expenseRow;
+  root.expenseRow=function(tx){
+    const html=originalExpenseRow(tx);
+    if(tx&&tx.categoryId) return html;
+    return html.replace(/Свободные деньги/g,"Нераспределено");
   };
 
   const originalRenderIncomePlan=root.renderIncomePlan;
