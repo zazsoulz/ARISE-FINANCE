@@ -5,31 +5,28 @@
   const reconciliation=root.ARISE_EXPENSE_RECONCILIATION;
 
   function expenseFunding(profile,{amount,date,categoryId}){
-    const available=core&&typeof core.availableFree==="function"
+    const stats=core&&typeof core.monthStats==="function"
+      ? core.monthStats(profile,monthKey(date))
+      : null;
+    const availableUnallocated=core&&typeof core.availableFree==="function"
       ? Math.max(0,integer(core.availableFree(profile,date)))
+      : 0;
+    const availableCategory=categoryId&&stats&&stats.categoryBalances
+      ? Math.max(0,integer(stats.categoryBalances[categoryId]||0))
       : 0;
 
     if(reconciliation&&typeof reconciliation.reconcileExpense==="function"){
-      return reconciliation.reconcileExpense({amount,categoryId,availableUnallocated:available});
+      return reconciliation.reconcileExpense({amount,categoryId,availableUnallocated,availableCategory});
     }
 
     const total=Math.max(0,integer(amount));
     const normalizedCategoryId=categoryId||null;
-
-    if(normalizedCategoryId){
-      return {
-        fundingSource:"category",
-        fundingSourceId:normalizedCategoryId,
-        controlledAmount:total,
-        uncontrolledAmount:0
-      };
-    }
-
+    const available=normalizedCategoryId?availableCategory:availableUnallocated;
     const controlledAmount=Math.min(total,available);
 
     return {
-      fundingSource:"unallocated",
-      fundingSourceId:null,
+      fundingSource:normalizedCategoryId?"category":"unallocated",
+      fundingSourceId:normalizedCategoryId,
       controlledAmount,
       uncontrolledAmount:Math.max(0,total-controlledAmount)
     };
