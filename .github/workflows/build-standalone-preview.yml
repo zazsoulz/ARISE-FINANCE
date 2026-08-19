@@ -1,0 +1,39 @@
+name: Build standalone ARISE preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app-shell.html
+      - financial-core.js
+      - financial-integration.js
+      - .github/workflows/build-standalone-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build standalone HTML
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          shell = Path('app-shell.html').read_text(encoding='utf-8')
+          core = Path('financial-core.js').read_text(encoding='utf-8')
+          integration = Path('financial-integration.js').read_text(encoding='utf-8')
+          scripts = f'\n<script>\n{core}\n</script>\n<script>\n{integration}\n</script>\n'
+          if '</body>' in shell:
+              out = shell.replace('</body>', scripts + '</body>', 1)
+          else:
+              out = shell + scripts
+          Path('ARISE-current-standalone.html').write_text(out, encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ARISE-current-standalone
+          path: ARISE-current-standalone.html
+          if-no-files-found: error
