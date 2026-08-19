@@ -2,8 +2,17 @@
   "use strict";
 
   const core=root.ARISE_FINANCE_CORE;
+  const reconciliation=root.ARISE_EXPENSE_RECONCILIATION;
 
   function expenseFunding(profile,{amount,date,categoryId}){
+    const available=core&&typeof core.availableFree==="function"
+      ? Math.max(0,integer(core.availableFree(profile,date)))
+      : 0;
+
+    if(reconciliation&&typeof reconciliation.reconcileExpense==="function"){
+      return reconciliation.reconcileExpense({amount,categoryId,availableUnallocated:available});
+    }
+
     const total=Math.max(0,integer(amount));
     const normalizedCategoryId=categoryId||null;
 
@@ -16,9 +25,6 @@
       };
     }
 
-    const available=core&&typeof core.availableFree==="function"
-      ? Math.max(0,integer(core.availableFree(profile,date)))
-      : 0;
     const controlledAmount=Math.min(total,available);
 
     return {
