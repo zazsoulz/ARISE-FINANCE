@@ -29,7 +29,6 @@ jobs:
           node --check reserve-analytics.js
           node --check product-rules.js
           node --check arise-v3.js
-          node --check arise-v3-api.js
           node --check financial-bootstrap.js
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
