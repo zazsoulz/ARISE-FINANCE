@@ -1,0 +1,116 @@
+(function(root){
+  "use strict";
+
+  const analytics=root.ARISE_ANALYTICS;
+  const core=root.ARISE_FINANCE_CORE;
+  if(!analytics||!core)return;
+
+  const oldRenderNav=root.renderNav;
+  const safe=v=>Math.max(0,Number(v)||0);
+  const pct=(v,total)=>total>0?Math.round(safe(v)/safe(total)*100):0;
+  const fmtPct=value=>value==null?"—":`${Math.abs(value).toLocaleString("ru-RU",{maximumFractionDigits:0})}%`;
+  let selectedAnalyticsMonth=null;
+
+  function monthLabel(key){try{return formatMonth(key);}catch(_){return key;}}
+  function deltaBadge(item,{inverse=false}={}){
+    if(!item)return "";
+    const value=Number(item.difference)||0;
+    if(value===0)return `<span class="analytics-delta neutral">без изменений</span>`;
+    const positive=inverse?value<0:value>0;
+    return `<span class="analytics-delta ${positive?"up":"down"}">${value>0?"↑":"↓"} ${fmtPct(item.percent)} к прошлому месяцу</span>`;
+  }
+  function path(values,width=720,height=200,pad=20,maxScale=null){
+    if(!values.length)return "";
+    const max=Math.max(1,maxScale==null?Math.max(...values.map(safe)):safe(maxScale));
+    const points=values.map((value,index)=>{
+      const x=values.length===1?width/2:pad+index*((width-pad*2)/(values.length-1));
+      const y=height-pad-(safe(value)/max)*(height-pad*2);
+      return [x,y];
+    });
+    return points.map((p,index)=>`${index?"L":"M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
+  }
+  function dots(values,klass,width=720,height=200,pad=20,maxScale=null){
+    if(!values.length)return "";
+    const max=Math.max(1,maxScale==null?Math.max(...values.map(safe)):safe(maxScale));
+    return values.map((value,index)=>{
+      const x=values.length===1?width/2:pad+index*((width-pad*2)/(values.length-1));
+      const y=height-pad-(safe(value)/max)*(height-pad*2);
+      return `<circle class="${klass}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.6"><title>${money(value)}</title></circle>`;
+    }).join("");
+  }
+  function averageExpenseRunway(profile){
+    const rows=analytics.series(profile,4).filter(row=>row.expenses>0);
+    if(!rows.length)return {monthly:0,months:null};
+    const chosen=rows.slice(-3);
+    const monthly=chosen.reduce((sum,row)=>sum+row.expenses,0)/chosen.length;
+    const balance=core.reserveBalance(profile);
+    return {monthly,months:monthly>0?balance/monthly:null};
+  }
+  function goalRows(profile){
+    const rows=analytics.goals(profile,new Date()).filter(goal=>goal.status!=="completed").slice(0,5);
+    if(!rows.length)return `<div class="analytics-empty">Активных целей пока нет.</div>`;
+    return rows.map(goal=>{
+      const progress=goal.target>0?Math.min(100,Math.round(goal.balance/goal.target*100)):0;
+      const projection=goal.projection||{};
+      const forecast=projection.remaining<=0?"достигнута":Number.isFinite(projection.months)?`≈ ${projection.months} мес. до цели`:"нужен темп пополнения";
+      return `<div class="analytics-goal"><div class="analytics-goal-ring" style="--p:${progress}"><span>${progress}%</span></div><div><strong>${escapeHTML(goal.name||"Цель")}</strong><small>${goal.deadline?`до ${formatDate(goal.deadline)} · `:""}${escapeHTML(forecast)}</small></div><b>${money(goal.balance)}</b></div>`;
+    }).join("");
+  }
+  function sourceRows(profile,month){
+    const rows=analytics.incomeSources(profile,{month});
+    if(!rows.length)return `<div class="analytics-empty">В этом месяце ещё нет доходов.</div>`;
+    return `<div class="analytics-source">${rows.slice(0,6).map(row=>`<div class="analytics-source-row"><strong>${escapeHTML(row.name)}</strong><div class="analytics-source-track"><div class="analytics-source-fill" style="width:${Math.max(3,row.share*100).toFixed(1)}%"></div></div><em>${money(row.value)} · ${Math.round(row.share*100)}%</em></div>`).join("")}</div>`;
+  }
+
+  root.renderNav=function(){
+    const base=typeof oldRenderNav==="function"?oldRenderNav():"";
+    if(base&&base.includes('data-page="analytics"'))return base;
+    const items=[["home","Главная"],["income","Распределение"],["goals","Цели"],["history","История"],["analytics","Аналитика"]];
+    return `<nav class="nav" aria-label="Основная навигация">${items.map(([id,label])=>`<button class="${activePage===id?"active":""}" data-page="${id}">${label}</button>`).join("")}</nav>`;
+  };
+
+  root.renderAnalytics=function(){
+    const profile=activeProfile();
+    const months=analytics.months(profile);
+    if(!selectedAnalyticsMonth||!months.includes(selectedAnalyticsMonth)){
+      selectedAnalyticsMonth=months.includes(activeMonth)?activeMonth:(months[months.length-1]||activeMonth);
+    }
+    const currentMonth=selectedAnalyticsMonth;
+    const currentIndex=months.indexOf(currentMonth);
+    const previousMonth=currentIndex>0?months[currentIndex-1]:null;
+    const current=analytics.monthly(profile,currentMonth);
+    const comparison=previousMonth?analytics.compare(profile,currentMonth,previousMonth):null;
+    const series=analytics.series(profile,999).filter(row=>row.month<=currentMonth).slice(-6);
+    const incomes=series.map(row=>row.income),expenses=series.map(row=>row.expenses);
+    const pulseMax=Math.max(1,...incomes.map(safe),...expenses.map(safe));
+    const runway=averageExpenseRunway(profile);
+    const reserveBalance=core.reserveBalance(profile);
+    const reserveTarget=safe(profile.settings&&profile.settings.reserve&&profile.settings.reserve.target);
+    const reserveProgress=reserveTarget>0?Math.min(100,Math.round(reserveBalance/reserveTarget*100)):0;
+    const page=document.getElementById("page");
+    page.className="arise-v3-secondary";
+    page.innerHTML=`<main class="arise-analytics">
+      <header class="analytics-head"><div><div class="v3-eyebrow">Финансовая аналитика</div><h1>${money(current.income)}</h1><p>Доход за ${escapeHTML(monthLabel(currentMonth))} · все показатели рассчитаны из реальных операций</p></div><select class="analytics-month-select" id="analyticsMonth">${(months.length?months:[activeMonth]).slice().reverse().map(key=>`<option value="${key}" ${key===currentMonth?"selected":""}>${escapeHTML(monthLabel(key))}</option>`).join("")}</select></header>
+      <div class="analytics-grid">
+        <section class="analytics-card third"><div class="analytics-label">Доход</div><div class="analytics-value">${money(current.income)}</div>${comparison?deltaBadge(comparison.income):`<span class="analytics-delta neutral">первый месяц данных</span>`}</section>
+        <section class="analytics-card third"><div class="analytics-label">Расходы</div><div class="analytics-value">${money(current.expenses)}</div>${comparison?deltaBadge(comparison.expenses,{inverse:true}):`<span class="analytics-delta neutral">первый месяц данных</span>`}</section>
+        <section class="analytics-card third"><div class="analytics-label">Не распределено</div><div class="analytics-value">${money(current.freeEnd)}</div>${comparison?deltaBadge(comparison.free):`<span class="analytics-delta neutral">остаток месяца</span>`}</section>
+
+        <section class="analytics-card"><div class="analytics-section-title"><div><div class="analytics-label">Financial pulse</div><h2>Доход и расходы по месяцам</h2></div><span>${series.length} мес.</span></div>
+          <div class="analytics-pulse"><svg viewBox="0 0 720 200" preserveAspectRatio="none" role="img" aria-label="Динамика доходов и расходов"><line class="gridline" x1="20" y1="50" x2="700" y2="50"/><line class="gridline" x1="20" y1="100" x2="700" y2="100"/><line class="gridline" x1="20" y1="150" x2="700" y2="150"/><path class="income" d="${path(incomes,720,200,20,pulseMax)}"/><path class="expense" d="${path(expenses,720,200,20,pulseMax)}"/>${dots(incomes,"point-income",720,200,20,pulseMax)}${dots(expenses,"point-expense",720,200,20,pulseMax)}</svg></div>
+          <div class="analytics-month-labels" style="--months:${Math.max(1,series.length)}">${series.map(row=>`<span>${escapeHTML(monthLabel(row.month).slice(0,3))}</span>`).join("")}</div><div class="pulse-legend"><span>Доход</span><span>Расходы</span></div>
+        </section>
+
+        <section class="analytics-card half"><div class="analytics-section-title"><div><div class="analytics-label">Источники</div><h2>Откуда пришли деньги</h2></div><span>${current.incomeCount} поступл.</span></div>${sourceRows(profile,currentMonth)}</section>
+        <section class="analytics-card half"><div class="analytics-section-title"><div><div class="analytics-label">Контроль</div><h2>Расходы вне плана</h2></div><span>${pct(current.uncontrolled,current.expenses)}%</span></div><div class="analytics-value ${current.uncontrolled>0?"negative":"positive"}">${money(current.uncontrolled)}</div>${current.uncontrolled>0?`<div class="analytics-alert">Эта сумма не была покрыта категориями или нераспределённым остатком. ARISE не скрывает её внутри обычных расходов.</div>`:`<div class="analytics-note">Все расходы месяца объяснены текущей финансовой моделью.</div>`}</section>
+
+        <section class="analytics-card half"><div class="analytics-section-title"><div><div class="analytics-label">Цели</div><h2>Темп накопления</h2></div><span>${(profile.goals||[]).filter(g=>g.status!=="completed").length} актив.</span></div>${goalRows(profile)}</section>
+        <section class="analytics-card half"><div class="analytics-section-title"><div><div class="analytics-label">Резерв</div><h2>Финансовая защита</h2></div><span>${reserveTarget?`${reserveProgress}% цели`:"без цели"}</span></div><div class="analytics-reserve-orbit" style="--p:${reserveTarget?reserveProgress:Math.min(100,runway.months?runway.months/6*100:0)}"><div class="analytics-reserve-center"><strong>${money(reserveBalance)}</strong><span>${runway.months==null?"нужны данные о расходах":`≈ ${runway.months.toLocaleString("ru-RU",{maximumFractionDigits:1})} мес. жизни`}</span></div></div><div class="analytics-note">${runway.monthly?`Оценка основана на среднем расходе ${money(runway.monthly)}/мес. за последние месяцы с расходами.`:"После появления истории расходов ARISE рассчитает, на сколько хватит подушки без новых доходов."}</div></section>
+      </div>
+    </main>`;
+    const select=document.getElementById("analyticsMonth");
+    if(select)select.onchange=()=>{selectedAnalyticsMonth=select.value;root.renderAnalytics();};
+  };
+
+  root.ARISE_ANALYTICS_UI={deltaBadge,path,dots,averageExpenseRunway,getSelectedMonth:()=>selectedAnalyticsMonth};
+})(typeof globalThis!=="undefined"?globalThis:window);

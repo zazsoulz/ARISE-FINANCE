@@ -33,11 +33,12 @@ test('shell boundaries required by the loader still exist',()=>{
   assert.ok(init>ui,'initialization marker must follow UI');
 });
 
-test('loader wires financial, product, sync and A1-V3 layers in safe order',()=>{
+test('loader wires financial, analytics, product, sync and A1-V3 layers in safe order',()=>{
   const core=index.indexOf('./financial-core.js');
   const runtime=index.indexOf('./financial-runtime.js');
   const integration=index.indexOf('./financial-integration.js');
   const reserveAnalytics=index.indexOf('./reserve-analytics.js');
+  const analytics=index.indexOf('./analytics-engine.js');
   const productRules=index.indexOf('./product-rules.js');
   const v3=index.indexOf('./arise-v3.js');
   const supabase=index.indexOf('./supabase-client.js');
@@ -49,7 +50,8 @@ test('loader wires financial, product, sync and A1-V3 layers in safe order',()=>
   assert.ok(runtime>core);
   assert.ok(integration>runtime);
   assert.ok(reserveAnalytics>integration);
-  assert.ok(productRules>reserveAnalytics);
+  assert.ok(analytics>reserveAnalytics,'analytics must consume financial/reserve core only');
+  assert.ok(productRules>analytics);
   assert.ok(v3>productRules);
   assert.ok(supabase>v3);
   assert.ok(outbox>supabase);
@@ -66,7 +68,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','arise-v3.css','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });

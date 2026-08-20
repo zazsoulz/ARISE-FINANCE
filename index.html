@@ -21,17 +21,13 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
     const financialMarker=`/* =========================================================\n   FINANCIAL ENGINE\n========================================================= */`;
     const uiMarker=`/* =========================================================\n   UI\n========================================================= */`;
     const initMarker=`/* =========================================================\n   INITIALIZATION\n========================================================= */`;
-    const financialStart=html.indexOf(financialMarker);
-    const uiStart=html.indexOf(uiMarker);
+    const financialStart=html.indexOf(financialMarker),uiStart=html.indexOf(uiMarker);
     if(financialStart<0||uiStart<0||uiStart<=financialStart)throw new Error("ARISE shell financial boundary not found.");
     html=html.slice(0,financialStart)+`/* Financial state and calculations are provided by the external ARISE runtime. */\n\n`+html.slice(uiStart);
-    const scriptCloseTag="</scr"+"ipt>";
-    const initStart=html.indexOf(initMarker);
-    const scriptEnd=html.lastIndexOf(scriptCloseTag);
+    const scriptCloseTag="</scr"+"ipt>",initStart=html.indexOf(initMarker),scriptEnd=html.lastIndexOf(scriptCloseTag);
     if(initStart<0||scriptEnd<0||scriptEnd<=initStart)throw new Error("ARISE shell initialization boundary not found.");
     html=html.slice(0,initStart)+`/* Initialization is deferred until the financial runtime is loaded. */\n\n`+html.slice(scriptEnd);
-    const scriptOpen="<scr"+"ipt";
-    const scriptClose=scriptCloseTag;
+    const scriptOpen="<scr"+"ipt",scriptClose=scriptCloseTag;
     const runtime=
       scriptOpen+" src=\"./currency-engine.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-core.js\">"+scriptClose+
@@ -40,8 +36,11 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"./financial-integration.js\">"+scriptClose+
       scriptOpen+" src=\"./canonical-ui-overrides.js\">"+scriptClose+
       scriptOpen+" src=\"./reserve-analytics.js\">"+scriptClose+
+      scriptOpen+" src=\"./analytics-engine.js\">"+scriptClose+
       scriptOpen+" src=\"./product-rules.js\">"+scriptClose+
       scriptOpen+" src=\"./arise-v3.js\">"+scriptClose+
+      scriptOpen+" src=\"./analytics-ui.js\">"+scriptClose+
+      scriptOpen+" src=\"./analytics-expense-ui.js\">"+scriptClose+
       scriptOpen+" src=\"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2\">"+scriptClose+
       scriptOpen+" src=\"./supabase-public-config.js\">"+scriptClose+
       scriptOpen+" src=\"./supabase-client.js\">"+scriptClose+
@@ -58,8 +57,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"./account-settings.js\">"+scriptClose+
       scriptOpen+" src=\"./profile-lifecycle.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-bootstrap.js\">"+scriptClose;
-    const bootHide='<style id="arise-boot-hide">html{visibility:hidden}</style>';
-    const themeLinks='<link rel="stylesheet" href="./arise-v3.css"><link rel="stylesheet" href="./arise-v3-state.css">';
+    const bootHide='<style id="arise-boot-hide">html{visibility:hidden}</style>',themeLinks='<link rel="stylesheet" href="./arise-v3.css"><link rel="stylesheet" href="./arise-v3-state.css"><link rel="stylesheet" href="./analytics-ui.css">';
     if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,themeLinks+bootHide+"</head>");else html=themeLinks+bootHide+html;
     if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,runtime+"</body>");else html+=runtime;
     document.open();document.write(html);document.close();
