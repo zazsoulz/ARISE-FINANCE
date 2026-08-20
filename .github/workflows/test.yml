@@ -32,6 +32,7 @@ jobs:
           node --check supabase-public-config.js
           node --check supabase-client.js
           node --check sync-outbox.js
+          node --check indexeddb-store.js
           node --check local-account-store.js
           node --check sync-engine.js
           node --check sync-entity-outbox.js
