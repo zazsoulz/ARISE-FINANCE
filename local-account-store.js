@@ -129,7 +129,6 @@
 
     if(!root.ARISE_SYNC_SILENT){
       const previous=read(key);
-      // All new mutations use the persistent outbox. Legacy tombstone helpers remain only for old vault migration/tests.
       recordMutationOutbox(previous,state);
     }
 
@@ -139,6 +138,13 @@
     if(!root.ARISE_SYNC_SILENT&&root.dispatchEvent){
       root.dispatchEvent(new CustomEvent("arise:local-change",{detail:{accountId:activeAccountId,at:new Date().toISOString()}}));
     }
+  }
+
+  function writeSilently(){
+    const previousSilent=root.ARISE_SYNC_SILENT;
+    root.ARISE_SYNC_SILENT=true;
+    try{write();}
+    finally{root.ARISE_SYNC_SILENT=previousSilent;}
   }
 
   root.saveState=write;
@@ -162,7 +168,10 @@
     }else{
       state=sanitize(defaultState());
     }
-    write();
+
+    // The first local vault snapshot is a baseline, not a user mutation.
+    // Persist it silently so server pull can attach canonical remote IDs before outbox seeding.
+    writeSilently();
     return state;
   }
 
@@ -171,7 +180,7 @@
     localStorage.removeItem(LAST_ACCOUNT_KEY);
     state=sanitize(defaultState());
     state.account.registered=false;
-    write();
+    writeSilently();
     return state;
   }
 
@@ -191,6 +200,6 @@
   preloadLastAccount();
   root.ARISE_LOCAL_ACCOUNTS={
     activate,deactivate,currentAccountId,accountKey,hasVault,restoreFromIndexedDb,
-    recordCategoryDeletions,recordGoalDeletions,recordMutationOutbox,mirrorIndexedDb
+    recordCategoryDeletions,recordGoalDeletions,recordMutationOutbox,mirrorIndexedDb,writeSilently
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
