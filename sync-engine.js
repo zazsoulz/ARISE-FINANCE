@@ -37,19 +37,27 @@
     if(error)throw error;id=data.id;mark(localProfile,id);return id;
   }
 
-  async function applyCategoryTombstones(profile,profileId){
+  async function applyEntityTombstones(profile,profileId,{metaKey,table}){
     const c=client();
     const meta=ensureMeta(profile);
-    const ids=[...new Set((meta.deletedCategoryIds||[]).filter(Boolean))];
+    const ids=[...new Set((meta[metaKey]||[]).filter(Boolean))];
     if(!ids.length) return 0;
 
     for(const id of ids){
-      const {error}=await c.from("finance_categories").delete().eq("id",id).eq("profile_id",profileId);
+      const {error}=await c.from(table).delete().eq("id",id).eq("profile_id",profileId);
       if(error) throw error;
     }
 
-    meta.deletedCategoryIds=[];
+    meta[metaKey]=[];
     return ids.length;
+  }
+
+  function applyCategoryTombstones(profile,profileId){
+    return applyEntityTombstones(profile,profileId,{metaKey:"deletedCategoryIds",table:"finance_categories"});
+  }
+
+  function applyGoalTombstones(profile,profileId){
+    return applyEntityTombstones(profile,profileId,{metaKey:"deletedGoalIds",table:"finance_goals"});
   }
 
   async function syncCategories(profile,profileId,user){
@@ -75,6 +83,7 @@
 
   async function syncGoals(profile,profileId,user){
     const c=client();let count=0;
+    await applyGoalTombstones(profile,profileId);
     for(const goal of profile.goals||[]){
       const payload={profile_id:profileId,user_id:user.id,name:String(goal.name||"Цель"),target_amount:Math.max(0,Number(goal.target)||0),ledger_start:Math.max(0,Number(goal.ledgerStart==null?goal.current:goal.ledgerStart)||0),currency:currency(profile,goal.currency),priority:Math.max(1,Math.min(5,Math.round(Number(goal.priority)||3))),deadline:goal.deadline||null,monthly_contribution:Math.max(0,Number(goal.monthlyContribution)||0),auto_allocate:goal.autoAllocate!==false,status:goal.status==="completed"?"completed":goal.status==="archived"?"archived":"active",note:String(goal.note||""),completed_at:goal.completedAt||null};
       const id=remoteId(goal);let data,error;
@@ -147,5 +156,5 @@
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
