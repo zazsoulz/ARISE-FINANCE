@@ -30,10 +30,19 @@ test('sync pull delegates remote/local choice to canonical conflict policy',()=>
   assert.equal(ctx.ARISE_SYNC_PULL.shouldUseRemote('2026-08-19T23:59:59.000Z',local),false);
 });
 
-test('dirty local entity always wins a pull conflict',()=>{
+test('concurrent remote edit does not overwrite dirty local and leaves a conflict marker',()=>{
   const ctx=boot();
   const local={ariseSync:{dirty:true,changedAt:'2026-08-19T23:00:00.000Z',syncedAt:'2026-08-19T22:00:00.000Z'}};
   assert.equal(ctx.ARISE_SYNC_PULL.shouldUseRemote('2026-08-20T02:00:00.000Z',local),false);
+  assert.equal(local.ariseSync.conflict.reason,'concurrent_remote_change');
+  assert.equal(local.ariseSync.conflict.remoteUpdatedAt,'2026-08-20T02:00:00.000Z');
+});
+
+test('dirty local stays local when server has not changed since the baseline',()=>{
+  const ctx=boot();
+  const local={ariseSync:{dirty:true,changedAt:'2026-08-20T01:00:00.000Z',syncedAt:'2026-08-20T00:00:00.000Z'}};
+  assert.equal(ctx.ARISE_SYNC_PULL.shouldUseRemote('2026-08-20T00:00:00.000Z',local),false);
+  assert.equal(local.ariseSync.conflict,undefined);
 });
 
 test('remote wins when a clean local entity has no prior sync timestamp',()=>{
