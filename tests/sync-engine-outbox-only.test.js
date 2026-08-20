@@ -20,8 +20,8 @@ test('legacy category and goal tombstones migrate into the unified outbox before
   assert.ok(source.includes('const legacyCategoryDeletes=applyCategoryTombstones(profile)'));
   assert.ok(source.includes('const legacyGoalDeletes=applyGoalTombstones(profile)'));
   assert.ok(source.includes('migrateEntityTombstones'));
-  assert.ok(source.includes('entityRemoteId:remoteIdValue'));
-  assert.ok(source.includes('action:"delete"'));
+  assert.match(source,/outbox\.enqueue\(profile,\{entity,entityLocalId:null,entityRemoteId:[a-zA-Z_$][\w$]*,action:"delete"\}\)/);
   assert.equal(source.includes('c.from(table).delete()'),false);
-  assert.ok(source.includes('legacyMigrated:legacyCategoryDeletes+legacyGoalDeletes'));
+  assert.equal(source.includes('legacyMigrated:'),false);
+  assert.ok(source.includes('legacyDeletes:legacyCategoryDeletes+legacyGoalDeletes'));
 });
