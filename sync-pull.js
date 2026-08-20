@@ -8,8 +8,16 @@
   function session(){return api()&&api().currentSession?api().currentSession():null;}
   function rid(entity){return entity&&entity[META_KEY]&&entity[META_KEY].remoteId||null;}
   function meta(remoteId,syncedAt){return {remoteId,syncedAt:syncedAt||new Date().toISOString(),dirty:false};}
-  function remoteNewer(remoteUpdated,localEntity){
+  function shouldUseRemote(remoteUpdated,localEntity){
     const localMeta=localEntity&&localEntity[META_KEY]||{};
+    const policy=root.ARISE_SYNC_CONFLICTS;
+    if(policy&&typeof policy.resolve==="function"){
+      return policy.resolve({
+        localMeta,
+        remoteUpdatedAt:remoteUpdated,
+        localChangedAt:localMeta.changedAt
+      }).winner==="remote";
+    }
     if(localMeta.dirty) return false;
     if(!localMeta.syncedAt) return false;
     return new Date(remoteUpdated||0).getTime()>new Date(localMeta.syncedAt||0).getTime();
@@ -97,7 +105,7 @@
     const remoteCategories=[];
     for(const remoteRow of bundle.categories){
       const existing=existingCategories.get(remoteRow.id);
-      if(existing&&!remoteNewer(remoteRow.updated_at,existing)){remoteCategories.push(existing);continue;}
+      if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){remoteCategories.push(existing);continue;}
       const next=localCategoryFrom(remoteRow);
       if(existing) next.id=existing.id;
       remoteCategories.push(next);
@@ -112,7 +120,7 @@
     const remoteGoals=[];
     for(const remoteRow of bundle.goals){
       const existing=existingGoals.get(remoteRow.id);
-      if(existing&&!remoteNewer(remoteRow.updated_at,existing)){remoteGoals.push(existing);continue;}
+      if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){remoteGoals.push(existing);continue;}
       const next=localGoalFrom(remoteRow);
       if(existing) next.id=existing.id;
       remoteGoals.push(next);
@@ -176,5 +184,5 @@
     return {status:"pulled",imported};
   }
 
-  root.ARISE_SYNC_PULL={pullAll};
+  root.ARISE_SYNC_PULL={pullAll,shouldUseRemote};
 })(typeof globalThis!=="undefined"?globalThis:window);
