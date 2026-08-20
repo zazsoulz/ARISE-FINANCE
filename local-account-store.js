@@ -31,6 +31,24 @@
     return !!read(accountKey(String(accountId)));
   }
 
+  async function restoreFromIndexedDb(accountId){
+    if(!accountId||hasVault(accountId)) return false;
+    const idb=root.ARISE_INDEXED_DB;
+    if(!idb||!idb.loadState) return false;
+    try{
+      const restored=await idb.loadState(String(accountId));
+      if(!restored||!Array.isArray(restored.profiles)||!restored.profiles.length) return false;
+      activeAccountId=String(accountId);
+      state=sanitize(restored);
+      localStorage.setItem(LAST_ACCOUNT_KEY,activeAccountId);
+      localStorage.setItem(accountKey(activeAccountId),JSON.stringify(state));
+      return true;
+    }catch(error){
+      console.error("ARISE IndexedDB restore",error);
+      return false;
+    }
+  }
+
   function remoteId(entity){
     return entity&&entity.ariseSync&&entity.ariseSync.remoteId||null;
   }
@@ -174,7 +192,7 @@
 
   preloadLastAccount();
   root.ARISE_LOCAL_ACCOUNTS={
-    activate,deactivate,currentAccountId,accountKey,hasVault,
+    activate,deactivate,currentAccountId,accountKey,hasVault,restoreFromIndexedDb,
     recordCategoryDeletions,recordGoalDeletions,recordMutationOutbox,mirrorIndexedDb
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
