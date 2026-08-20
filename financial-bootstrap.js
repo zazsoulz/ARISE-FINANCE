@@ -23,7 +23,12 @@
       try{
         const auth=await remote.init();
         if(auth.available&&auth.session){
-          if(globalThis.ARISE_LOCAL_ACCOUNTS) globalThis.ARISE_LOCAL_ACCOUNTS.activate(auth.session.user.id);
+          const localAccounts=globalThis.ARISE_LOCAL_ACCOUNTS;
+          if(localAccounts){
+            if(localAccounts.restoreFromIndexedDb) await localAccounts.restoreFromIndexedDb(auth.session.user.id);
+            localAccounts.activate(auth.session.user.id);
+          }
+
           let account=null;
           try{account=await remote.loadAccount();}catch(error){console.error("ARISE account hydrate",error);}
           state.account.name=(account&&account.name)||auth.session.user.user_metadata?.name||auth.session.user.email?.split("@")[0]||state.account.name||"";
@@ -41,6 +46,7 @@
           globalThis.ARISE_SYNC_SILENT=true;
           try{saveState();}finally{globalThis.ARISE_SYNC_SILENT=false;}
           if(globalThis.ARISE_SYNC) globalThis.ARISE_SYNC.schedule();
+          if(globalThis.ARISE_ENTITY_OUTBOX) globalThis.ARISE_ENTITY_OUTBOX.schedule();
         }else if(auth.available){
           state.account.registered=false;
           saveState();
