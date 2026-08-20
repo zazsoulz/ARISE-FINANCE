@@ -88,7 +88,9 @@
     panel.querySelectorAll("[data-expense-source-option]").forEach(button=>{
       button.onclick=()=>{
         select.value=button.dataset.expenseSourceOption||"";
-        select.dispatchEvent(new Event("change",{bubbles:true}));
+        const EventCtor=select.ownerDocument&&select.ownerDocument.defaultView&&select.ownerDocument.defaultView.Event;
+        if(EventCtor)select.dispatchEvent(new EventCtor("change",{bubbles:true}));
+        else if(typeof select.onchange==="function")select.onchange({target:select});
       };
     });
   }
