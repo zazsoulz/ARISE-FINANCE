@@ -108,5 +108,5 @@ test('sync engine contains no direct category/goal tombstone delete write path',
   const source=fs.readFileSync('sync-engine.js','utf8');
   assert.equal(source.includes('from(table).delete()'),false);
   assert.match(source,/migrateEntityTombstones/);
-  assert.match(source,/entityRemoteId:remoteIdValue/);
+  assert.match(source,/outbox\.enqueue\(profile,\{entity,entityLocalId:null,entityRemoteId:[a-zA-Z_$][\w$]*,action:"delete"\}\)/);
 });
