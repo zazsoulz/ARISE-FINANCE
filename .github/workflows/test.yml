@@ -57,6 +57,7 @@ jobs:
           node --check sync-entity-outbox.js
           node --check sync-conflict-policy.js
           node --check sync-pull.js
+          node --check transaction-transfer-metadata.js
           node --check sync-conflict-hardening.js
           node --check auth-ui.js
           node --check account-settings.js
