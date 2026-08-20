@@ -19,9 +19,9 @@
     const positive=inverse?value<0:value>0;
     return `<span class="analytics-delta ${positive?"up":"down"}">${value>0?"↑":"↓"} ${fmtPct(item.percent)} к прошлому месяцу</span>`;
   }
-  function path(values,width=720,height=200,pad=20){
+  function path(values,width=720,height=200,pad=20,maxScale=null){
     if(!values.length)return "";
-    const max=Math.max(1,...values.map(safe));
+    const max=Math.max(1,maxScale==null?Math.max(...values.map(safe)):safe(maxScale));
     const points=values.map((value,index)=>{
       const x=values.length===1?width/2:pad+index*((width-pad*2)/(values.length-1));
       const y=height-pad-(safe(value)/max)*(height-pad*2);
@@ -29,9 +29,9 @@
     });
     return points.map((p,index)=>`${index?"L":"M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
   }
-  function dots(values,klass,width=720,height=200,pad=20){
+  function dots(values,klass,width=720,height=200,pad=20,maxScale=null){
     if(!values.length)return "";
-    const max=Math.max(1,...values.map(safe));
+    const max=Math.max(1,maxScale==null?Math.max(...values.map(safe)):safe(maxScale));
     return values.map((value,index)=>{
       const x=values.length===1?width/2:pad+index*((width-pad*2)/(values.length-1));
       const y=height-pad-(safe(value)/max)*(height-pad*2);
@@ -82,6 +82,7 @@
     const comparison=previousMonth?analytics.compare(profile,currentMonth,previousMonth):null;
     const series=analytics.series(profile,999).filter(row=>row.month<=currentMonth).slice(-6);
     const incomes=series.map(row=>row.income),expenses=series.map(row=>row.expenses);
+    const pulseMax=Math.max(1,...incomes.map(safe),...expenses.map(safe));
     const runway=averageExpenseRunway(profile);
     const reserveBalance=core.reserveBalance(profile);
     const reserveTarget=safe(profile.settings&&profile.settings.reserve&&profile.settings.reserve.target);
@@ -96,7 +97,7 @@
         <section class="analytics-card third"><div class="analytics-label">Не распределено</div><div class="analytics-value">${money(current.freeEnd)}</div>${comparison?deltaBadge(comparison.free):`<span class="analytics-delta neutral">остаток месяца</span>`}</section>
 
         <section class="analytics-card"><div class="analytics-section-title"><div><div class="analytics-label">Financial pulse</div><h2>Доход и расходы по месяцам</h2></div><span>${series.length} мес.</span></div>
-          <div class="analytics-pulse"><svg viewBox="0 0 720 200" preserveAspectRatio="none" role="img" aria-label="Динамика доходов и расходов"><line class="gridline" x1="20" y1="50" x2="700" y2="50"/><line class="gridline" x1="20" y1="100" x2="700" y2="100"/><line class="gridline" x1="20" y1="150" x2="700" y2="150"/><path class="income" d="${path(incomes)}"/><path class="expense" d="${path(expenses)}"/>${dots(incomes,"point-income")}${dots(expenses,"point-expense")}</svg></div>
+          <div class="analytics-pulse"><svg viewBox="0 0 720 200" preserveAspectRatio="none" role="img" aria-label="Динамика доходов и расходов"><line class="gridline" x1="20" y1="50" x2="700" y2="50"/><line class="gridline" x1="20" y1="100" x2="700" y2="100"/><line class="gridline" x1="20" y1="150" x2="700" y2="150"/><path class="income" d="${path(incomes,720,200,20,pulseMax)}"/><path class="expense" d="${path(expenses,720,200,20,pulseMax)}"/>${dots(incomes,"point-income",720,200,20,pulseMax)}${dots(expenses,"point-expense",720,200,20,pulseMax)}</svg></div>
           <div class="analytics-month-labels" style="--months:${Math.max(1,series.length)}">${series.map(row=>`<span>${escapeHTML(monthLabel(row.month).slice(0,3))}</span>`).join("")}</div><div class="pulse-legend"><span>Доход</span><span>Расходы</span></div>
         </section>
 
@@ -111,5 +112,5 @@
     if(select)select.onchange=()=>{selectedAnalyticsMonth=select.value;root.renderAnalytics();};
   };
 
-  root.ARISE_ANALYTICS_UI={deltaBadge,path,averageExpenseRunway,getSelectedMonth:()=>selectedAnalyticsMonth};
+  root.ARISE_ANALYTICS_UI={deltaBadge,path,dots,averageExpenseRunway,getSelectedMonth:()=>selectedAnalyticsMonth};
 })(typeof globalThis!=="undefined"?globalThis:window);
