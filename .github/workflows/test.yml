@@ -30,6 +30,7 @@ jobs:
           node --check expense-reconciliation.js
           node --check financial-runtime.js
           node --check financial-integration.js
+          node --check income-plan-consequences.js
           node --check canonical-ui-overrides.js
           node --check reserve-analytics.js
           node --check analytics-engine.js
