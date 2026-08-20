@@ -129,9 +129,7 @@
 
     if(!root.ARISE_SYNC_SILENT){
       const previous=read(key);
-      // Tombstones remain as a transition fallback until category/goal outbox is proven in production tests.
-      recordCategoryDeletions(previous,state);
-      recordGoalDeletions(previous,state);
+      // All new mutations use the persistent outbox. Legacy tombstone helpers remain only for old vault migration/tests.
       recordMutationOutbox(previous,state);
     }
 
