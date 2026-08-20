@@ -23,6 +23,7 @@ jobs:
         run: |
           node --check currency-engine.js
           node --check currency-runtime.js
+          node --check currency-display.js
           node --check financial-core.js
           node --check expense-reconciliation.js
           node --check financial-runtime.js
