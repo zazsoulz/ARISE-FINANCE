@@ -43,6 +43,19 @@
     return {winner:"local",reason:"local_newer_or_equal",baseTime:syncedTime,localTime,remoteTime};
   }
 
+  function resolveAbsence({localMeta={}}={}){
+    if(!localMeta||!localMeta.remoteId){
+      return {winner:"local",reason:"local_unsynced"};
+    }
+    if(localMeta.conflict){
+      return {winner:"conflict",reason:"existing_conflict",conflict:localMeta.conflict};
+    }
+    if(localMeta.dirty){
+      return {winner:"local",reason:"local_dirty_remote_deleted"};
+    }
+    return {winner:"remote_delete",reason:"remote_deleted_clean_local"};
+  }
+
   function mergeObject(localValue,remoteValue,decision){
     return decision&&decision.winner==="remote"
       ? {...localValue,...remoteValue}
@@ -53,5 +66,5 @@
     return !!decision&&decision.winner==="conflict";
   }
 
-  root.ARISE_SYNC_CONFLICTS={resolve,mergeObject,timestamp,isConflict};
+  root.ARISE_SYNC_CONFLICTS={resolve,resolveAbsence,mergeObject,timestamp,isConflict};
 })(typeof globalThis!=="undefined"?globalThis:window);
