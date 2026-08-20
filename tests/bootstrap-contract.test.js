@@ -33,14 +33,17 @@ test('shell boundaries required by the loader still exist',()=>{
   assert.ok(init>ui,'initialization marker must follow UI');
 });
 
-test('loader wires financial, analytics, history, product UI, accessibility, sync and A1-V3 layers in safe order',()=>{
+test('loader wires financial, lifecycle, reconciliation, analytics, product, sync and accessibility layers in safe order',()=>{
   const core=index.indexOf('./financial-core.js');
+  const goalLifecycleCore=index.indexOf('./goal-lifecycle-core.js');
+  const expenseReconciliation=index.indexOf('./expense-reconciliation.js');
   const runtime=index.indexOf('./financial-runtime.js');
   const integration=index.indexOf('./financial-integration.js');
   const reserveAnalytics=index.indexOf('./reserve-analytics.js');
   const analytics=index.indexOf('./analytics-engine.js');
   const productRules=index.indexOf('./product-rules.js');
   const v3=index.indexOf('./arise-v3.js');
+  const reconciliationUi=index.indexOf('./expense-reconciliation-ui.js');
   const history=index.indexOf('./history-inspector.js');
   const analyticsUi=index.indexOf('./analytics-ui.js');
   const supabase=index.indexOf('./supabase-client.js');
@@ -48,23 +51,28 @@ test('loader wires financial, analytics, history, product UI, accessibility, syn
   const localStore=index.indexOf('./local-account-store.js');
   const syncEngine=index.indexOf('./sync-engine.js');
   const productUi=index.indexOf('./product-ui.js');
+  const goalLifecycleUi=index.indexOf('./goal-lifecycle-ui.js');
   const modalAccessibility=index.indexOf('./modal-accessibility.js');
   const bootstrap=index.indexOf('./financial-bootstrap.js');
   assert.ok(core>=0);
-  assert.ok(runtime>core);
+  assert.ok(goalLifecycleCore>core,'goal lifecycle core must extend the canonical financial core');
+  assert.ok(expenseReconciliation>goalLifecycleCore);
+  assert.ok(runtime>expenseReconciliation);
   assert.ok(integration>runtime);
   assert.ok(reserveAnalytics>integration);
   assert.ok(analytics>reserveAnalytics,'analytics must consume financial/reserve core only');
   assert.ok(productRules>analytics);
   assert.ok(v3>productRules);
-  assert.ok(history>v3,'history inspector must wrap the final A1-V3 history renderer');
+  assert.ok(reconciliationUi>v3,'expense reconciliation UI must wrap the final expense/product behavior');
+  assert.ok(history>reconciliationUi,'history must see persisted reconciliation metadata');
   assert.ok(analyticsUi>history);
   assert.ok(supabase>v3);
   assert.ok(outbox>supabase);
   assert.ok(localStore>outbox,'outbox must exist before local save hooks');
   assert.ok(syncEngine>localStore,'sync engine must see local account storage');
   assert.ok(productUi>syncEngine,'product UI must decorate the already-loaded sync and history layers');
-  assert.ok(modalAccessibility>productUi,'modal accessibility must wrap the final product modal behavior');
+  assert.ok(goalLifecycleUi>productUi,'goal lifecycle UI must decorate the final goal/product renderer');
+  assert.ok(modalAccessibility>goalLifecycleUi,'modal accessibility must wrap the final modal behavior');
   assert.ok(bootstrap>modalAccessibility);
   assert.ok(index.includes('./arise-v3.css'));
   assert.ok(index.includes('./history-inspector.css'));
@@ -78,7 +86,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['currency-engine.js','financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','history-inspector.js','history-inspector.css','product-ui.js','product-ui.css','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-reconciliation-ui.js','history-inspector.js','history-inspector.css','product-ui.js','product-ui.css','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });
