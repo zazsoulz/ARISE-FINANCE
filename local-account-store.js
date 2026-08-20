@@ -79,13 +79,16 @@
     recordEntityDeletions(previous,next,{collection:"goals",tombstoneKey:"deletedGoalIds"});
   }
 
-  function recordTransactionOutbox(previous,next){
+  function recordMutationOutbox(previous,next){
     const outbox=root.ARISE_SYNC_OUTBOX;
-    if(!outbox||!outbox.recordTransactionChanges||!next||!Array.isArray(next.profiles)) return;
+    if(!outbox||!next||!Array.isArray(next.profiles)) return;
     const previousProfiles=previous&&Array.isArray(previous.profiles)?previous.profiles:[];
+
     for(const currentProfile of next.profiles){
       const previousProfile=findMatchingProfile(previousProfiles,currentProfile)||previousProfiles.find(profile=>String(profile.id)===String(currentProfile.id))||null;
-      outbox.recordTransactionChanges(previousProfile,currentProfile);
+      if(outbox.recordTransactionChanges) outbox.recordTransactionChanges(previousProfile,currentProfile);
+      if(outbox.recordCategoryChanges) outbox.recordCategoryChanges(previousProfile,currentProfile);
+      if(outbox.recordGoalChanges) outbox.recordGoalChanges(previousProfile,currentProfile);
     }
   }
 
@@ -95,9 +98,10 @@
 
     if(!root.ARISE_SYNC_SILENT){
       const previous=read(key);
+      // Tombstones remain as a transition fallback until category/goal outbox is proven in production tests.
       recordCategoryDeletions(previous,state);
       recordGoalDeletions(previous,state);
-      recordTransactionOutbox(previous,state);
+      recordMutationOutbox(previous,state);
     }
 
     localStorage.setItem(key,JSON.stringify(state));
@@ -152,5 +156,8 @@
   function currentAccountId(){return activeAccountId;}
 
   preloadLastAccount();
-  root.ARISE_LOCAL_ACCOUNTS={activate,deactivate,currentAccountId,accountKey,recordCategoryDeletions,recordGoalDeletions,recordTransactionOutbox};
+  root.ARISE_LOCAL_ACCOUNTS={
+    activate,deactivate,currentAccountId,accountKey,
+    recordCategoryDeletions,recordGoalDeletions,recordMutationOutbox
+  };
 })(typeof globalThis!=="undefined"?globalThis:window);
