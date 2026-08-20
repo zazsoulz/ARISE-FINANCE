@@ -17,29 +17,23 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
   try{
     const response=await fetch("./app-shell.html",{cache:"no-store"});
     if(!response.ok) throw new Error("app-shell.html: HTTP "+response.status);
-
     let html=await response.text();
-
     const financialMarker=`/* =========================================================\n   FINANCIAL ENGINE\n========================================================= */`;
     const uiMarker=`/* =========================================================\n   UI\n========================================================= */`;
     const initMarker=`/* =========================================================\n   INITIALIZATION\n========================================================= */`;
-
     const financialStart=html.indexOf(financialMarker);
     const uiStart=html.indexOf(uiMarker);
-    if(financialStart<0||uiStart<0||uiStart<=financialStart){throw new Error("ARISE shell financial boundary not found.");}
-
+    if(financialStart<0||uiStart<0||uiStart<=financialStart)throw new Error("ARISE shell financial boundary not found.");
     html=html.slice(0,financialStart)+`/* Financial state and calculations are provided by the external ARISE runtime. */\n\n`+html.slice(uiStart);
-
     const scriptCloseTag="</scr"+"ipt>";
     const initStart=html.indexOf(initMarker);
     const scriptEnd=html.lastIndexOf(scriptCloseTag);
-    if(initStart<0||scriptEnd<0||scriptEnd<=initStart){throw new Error("ARISE shell initialization boundary not found.");}
-
+    if(initStart<0||scriptEnd<0||scriptEnd<=initStart)throw new Error("ARISE shell initialization boundary not found.");
     html=html.slice(0,initStart)+`/* Initialization is deferred until the financial runtime is loaded. */\n\n`+html.slice(scriptEnd);
-
     const scriptOpen="<scr"+"ipt";
     const scriptClose=scriptCloseTag;
     const runtime=
+      scriptOpen+" src=\"./currency-engine.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-core.js\">"+scriptClose+
       scriptOpen+" src=\"./expense-reconciliation.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-runtime.js\">"+scriptClose+
@@ -51,6 +45,8 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2\">"+scriptClose+
       scriptOpen+" src=\"./supabase-public-config.js\">"+scriptClose+
       scriptOpen+" src=\"./supabase-client.js\">"+scriptClose+
+      scriptOpen+" src=\"./currency-runtime.js\">"+scriptClose+
+      scriptOpen+" src=\"./currency-display.js\">"+scriptClose+
       scriptOpen+" src=\"./sync-outbox.js\">"+scriptClose+
       scriptOpen+" src=\"./indexeddb-store.js\">"+scriptClose+
       scriptOpen+" src=\"./local-account-store.js\">"+scriptClose+
@@ -62,17 +58,12 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"./account-settings.js\">"+scriptClose+
       scriptOpen+" src=\"./profile-lifecycle.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-bootstrap.js\">"+scriptClose;
-
     const bootHide='<style id="arise-boot-hide">html{visibility:hidden}</style>';
     const themeLinks='<link rel="stylesheet" href="./arise-v3.css"><link rel="stylesheet" href="./arise-v3-state.css">';
-    if(/<\/head>/i.test(html)) html=html.replace(/<\/head>/i,themeLinks+bootHide+"</head>"); else html=themeLinks+bootHide+html;
-    if(/<\/body>/i.test(html)) html=html.replace(/<\/body>/i,runtime+"</body>"); else html+=runtime;
-
+    if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,themeLinks+bootHide+"</head>");else html=themeLinks+bootHide+html;
+    if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,runtime+"</body>");else html+=runtime;
     document.open();document.write(html);document.close();
-  }catch(error){
-    console.error(error);
-    document.getElementById("boot").textContent="ARISE не удалось загрузить приложение.";
-  }
+  }catch(error){console.error(error);document.getElementById("boot").textContent="ARISE не удалось загрузить приложение.";}
 })();
 </script>
 </body>
