@@ -8,7 +8,7 @@ test('entity outbox drains category and goal mutations through dedicated tables'
   for(const token of [
     'finance_categories',
     'finance_goals',
-    'outbox.list(profile,entity)',
+    'box.list(profile,entity)',
     'box.ack(profile,mutation.id)',
     'box.fail(profile,mutation.id,error)',
     'mutation.action==="delete"',
