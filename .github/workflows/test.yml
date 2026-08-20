@@ -31,6 +31,7 @@ jobs:
           node --check arise-v3.js
           node --check supabase-public-config.js
           node --check supabase-client.js
+          node --check sync-outbox.js
           node --check local-account-store.js
           node --check sync-engine.js
           node --check sync-conflict-policy.js
