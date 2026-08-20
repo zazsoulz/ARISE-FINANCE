@@ -41,10 +41,7 @@
     const meta=ensureMeta(profile);
     const ids=[...new Set((meta[metaKey]||[]).filter(Boolean))];
     if(!ids.length)return 0;
-    for(const id of ids){
-      const {error}=await c.from(table).delete().eq("id",id).eq("profile_id",profileId);
-      if(error)throw error;
-    }
+    for(const id of ids){const {error}=await c.from(table).delete().eq("id",id).eq("profile_id",profileId);if(error)throw error;}
     meta[metaKey]=[];
     return ids.length;
   }
@@ -60,22 +57,18 @@
     for(const item of profile[collection]||[]){
       if(remoteId(item)||queued.has(String(item.id)))continue;
       outbox.enqueue(profile,{entity,entityLocalId:item.id,action:"upsert"});
-      queued.add(String(item.id));
-      count++;
+      queued.add(String(item.id));count++;
     }
     return count;
   }
 
   async function drainEntityOutbox(profile,profileId,user){
-    // Process old tombstone state once, then rely on the unified outbox.
     const legacyCategoryDeletes=await applyCategoryTombstones(profile,profileId);
     const legacyGoalDeletes=await applyGoalTombstones(profile,profileId);
     const seededCategories=seedEntityOutbox(profile,"category","categories");
     const seededGoals=seedEntityOutbox(profile,"goal","goals");
     let drained=0;
-    if(root.ARISE_ENTITY_OUTBOX&&root.ARISE_ENTITY_OUTBOX.drainProfile){
-      drained=await root.ARISE_ENTITY_OUTBOX.drainProfile(profile,user.id);
-    }
+    if(root.ARISE_ENTITY_OUTBOX&&root.ARISE_ENTITY_OUTBOX.drainProfile)drained=await root.ARISE_ENTITY_OUTBOX.drainProfile(profile,user.id);
     return {drained,seededCategories,seededGoals,legacyDeletes:legacyCategoryDeletes+legacyGoalDeletes};
   }
 
@@ -92,11 +85,38 @@
     return data&&data[0]&&data[0].id||null;
   }
 
+  function transactionCurrencySnapshot(profile,tx){
+    const base=currency(profile,tx.baseCurrency||tx.base_currency||profile.settings&&profile.settings.currency);
+    const originalCurrency=tx.originalCurrency||tx.currency||base;
+    const originalAmount=Math.max(0,Number(tx.originalAmount!=null?tx.originalAmount:tx.amount)||0);
+    const baseAmount=Math.max(0,Number(tx.baseAmount!=null?tx.baseAmount:tx.amount)||0);
+    const rate=Number(tx.exchangeRateToBase??tx.exchange_rate_to_base);
+    return {
+      originalAmount,
+      originalCurrency,
+      baseCurrency:base,
+      baseAmount,
+      exchangeRateToBase:Number.isFinite(rate)&&rate>0?rate:(originalCurrency===base?1:null),
+      fxSource:tx.fxSource||tx.fx_source||(originalCurrency===base?"identity":null),
+      fxFetchedAt:tx.fxFetchedAt||tx.fx_fetched_at||null
+    };
+  }
+
   async function syncTransaction(profile,profileId,user,tx){
     const c=client();
     const category=(profile.categories||[]).find(item=>item.id===tx.categoryId);
     const goal=(profile.goals||[]).find(item=>item.id===(tx.goalId||tx.goal_id));
-    const payload={profile_id:profileId,user_id:user.id,type:transactionType(tx),amount:Math.max(0,Number(tx.amount)||0),currency:currency(profile,tx.currency),date:tx.date||new Date().toISOString().slice(0,10),source:String(tx.source||""),note:String(tx.note||""),category_id:category?remoteId(category):null,goal_id:goal?remoteId(goal):null,funding_source:tx.fundingSource||null,controlled_amount:Math.max(0,Number(tx.controlledAmount)||0),uncontrolled_amount:Math.max(0,Number(tx.uncontrolledAmount)||0),remainder:Math.max(0,Number(tx.remainder)||0),reserve_amount:Math.max(0,Number(tx.reserve)||0),client_mutation_id:isUuid(tx.id)?tx.id:null,payload:{localId:tx.id,month:tx.month||null,allocations:tx.allocations||[],goalAllocations:tx.goalAllocations||[],fundingBreakdown:tx.fundingBreakdown||null}};
+    const fx=transactionCurrencySnapshot(profile,tx);
+    const payload={
+      profile_id:profileId,user_id:user.id,type:transactionType(tx),
+      amount:fx.originalAmount,currency:fx.originalCurrency,
+      base_currency:fx.baseCurrency,exchange_rate_to_base:fx.exchangeRateToBase,base_amount:fx.baseAmount,fx_source:fx.fxSource,fx_fetched_at:fx.fxFetchedAt,
+      date:tx.date||new Date().toISOString().slice(0,10),source:String(tx.source||""),note:String(tx.note||""),
+      category_id:category?remoteId(category):null,goal_id:goal?remoteId(goal):null,funding_source:tx.fundingSource||null,
+      controlled_amount:Math.max(0,Number(tx.controlledAmount)||0),uncontrolled_amount:Math.max(0,Number(tx.uncontrolledAmount)||0),
+      remainder:Math.max(0,Number(tx.remainder)||0),reserve_amount:Math.max(0,Number(tx.reserve)||0),client_mutation_id:isUuid(tx.id)?tx.id:null,
+      payload:{localId:tx.id,month:tx.month||null,ledgerAmount:fx.baseAmount,allocations:tx.allocations||[],goalAllocations:tx.goalAllocations||[],fundingBreakdown:tx.fundingBreakdown||null}
+    };
     let id=await findExistingTransaction(c,user.id,tx);let data,error;
     if(id)({data,error}=await c.from("finance_transactions").update(payload).eq("id",id).select("id").single());
     else({data,error}=await c.from("finance_transactions").insert(payload).select("id").single());
@@ -118,12 +138,7 @@
     if(!outbox||!outbox.enqueue||!outbox.list)return 0;
     const queued=new Set(outbox.list(profile,"transaction").map(item=>String(item.entityLocalId)));
     let count=0;
-    for(const tx of profile.transactions||[]){
-      if(remoteId(tx)||queued.has(String(tx.id)))continue;
-      outbox.enqueue(profile,{entity:"transaction",entityLocalId:tx.id,action:"upsert"});
-      queued.add(String(tx.id));
-      count++;
-    }
+    for(const tx of profile.transactions||[]){if(remoteId(tx)||queued.has(String(tx.id)))continue;outbox.enqueue(profile,{entity:"transaction",entityLocalId:tx.id,action:"upsert"});queued.add(String(tx.id));count++;}
     return count;
   }
 
@@ -136,19 +151,13 @@
         if(mutation.action==="delete"){
           let id=mutation.entityRemoteId||null;
           if(!id&&mutation.entityLocalId)id=await findExistingTransaction(c,user.id,{id:mutation.entityLocalId});
-          if(id){
-            const {error}=await c.from("finance_transactions").delete().eq("id",id).eq("profile_id",profileId);
-            if(error)throw error;
-          }
+          if(id){const {error}=await c.from("finance_transactions").delete().eq("id",id).eq("profile_id",profileId);if(error)throw error;}
         }else{
           const tx=(profile.transactions||[]).find(item=>String(item.id)===String(mutation.entityLocalId));
           if(tx)await syncTransaction(profile,profileId,user,tx);
         }
         outbox.ack(profile,mutation.id);count++;
-      }catch(error){
-        if(outbox.fail)outbox.fail(profile,mutation.id,error);
-        throw error;
-      }
+      }catch(error){if(outbox.fail)outbox.fail(profile,mutation.id,error);throw error;}
     }
     return count;
   }
@@ -160,13 +169,7 @@
     const seededTransactions=seedTransactionOutbox(profile);
     const transactionOutboxCount=await flushTransactionOutbox(profile,profileId,user);
     mark(profile,profileId);
-    return {
-      txCount:transactionOutboxCount,
-      outboxCount:transactionOutboxCount+entityResult.drained,
-      seededTransactions,
-      seededEntities:entityResult.seededCategories+entityResult.seededGoals,
-      legacyDeletes:entityResult.legacyDeletes
-    };
+    return {txCount:transactionOutboxCount,outboxCount:transactionOutboxCount+entityResult.drained,seededTransactions,seededEntities:entityResult.seededCategories+entityResult.seededGoals,legacyDeletes:entityResult.legacyDeletes};
   }
 
   async function pushAll(){
@@ -177,14 +180,8 @@
     try{
       const serverProfiles=await loadServerProfiles();let txCount=0;let outboxCount=0;let seededTransactions=0;let seededEntities=0;let legacyDeletes=0;
       for(let i=0;i<(state.profiles||[]).length;i++){
-        const profile=state.profiles[i];
-        const profileId=await ensureProfile(profile,user,serverProfiles,i);
-        const result=await syncProfile(profile,profileId,user);
-        txCount+=result.txCount;
-        outboxCount+=result.outboxCount;
-        seededTransactions+=result.seededTransactions;
-        seededEntities+=result.seededEntities;
-        legacyDeletes+=result.legacyDeletes;
+        const profile=state.profiles[i];const profileId=await ensureProfile(profile,user,serverProfiles,i);const result=await syncProfile(profile,profileId,user);
+        txCount+=result.txCount;outboxCount+=result.outboxCount;seededTransactions+=result.seededTransactions;seededEntities+=result.seededEntities;legacyDeletes+=result.legacyDeletes;
       }
       if(state.account)delete state.account.password;
       root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
@@ -198,5 +195,5 @@
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,seedEntityOutbox,drainEntityOutbox,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,transactionCurrencySnapshot,applyCategoryTombstones,applyGoalTombstones,seedEntityOutbox,drainEntityOutbox,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
