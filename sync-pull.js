@@ -12,9 +12,7 @@
   function conflictDecision(remoteUpdated,localEntity){
     const localMeta=localEntity&&localEntity[META_KEY]||{};
     const policy=root.ARISE_SYNC_CONFLICTS;
-    if(policy&&typeof policy.resolve==="function"){
-      return policy.resolve({localMeta,remoteUpdatedAt:remoteUpdated,localChangedAt:localMeta.changedAt});
-    }
+    if(policy&&typeof policy.resolve==="function")return policy.resolve({localMeta,remoteUpdatedAt:remoteUpdated,localChangedAt:localMeta.changedAt});
     if(localMeta.dirty)return {winner:"local",reason:"local_dirty"};
     if(!localMeta.syncedAt)return {winner:"local",reason:"local_unsynced"};
     const remoteTime=new Date(remoteUpdated||0).getTime();
@@ -37,10 +35,7 @@
   function findLocalGoal(remoteRow,localGoals,claimed){
     const byName=(localGoals||[]).filter(item=>!claimed.has(item)&&!rid(item)&&normalizeName(item.name)===normalizeName(remoteRow.name));
     if(byName.length===1)return byName[0];
-    return byName.find(item=>
-      Number(item.target||0)===Number(remoteRow.target_amount||0)&&
-      String(item.deadline||"")===String(remoteRow.deadline||"")
-    )||null;
+    return byName.find(item=>Number(item.target||0)===Number(remoteRow.target_amount||0)&&String(item.deadline||"")===String(remoteRow.deadline||""))||null;
   }
 
   function localCategoryFrom(row){
@@ -67,7 +62,23 @@
     const goalAllocations=rows.filter(a=>a.allocation_type==="goal").map(a=>{const goal=byRemoteGoal.get(a.goal_id);return {goalId:goal?goal.id:null,name:a.name_snapshot||goal&&goal.name||"Цель",amount:Number(a.amount)||0,priority:Number(a.rule_snapshot&&a.rule_snapshot.priority)||goal&&goal.priority||3};});
     const category=byRemoteCategory.get(row.category_id);
     const goal=byRemoteGoal.get(row.goal_id);
-    return {id:payload.localId||uid(),type:row.type,date:row.date||today(),month:payload.month||monthKey(row.date||today()),amount:Number(row.amount)||0,currency:row.currency||profile.settings.currency,source:row.source||"",note:row.note||"",categoryId:category?category.id:null,categoryName:category?category.name:(row.type==="expense"?"Нераспределено":""),goalId:goal?goal.id:null,controlledAmount:Number(row.controlled_amount)||0,uncontrolledAmount:Number(row.uncontrolled_amount)||0,remainder:Number(row.remainder)||0,reserve:Number(row.reserve_amount)||0,fundingSource:row.funding_source||null,allocations:allocations.length?allocations:(payload.allocations||[]),goalAllocations:goalAllocations.length?goalAllocations:(payload.goalAllocations||[]),fundingBreakdown:payload.fundingBreakdown||null,createdAt:row.created_at||new Date().toISOString(),[META_KEY]:meta(row.id,row.updated_at)};
+    const originalAmount=Math.max(0,Number(row.amount)||0);
+    const originalCurrency=row.currency||profile.settings.currency;
+    const baseCurrency=row.base_currency||profile.settings.currency||originalCurrency;
+    const baseAmount=Number.isFinite(Number(row.base_amount))?Math.max(0,Number(row.base_amount)):(Number.isFinite(Number(payload.ledgerAmount))?Math.max(0,Number(payload.ledgerAmount)):originalAmount);
+    const rate=Number(row.exchange_rate_to_base);
+    return {
+      id:payload.localId||uid(),type:row.type,date:row.date||today(),month:payload.month||monthKey(row.date||today()),
+      amount:baseAmount,currency:baseCurrency,
+      originalAmount,originalCurrency,baseAmount,baseCurrency,
+      exchangeRateToBase:Number.isFinite(rate)&&rate>0?rate:(originalCurrency===baseCurrency?1:null),
+      fxSource:row.fx_source||(originalCurrency===baseCurrency?"identity":null),fxFetchedAt:row.fx_fetched_at||null,
+      conversionPending:originalCurrency!==baseCurrency&&!Number.isFinite(rate)&&!Number.isFinite(Number(row.base_amount)),
+      source:row.source||"",note:row.note||"",categoryId:category?category.id:null,categoryName:category?category.name:(row.type==="expense"?"Нераспределено":""),goalId:goal?goal.id:null,
+      controlledAmount:Number(row.controlled_amount)||0,uncontrolledAmount:Number(row.uncontrolled_amount)||0,remainder:Number(row.remainder)||0,reserve:Number(row.reserve_amount)||0,fundingSource:row.funding_source||null,
+      allocations:allocations.length?allocations:(payload.allocations||[]),goalAllocations:goalAllocations.length?goalAllocations:(payload.goalAllocations||[]),fundingBreakdown:payload.fundingBreakdown||null,
+      createdAt:row.created_at||new Date().toISOString(),[META_KEY]:meta(row.id,row.updated_at)
+    };
   }
 
   async function fetchProfileBundle(profileId){
@@ -102,19 +113,12 @@
       if(existing)claimedCategories.add(existing);
       if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){
         existing[META_KEY]={...(existing[META_KEY]||{}),remoteId:remoteRow.id,syncedAt:existing[META_KEY]&&existing[META_KEY].syncedAt||remoteRow.updated_at};
-        remoteCategories.push(existing);
-        continue;
+        remoteCategories.push(existing);continue;
       }
-      const next=localCategoryFrom(remoteRow);
-      if(existing)next.id=existing.id;
-      remoteCategories.push(next);
+      const next=localCategoryFrom(remoteRow);if(existing)next.id=existing.id;remoteCategories.push(next);
     }
     if(replace)target.categories=remoteCategories;
-    else{
-      const matchedLocal=new Set([...claimedCategories]);
-      const remoteIds=new Set(remoteCategories.map(rid));
-      target.categories=[...(target.categories||[]).filter(item=>!matchedLocal.has(item)&&!remoteIds.has(rid(item))),...remoteCategories];
-    }
+    else{const matchedLocal=new Set([...claimedCategories]);const remoteIds=new Set(remoteCategories.map(rid));target.categories=[...(target.categories||[]).filter(item=>!matchedLocal.has(item)&&!remoteIds.has(rid(item))),...remoteCategories];}
 
     const goalByRemote=new Map((target.goals||[]).map(item=>[rid(item),item]).filter(([id])=>id));
     const claimedGoals=new Set();
@@ -124,19 +128,12 @@
       if(existing)claimedGoals.add(existing);
       if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){
         existing[META_KEY]={...(existing[META_KEY]||{}),remoteId:remoteRow.id,syncedAt:existing[META_KEY]&&existing[META_KEY].syncedAt||remoteRow.updated_at};
-        remoteGoals.push(existing);
-        continue;
+        remoteGoals.push(existing);continue;
       }
-      const next=localGoalFrom(remoteRow);
-      if(existing)next.id=existing.id;
-      remoteGoals.push(next);
+      const next=localGoalFrom(remoteRow);if(existing)next.id=existing.id;remoteGoals.push(next);
     }
     if(replace)target.goals=remoteGoals;
-    else{
-      const matchedLocal=new Set([...claimedGoals]);
-      const remoteIds=new Set(remoteGoals.map(rid));
-      target.goals=[...(target.goals||[]).filter(item=>!matchedLocal.has(item)&&!remoteIds.has(rid(item))),...remoteGoals];
-    }
+    else{const matchedLocal=new Set([...claimedGoals]);const remoteIds=new Set(remoteGoals.map(rid));target.goals=[...(target.goals||[]).filter(item=>!matchedLocal.has(item)&&!remoteIds.has(rid(item))),...remoteGoals];}
 
     const allocationMap=allocationGroups(bundle.allocations);
     const existingTxByRemote=new Map((target.transactions||[]).map(item=>[rid(item),item]));
@@ -153,11 +150,7 @@
       remoteTransactions.push(localTransactionFrom(remoteRow,target,allocationMap.get(remoteRow.id)||[]));
     }
     if(replace)target.transactions=remoteTransactions;
-    else{
-      const knownRemote=new Set(remoteTransactions.map(rid).filter(Boolean));
-      const knownLocal=new Set(remoteTransactions.map(tx=>tx.id));
-      target.transactions=[...(target.transactions||[]).filter(tx=>!knownRemote.has(rid(tx))&&!knownLocal.has(tx.id)),...remoteTransactions];
-    }
+    else{const knownRemote=new Set(remoteTransactions.map(rid).filter(Boolean));const knownLocal=new Set(remoteTransactions.map(tx=>tx.id));target.transactions=[...(target.transactions||[]).filter(tx=>!knownRemote.has(rid(tx))&&!knownLocal.has(tx.id)),...remoteTransactions];}
 
     return normalizeProfile(target);
   }
@@ -169,9 +162,7 @@
     const rows=await api().listFinanceProfiles();
     let imported=0;
     const localByRemote=new Map((state.profiles||[]).map(p=>[rid(p),p]).filter(([id])=>id));
-    const claimedLocal=new Set();
-    const merged=[];
-
+    const claimedLocal=new Set();const merged=[];
     for(const row of rows){
       let local=localByRemote.get(row.id)||null;
       if(!local)local=(state.profiles||[]).find(p=>!claimedLocal.has(p)&&!rid(p)&&p.name===row.name)||null;
@@ -179,7 +170,6 @@
       if(local)claimedLocal.add(local);
       merged.push(await hydrateRemoteProfile(row,local));imported++;
     }
-
     for(const local of state.profiles||[])if(!claimedLocal.has(local)&&!merged.includes(local))merged.push(local);
     if(merged.length)state.profiles=merged;
     if(!state.profiles.some(p=>p.id===state.activeProfileId))state.activeProfileId=state.profiles[0]&&state.profiles[0].id||null;
@@ -188,5 +178,5 @@
     return {status:"pulled",imported};
   }
 
-  root.ARISE_SYNC_PULL={pullAll,shouldUseRemote,conflictDecision,hydrateRemoteProfile,findLocalCategory,findLocalGoal};
+  root.ARISE_SYNC_PULL={pullAll,shouldUseRemote,conflictDecision,hydrateRemoteProfile,findLocalCategory,findLocalGoal,localTransactionFrom};
 })(typeof globalThis!=="undefined"?globalThis:window);
