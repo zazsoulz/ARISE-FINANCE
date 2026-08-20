@@ -30,6 +30,7 @@ jobs:
           node --check financial-integration.js
           node --check canonical-ui-overrides.js
           node --check reserve-analytics.js
+          node --check analytics-engine.js
           node --check product-rules.js
           node --check arise-v3.js
           node --check supabase-public-config.js
