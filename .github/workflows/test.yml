@@ -40,6 +40,7 @@ jobs:
           node --check history-inspector.js
           node --check settings-currency-guard.js
           node --check product-ui.js
+          node --check sync-conflict-ui.js
           node --check goal-lifecycle-ui.js
           node --check modal-accessibility.js
           node --check supabase-public-config.js
