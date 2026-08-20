@@ -38,7 +38,7 @@ test('production navigation exposes five primary sections and every button chang
   const {dom,document}=boot();
   const expected=['home','income','goals','history','analytics'];
   assert.deepEqual([...document.querySelectorAll('.product-nav [data-page]')].map(x=>x.dataset.page),expected);
-  const selectors={home:'.arise-v3-home',income:'.arise-v3-distribution',goals:'.arise-v3-goals',history:'.arise-v3-history',analytics:'.analytics-page'};
+  const selectors={home:'.arise-v3-home',income:'.arise-v3-distribution',goals:'.arise-v3-goals',history:'.arise-v3-history',analytics:'.arise-analytics'};
   for(const page of expected){
     document.querySelector(`.product-nav [data-page="${page}"]`).click();
     assert.ok(document.querySelector(selectors[page]),`${page} did not render its primary screen`);
