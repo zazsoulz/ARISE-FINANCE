@@ -26,6 +26,20 @@
     return `Для цели «${goal.name||"Цель"}» требуемый средний темп до дедлайна ${direction}: ${money(originalNeed,currency)}/мес. → ${money(editedNeed,currency)}/мес.`;
   }
 
+  function reserveTargetConsequence(profile,originalAmount,editedAmount,currency){
+    const analytics=root.ARISE_RESERVE_ANALYTICS;
+    const target=safe(profile.settings?.reserve?.targetBalance);
+    if(originalAmount===editedAmount||target<=0||!analytics||typeof analytics.reserveProgress!=="function"||typeof core.reserveBalance!=="function")return null;
+    const balance=safe(core.reserveBalance(profile));
+    const before=analytics.reserveProgress({reserveBalance:balance+safe(originalAmount),targetBalance:target});
+    const after=analytics.reserveProgress({reserveBalance:balance+safe(editedAmount),targetBalance:target});
+    if(before.status!=="ok"||after.status!=="ok")return null;
+    const beforePercent=Math.round(before.percent);
+    const afterPercent=Math.round(after.percent);
+    if(beforePercent===afterPercent&&before.remaining===after.remaining)return null;
+    return `Прогресс подушки после этого дохода: ${beforePercent}% → ${afterPercent}%; до цели останется ${money(before.remaining,currency)} → ${money(after.remaining,currency)}.`;
+  }
+
   function consequences(plan,edited){
     const profile=activeProfile();
     const currency=plan.baseCurrency||profile.settings?.currency||"RUB";
@@ -55,6 +69,8 @@
     if(reserveBefore!==reserveAfter){
       const delta=reserveAfter-reserveBefore;
       rows.push(`Финансовая подушка получит ${signed(delta,currency)} относительно предложения${delta<0?" — резерв будет расти медленнее":" — резерв будет расти быстрее"}.`);
+      const targetConsequence=reserveTargetConsequence(profile,reserveBefore,reserveAfter,currency);
+      if(targetConsequence)rows.push(targetConsequence);
     }
 
     const validation=core.validatePlan({total:plan.total,allocations:edited.allocations,goalAllocations:edited.goalAllocations,reserve:edited.reserve});
@@ -87,5 +103,5 @@
     return result;
   };
 
-  root.ARISE_INCOME_PLAN_CONSEQUENCES={consequences,deadlineConsequence,render};
+  root.ARISE_INCOME_PLAN_CONSEQUENCES={consequences,deadlineConsequence,reserveTargetConsequence,render};
 })(typeof globalThis!=="undefined"?globalThis:window);
