@@ -4,7 +4,9 @@
   const previous=root.renderHistory;
   if(typeof previous!=="function") return;
 
-  const filters={scope:"month",type:"all",category:"all",goal:"all",source:"all",currency:"all"};
+  const defaults=()=>({scope:"month",type:"all",category:"all",goal:"all",source:"all",currency:"all"});
+  const filters=defaults();
+  let filterProfile=null;
   const typeLabels={
     income:"Доход",
     expense:"Расход",
@@ -31,6 +33,12 @@
   };
   const unique=values=>[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
 
+  function resetFilters(){Object.assign(filters,defaults());}
+  function ensureProfileScope(profile){
+    if(filterProfile===null){filterProfile=profile;return false;}
+    if(filterProfile!==profile){resetFilters();filterProfile=profile;return true;}
+    return false;
+  }
   function option(value,label,current){
     return `<option value="${esc(value)}" ${String(current)===String(value)?"selected":""}>${esc(label)}</option>`;
   }
@@ -147,14 +155,15 @@
       root.renderHistory();
     });
     page.querySelector("[data-history-reset]")?.addEventListener("click",()=>{
-      Object.assign(filters,{scope:"month",type:"all",category:"all",goal:"all",source:"all",currency:"all"});
+      resetFilters();
       root.renderHistory();
     });
   }
 
   root.renderHistory=function(){
-    previous();
     const profile=activeProfile();
+    ensureProfileScope(profile);
+    previous();
     const page=document.getElementById("page");
     const operations=page.querySelector(".v3-section");
     if(!operations) return;
@@ -163,5 +172,5 @@
     bind(page,profile);
   };
 
-  root.ARISE_HISTORY_INSPECTOR={filteredTransactions,reset(){Object.assign(filters,{scope:"month",type:"all",category:"all",goal:"all",source:"all",currency:"all"});},state:filters};
+  root.ARISE_HISTORY_INSPECTOR={filteredTransactions,reset:resetFilters,state:filters,ensureProfileScope};
 })(typeof globalThis!=="undefined"?globalThis:window);
