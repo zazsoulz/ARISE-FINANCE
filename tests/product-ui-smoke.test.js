@@ -41,6 +41,14 @@ test('topbar exposes profile identity and live connection state',()=>{
   assert.match(html,/ARISE/);assert.match(html,/Основной/);assert.match(html,/Онлайн/);assert.match(html,/data-page="settings"/);
 });
 
+test('topbar shows synchronization while sync engine is busy',()=>{
+  const {ctx}=boot();
+  ctx.ARISE_SYNC={lastResult:()=>({status:'busy'})};
+  const html=ctx.renderTopbar();
+  assert.match(html,/Синхронизация/);
+  assert.match(html,/product-sync syncing/);
+});
+
 test('history decoration preserves an existing wrapped history renderer',()=>{
   const {ctx,dom}=boot();
   ctx.renderHistory();

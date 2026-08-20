@@ -172,11 +172,18 @@
     return {txCount:transactionOutboxCount,outboxCount:transactionOutboxCount+entityResult.drained,seededTransactions,seededEntities:entityResult.seededCategories+entityResult.seededGoals,legacyDeletes:entityResult.legacyDeletes};
   }
 
+  function publish(result){
+    lastResult=result;
+    if(root.dispatchEvent)root.dispatchEvent(new CustomEvent("arise:sync",{detail:lastResult}));
+    return lastResult;
+  }
+
   async function pushAll(){
     if(running)return lastResult||{status:"busy"};
     if(!online())return {status:"offline"};
     const c=client();const user=await getUser();if(!c||!user)return {status:"signed_out"};
     running=true;const startedAt=new Date().toISOString();
+    publish({status:"busy",startedAt});
     try{
       const serverProfiles=await loadServerProfiles();let txCount=0;let outboxCount=0;let seededTransactions=0;let seededEntities=0;let legacyDeletes=0;
       for(let i=0;i<(state.profiles||[]).length;i++){
@@ -185,11 +192,9 @@
       }
       if(state.account)delete state.account.password;
       root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
-      lastResult={status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,seededTransactions,seededEntities,legacyDeletes,startedAt,finishedAt:new Date().toISOString()};
-      if(root.dispatchEvent)root.dispatchEvent(new CustomEvent("arise:sync",{detail:lastResult}));return lastResult;
+      return publish({status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,seededTransactions,seededEntities,legacyDeletes,startedAt,finishedAt:new Date().toISOString()});
     }catch(error){
-      console.error("ARISE sync",error);lastResult={status:"error",message:error.message||"Sync failed",startedAt,finishedAt:new Date().toISOString()};
-      if(root.dispatchEvent)root.dispatchEvent(new CustomEvent("arise:sync",{detail:lastResult}));throw error;
+      console.error("ARISE sync",error);publish({status:"error",message:error.message||"Sync failed",startedAt,finishedAt:new Date().toISOString()});throw error;
     }finally{running=false;}
   }
 
