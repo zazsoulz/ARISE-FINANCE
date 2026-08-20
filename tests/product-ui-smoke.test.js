@@ -36,6 +36,15 @@ test('home exposes working income and expense quick actions',()=>{
   assert.deepEqual(calls(),{incomeCalls:1,expenseCalls:1});
 });
 
+test('quick actions cannot reopen a second financial modal',()=>{
+  const {ctx,dom,calls}=boot();ctx.renderHome();
+  const modal=dom.window.document.createElement('div');
+  modal.id='modal';modal.className='modal open';dom.window.document.body.appendChild(modal);
+  dom.window.document.querySelector('[data-quick-income]').click();
+  dom.window.document.querySelector('[data-quick-expense]').click();
+  assert.deepEqual(calls(),{incomeCalls:0,expenseCalls:0});
+});
+
 test('topbar exposes profile identity and live connection state',()=>{
   const {ctx}=boot();const html=ctx.renderTopbar();
   assert.match(html,/ARISE/);assert.match(html,/Основной/);assert.match(html,/Онлайн/);assert.match(html,/data-page="settings"/);
