@@ -25,11 +25,21 @@
     return {winner:"local",reason:"local_newer_or_equal"};
   }
 
+  function resolveAbsence({localMeta={}}={}){
+    if(!localMeta||!localMeta.remoteId){
+      return {winner:"local",reason:"local_unsynced"};
+    }
+    if(localMeta.dirty){
+      return {winner:"local",reason:"local_dirty_remote_deleted"};
+    }
+    return {winner:"remote_delete",reason:"remote_deleted_clean_local"};
+  }
+
   function mergeObject(localValue,remoteValue,decision){
     return decision&&decision.winner==="remote"
       ? {...localValue,...remoteValue}
       : localValue;
   }
 
-  root.ARISE_SYNC_CONFLICTS={resolve,mergeObject,timestamp};
+  root.ARISE_SYNC_CONFLICTS={resolve,resolveAbsence,mergeObject,timestamp};
 })(typeof globalThis!=="undefined"?globalThis:window);
