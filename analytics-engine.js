@@ -13,8 +13,23 @@
     const d=new Date(value||Date.now());if(Number.isNaN(d.getTime()))return '';
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   };
+  const monthIndex=key=>{const match=/^(\d{4})-(\d{2})$/.exec(String(key||''));return match?Number(match[1])*12+Number(match[2])-1:null;};
+  const monthFromIndex=index=>`${Math.floor(index/12)}-${String(index%12+1).padStart(2,'0')}`;
 
-  function months(profile){return [...new Set((profile&&profile.transactions||[]).map(tx=>monthKey(tx.month||tx.date)).filter(Boolean))].sort();}
+  function transactionMonths(profile){return [...new Set((profile&&profile.transactions||[]).map(tx=>monthKey(tx.month||tx.date)).filter(Boolean))].sort();}
+  function months(profile,{through=null}={}){
+    const actual=transactionMonths(profile);
+    const requestedEnd=monthKey(through||new Date());
+    if(!actual.length)return requestedEnd?[requestedEnd]:[];
+    const start=monthIndex(actual[0]);
+    const latest=monthIndex(actual[actual.length-1]);
+    const requested=monthIndex(requestedEnd);
+    const end=Math.max(latest,requested==null?latest:requested);
+    if(start==null||end==null)return actual;
+    const result=[];
+    for(let index=start;index<=end&&result.length<240;index++)result.push(monthFromIndex(index));
+    return result;
+  }
   function categoryName(profile,id){const found=(profile&&profile.categories||[]).find(item=>String(item.id)===String(id));return found&&found.name||'Без категории';}
   function sourceName(tx){return String(tx&&tx.source||'Источник не указан').trim()||'Источник не указан';}
   function expenseName(tx){return String(tx&&tx.categoryName||(!tx||!tx.categoryId?'Не распределено':'Без категории')).trim()||'Без категории';}
@@ -37,12 +52,8 @@
       const name=categoryName(profile,id);categorySpent[name]=(categorySpent[name]||0)+Math.max(0,num(value));
     }
     return {
-      month:key,
-      income:Math.max(0,num(stats.income)),expenses:Math.max(0,num(stats.expenses)),
-      savedToReserve:Math.max(0,num(stats.reserve)),reserveWithdrawn:Math.max(0,num(stats.reserveWithdrawn)),
-      freeEnd:Math.max(0,num(stats.free)),uncontrolled:Math.max(0,num(stats.uncontrolled)),operations:Math.max(0,num(stats.operationCount)),
-      incomeCount:txs.filter(tx=>tx.type==='income').length,expenseCount:txs.filter(tx=>tx.type==='expense').length,
-      incomeSources,expenseGroups,categorySpent,goalAllocated:{...(stats.goalAllocated||{})}
+      month:key,income:Math.max(0,num(stats.income)),expenses:Math.max(0,num(stats.expenses)),savedToReserve:Math.max(0,num(stats.reserve)),reserveWithdrawn:Math.max(0,num(stats.reserveWithdrawn)),freeEnd:Math.max(0,num(stats.free)),uncontrolled:Math.max(0,num(stats.uncontrolled)),operations:Math.max(0,num(stats.operationCount)),
+      incomeCount:txs.filter(tx=>tx.type==='income').length,expenseCount:txs.filter(tx=>tx.type==='expense').length,incomeSources,expenseGroups,categorySpent,goalAllocated:{...(stats.goalAllocated||{})}
     };
   }
 
@@ -85,5 +96,5 @@
     return {months:keys.length,totalIncome:sum(incomes),totalExpenses:sum(expenses),incomeTransactions:incomes.length,expenseTransactions:expenses.length,averageMonthlyIncome:rows.length?sum(rows.map(row=>row.income))/rows.length:0,averageMonthlyExpenses:rows.length?sum(rows.map(row=>row.expenses))/rows.length:0,maxIncome:incomes.length?Math.max(...incomes):0,minIncome:incomes.length?Math.min(...incomes):0};
   }
 
-  return {monthKey,months,monthly,delta,compare,series,composition,incomeSources,expenseComposition,goals,reserve,lifetime};
+  return {monthKey,monthIndex,monthFromIndex,transactionMonths,months,monthly,delta,compare,series,composition,incomeSources,expenseComposition,goals,reserve,lifetime};
 });
