@@ -29,12 +29,15 @@ function boot(){
 }
 
 function fill(dom,{amount=30000}){
-  dom.window.document.getElementById('editExpenseAmount').value=String(amount);
-  dom.window.document.getElementById('editExpenseCurrency').value='RUB';
-  dom.window.document.getElementById('editExpenseDate').value='2026-08-10';
-  dom.window.document.getElementById('editExpenseCategory').value='';
-  dom.window.document.getElementById('editExpenseSource').value='Исправленный расход';
-  dom.window.document.getElementById('editExpenseNote').value='Проверено';
+  const document=dom.window.document;
+  const amountInput=document.getElementById('editExpenseAmount');
+  amountInput.value=String(amount);
+  document.getElementById('editExpenseCurrency').value='RUB';
+  document.getElementById('editExpenseDate').value='2026-08-10';
+  document.getElementById('editExpenseCategory').value='';
+  document.getElementById('editExpenseSource').value='Исправленный расход';
+  document.getElementById('editExpenseNote').value='Проверено';
+  amountInput.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
 }
 
 test('expense edit reconciliation restores the original expense before recomputing balances',()=>{
@@ -52,9 +55,6 @@ test('editing into an uncontrolled expense requires explicit acceptance and pres
   ctx.ARISE_EXPENSE_EDIT.showExpenseEditModal(tx.id);
   fill(dom,{amount:30000});
   assert.throws(()=>ctx.ARISE_EXPENSE_EDIT.applyEdit(profile,tx),/Подтверди неконтролируемую часть/);
-  ctx.ARISE_EXPENSE_EDIT.showExpenseEditModal(tx.id);
-  fill(dom,{amount:30000});
-  ctx.ARISE_EXPENSE_EDIT.renderEditPreview?.(profile,tx);
   const accept=dom.window.document.getElementById('acceptExpenseEditUncontrolled');
   assert.ok(accept);accept.checked=true;
   ctx.ARISE_EXPENSE_EDIT.applyEdit(profile,tx);
