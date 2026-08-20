@@ -52,6 +52,18 @@ test('expense composition uses the full expense purpose even when funding is spl
   assert.equal(monthly.expenseGroups['Жизнь'],40000,'user spending purpose keeps the full operation amount');
 });
 
+test('month timeline includes zero-operation calendar months',()=>{
+  const p={settings:{currency:'RUB',reserve:{}},categories:[],goals:[],transactions:[
+    {id:'m',type:'income',date:'2026-05-10',month:'2026-05',amount:10000,allocations:[],goalAllocations:[],reserve:0,remainder:10000},
+    {id:'j',type:'income',date:'2026-07-10',month:'2026-07',amount:20000,allocations:[],goalAllocations:[],reserve:0,remainder:20000}
+  ]};
+  assert.deepEqual(analytics.months(p,{through:'2026-07'}),['2026-05','2026-06','2026-07']);
+  const june=analytics.monthly(p,'2026-06');
+  assert.equal(june.operations,0);
+  assert.equal(june.income,0);
+  assert.equal(june.freeEnd,10000,'carried unallocated money remains visible in an empty month');
+});
+
 test('series is chronological and lifetime analytics stay transaction-derived',()=>{
   const p=profile();
   assert.deepEqual(analytics.series(p).map(row=>row.month),['2026-07','2026-08']);
