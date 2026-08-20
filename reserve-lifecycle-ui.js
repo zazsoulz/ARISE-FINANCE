@@ -3,7 +3,8 @@
 
   const core=root.ARISE_FINANCE_CORE;
   const analytics=root.ARISE_RESERVE_ANALYTICS;
-  if(!core||!analytics)return;
+  const essential=root.ARISE_RESERVE_ESSENTIAL_SPEND;
+  if(!core||!analytics||!essential)return;
 
   const previousRenderSettings=root.renderSettings;
   const previousHistoryTransaction=root.historyTransaction;
@@ -15,23 +16,45 @@
     return profile.settings.reserve;
   }
 
-  function recentAverageSpend(profile,count=3){
+  function selectedEssentialCategoryIds(profile){
+    return essential.normalizeIds(reserveSettings(profile).essentialCategoryIds||[]);
+  }
+
+  function categorySpendModel(profile,count=3){
     const months=typeof allMonths==="function"?allMonths(profile).slice(-count):[];
-    const values=months.map(month=>safe(core.monthStats(profile,month).expenses));
-    const positive=values.filter(value=>value>0);
-    return positive.length?Math.round(positive.reduce((sum,value)=>sum+value,0)/positive.length):0;
+    return essential.averageEssentialSpend(profile,{
+      categoryIds:selectedEssentialCategoryIds(profile),
+      monthKeys:months,
+      months:count
+    });
   }
 
   function runwayModel(profile){
     const settings=reserveSettings(profile);
     const configured=safe(settings.monthlyEssentialSpend);
-    const auto=recentAverageSpend(profile,3);
-    const monthly=configured||auto;
+    const categoryModel=categorySpendModel(profile,3);
+    const monthly=configured||categoryModel.monthlyAverage||0;
     const model=analytics.reserveRunway({reserveBalance:core.reserveBalance(profile),monthlyEssentialSpend:monthly});
-    return {...model,source:configured?"configured":auto?"average_expenses":"none",autoEstimate:auto};
+    return {
+      ...model,
+      source:configured?"configured":categoryModel.status==="ok"&&monthly>0?"essential_categories":"none",
+      categoryEstimate:categoryModel.monthlyAverage||0,
+      categoryModel
+    };
   }
 
   function reserveTarget(profile){return safe(reserveSettings(profile).targetBalance||reserveSettings(profile).target||0);}
+
+  function essentialCategoryOptions(profile){
+    const selected=new Set(selectedEssentialCategoryIds(profile));
+    const categories=(profile.categories||[]).filter(category=>category&&category.id!=null);
+    if(!categories.length)return `<div class="tiny muted">Сначала создай категории расходов. ARISE не будет угадывать обязательные расходы автоматически.</div>`;
+    return `<div style="display:grid;gap:8px;margin-top:8px">${categories.map(category=>`
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+        <input class="reserve-essential-category" type="checkbox" value="${escapeHTML(String(category.id))}" ${selected.has(String(category.id))?"checked":""} style="width:auto">
+        <span>${escapeHTML(category.name||"Без названия")}</span>
+      </label>`).join("")}</div>`;
+  }
 
   function reserveSection(profile){
     const balance=safe(core.reserveBalance(profile));
@@ -41,19 +64,28 @@
     const runway=runwayModel(profile);
     const monthly=runway.monthlyEssentialSpend||0;
     const months=runway.status==="ok"?runway.months:null;
+    const selected=selectedEssentialCategoryIds(profile);
     const reserveTx=(profile.transactions||[]).filter(tx=>tx.type==="reserve_deposit"||tx.type==="reserve_withdrawal").slice().reverse().slice(0,6);
+    const explanation=runway.source==="configured"
+      ?"Runway считается по заданной вручную месячной сумме обязательных расходов."
+      :runway.source==="essential_categories"
+        ?`Runway считается по среднему факту последних месяцев только по выбранным обязательным категориям: ${money(runway.categoryEstimate)}/мес.`
+        :selected.length
+          ?"По выбранным обязательным категориям пока недостаточно истории. Можно задать месячную сумму вручную."
+          :"Выбери категории, которые действительно считаешь обязательными, или задай месячную сумму вручную. ARISE не считает все расходы обязательными автоматически.";
 
     return `<section class="card" id="reserveLifecycle" style="margin-top:16px">
       <div class="kicker">ФИНАНСОВАЯ ПОДУШКА</div>
       <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:8px">
         <div><div class="big-value">${money(balance)}</div><div class="sub" style="margin-top:6px">${target>0?`${Math.round(progress.percent||0)}% от цели ${money(target)}`:"Цель подушки пока не указана"}</div></div>
-        <div style="text-align:right"><strong>${months===null?"—":`${months.toFixed(months<10?1:0)} мес.`}</strong><div class="tiny muted" style="margin-top:4px">${monthly?`при расходах ${money(monthly)}/мес.`:"нужен месячный ориентир расходов"}</div></div>
+        <div style="text-align:right"><strong>${months===null?"—":`${months.toFixed(months<10?1:0)} мес.`}</strong><div class="tiny muted" style="margin-top:4px">${monthly?`при обязательных расходах ${money(monthly)}/мес.`:"нужен ориентир обязательных расходов"}</div></div>
       </div>
-      <div class="notice" style="margin-top:14px">${runway.source==="configured"?"Runway считается по твоему месячному ориентиру расходов.":runway.source==="average_expenses"?`Пока используется автооценка по средним фактическим расходам последних месяцев: ${money(runway.autoEstimate)}/мес. Ты можешь задать свой ориентир ниже.`:"Укажи месячный ориентир расходов — ARISE покажет, на сколько хватит подушки без доходов."}</div>
+      <div class="notice" style="margin-top:14px">${explanation}</div>
       <div class="actions" style="margin-top:14px"><button class="btn primary" id="reserveDepositAction">Пополнить резерв</button><button class="btn" id="reserveWithdrawAction" ${balance<=0?"disabled":""}>Вывести из резерва</button></div>
       <div class="form" style="margin-top:16px">
         <div class="field"><label>Цель подушки</label><input id="reserveTargetBalance" type="number" min="0" value="${target||""}" placeholder="300000"></div>
-        <div class="field"><label>Месячный ориентир расходов для runway</label><input id="reserveEssentialSpend" type="number" min="0" value="${safe(reserveSettings(profile).monthlyEssentialSpend)||""}" placeholder="Например 60000"></div>
+        <div class="field"><label>Месячная сумма обязательных расходов — ручной приоритет</label><input id="reserveEssentialSpend" type="number" min="0" value="${safe(reserveSettings(profile).monthlyEssentialSpend)||""}" placeholder="Например 60000"><div class="tiny muted" style="margin-top:6px">Если указана, эта сумма используется вместо авторасчёта по категориям.</div></div>
+        <div class="field full"><label>Категории обязательных расходов</label>${essentialCategoryOptions(profile)}<div class="tiny muted" style="margin-top:8px">Если ручная сумма пустая, ARISE использует среднее по этим категориям за последние доступные месяцы.</div></div>
       </div>
       <div class="actions"><button class="btn" id="saveReserveLifecycleSettings">Сохранить параметры подушки</button></div>
       ${reserveTx.length?`<div style="margin-top:18px"><div class="kicker">ПОСЛЕДНИЕ ОПЕРАЦИИ РЕЗЕРВА</div>${reserveTx.map(tx=>`<div class="row"><div class="row-left"><strong class="${tx.type==="reserve_deposit"?"positive":"negative"}">${tx.type==="reserve_deposit"?"+":"−"} ${money(tx.amount,tx.currency||profile.settings.currency)}</strong><div class="tiny muted">${escapeHTML(tx.source|| (tx.type==="reserve_deposit"?"Пополнение":"Вывод"))} · ${formatDate(tx.date)}</div></div></div>`).join("")}</div>`:""}
@@ -72,6 +104,7 @@
       const settings=reserveSettings(profile);
       settings.targetBalance=safe(document.getElementById("reserveTargetBalance")?.value);
       settings.monthlyEssentialSpend=safe(document.getElementById("reserveEssentialSpend")?.value);
+      settings.essentialCategoryIds=[...document.querySelectorAll(".reserve-essential-category:checked")].map(input=>String(input.value));
       saveState();toast("Параметры подушки сохранены.");render();
     });
   }
@@ -118,5 +151,5 @@
     return typeof previousHistoryTransaction==="function"?previousHistoryTransaction(tx):"";
   };
 
-  root.ARISE_RESERVE_LIFECYCLE={reserveSettings,recentAverageSpend,runwayModel,reserveSection,appendReserveSection,showReserveDepositModal,showReserveWithdrawalModal};
+  root.ARISE_RESERVE_LIFECYCLE={reserveSettings,selectedEssentialCategoryIds,categorySpendModel,runwayModel,reserveSection,appendReserveSection,showReserveDepositModal,showReserveWithdrawalModal};
 })(typeof globalThis!=="undefined"?globalThis:window);
