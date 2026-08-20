@@ -13,6 +13,16 @@
 
   function mark(entity,remoteId){
     entity[META_KEY]={...(entity[META_KEY]||{}),remoteId,syncedAt:new Date().toISOString(),dirty:false};
+    delete entity[META_KEY].conflict;
+  }
+
+  function assertNoConflict(entity,label){
+    const conflict=entity&&entity[META_KEY]&&entity[META_KEY].conflict;
+    if(!conflict)return;
+    const error=new Error(`${label||"Данные"} изменены на другом устройстве после последней синхронизации. Изменение оставлено в очереди.`);
+    error.code="ARISE_SYNC_CONFLICT";
+    error.conflict=conflict;
+    throw error;
   }
 
   function categoryPayload(profile,profileId,userId,category){
@@ -53,9 +63,9 @@
     const box=outbox();
     const entityName=mutation.entity;
     const config=entityName==="category"
-      ? {collection:"categories",table:"finance_categories",payload:categoryPayload}
+      ? {collection:"categories",table:"finance_categories",payload:categoryPayload,label:"Категория"}
       : entityName==="goal"
-        ? {collection:"goals",table:"finance_goals",payload:goalPayload}
+        ? {collection:"goals",table:"finance_goals",payload:goalPayload,label:"Цель"}
         : null;
     if(!config) return false;
 
@@ -72,6 +82,7 @@
           box.ack(profile,mutation.id);
           return true;
         }
+        assertNoConflict(entity,config.label);
         const payload=config.payload(profile,profileId,userId,entity);
         let remoteId=rid(entity)||mutation.entityRemoteId||null;
         let data,error;
@@ -136,5 +147,5 @@
     root.addEventListener("arise:local-change",schedule);
   }
 
-  root.ARISE_ENTITY_OUTBOX={drainAll,drainProfile,processMutation,categoryPayload,goalPayload,schedule};
+  root.ARISE_ENTITY_OUTBOX={drainAll,drainProfile,processMutation,categoryPayload,goalPayload,assertNoConflict,schedule};
 })(typeof globalThis!=="undefined"?globalThis:window);

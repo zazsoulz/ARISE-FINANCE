@@ -10,9 +10,18 @@
   function session(){return remote()&&remote().currentSession?remote().currentSession():null;}
   function online(){return typeof navigator==="undefined"||navigator.onLine!==false;}
   function ensureMeta(entity){if(!entity[META_KEY]||typeof entity[META_KEY]!=="object") entity[META_KEY]={};return entity[META_KEY];}
-  function mark(entity,remoteId){const meta=ensureMeta(entity);if(remoteId)meta.remoteId=remoteId;meta.syncedAt=new Date().toISOString();meta.dirty=false;return meta;}
+  function mark(entity,remoteId){const meta=ensureMeta(entity);if(remoteId)meta.remoteId=remoteId;meta.syncedAt=new Date().toISOString();meta.dirty=false;delete meta.conflict;return meta;}
   function markDirty(entity){const meta=ensureMeta(entity);meta.dirty=true;meta.changedAt=new Date().toISOString();}
   function remoteId(entity){return entity&&entity[META_KEY]&&entity[META_KEY].remoteId||null;}
+  function conflictError(entity,label){
+    const conflict=entity&&entity[META_KEY]&&entity[META_KEY].conflict;
+    if(!conflict)return null;
+    const error=new Error(`${label||"Данные"} изменены на другом устройстве после последней синхронизации. Синхронизация остановлена, чтобы не потерять изменения.`);
+    error.code="ARISE_SYNC_CONFLICT";
+    error.conflict=conflict;
+    return error;
+  }
+  function assertNoConflict(entity,label){const error=conflictError(entity,label);if(error)throw error;}
   function currency(profile,value){return value||profile.settings&&profile.settings.currency||"RUB";}
   function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""));}
 
@@ -103,6 +112,7 @@
   }
 
   async function syncTransaction(profile,profileId,user,tx){
+    assertNoConflict(tx,"Операция");
     const c=client();
     const category=(profile.categories||[]).find(item=>item.id===tx.categoryId);
     const goal=(profile.goals||[]).find(item=>item.id===(tx.goalId||tx.goal_id));
@@ -163,6 +173,7 @@
   }
 
   async function syncProfile(profile,profileId,user){
+    assertNoConflict(profile,"Финансовый профиль");
     const c=client();
     const {error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId);if(error)throw error;
     const entityResult=await drainEntityOutbox(profile,profileId,user);
@@ -194,11 +205,15 @@
       root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
       return publish({status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,seededTransactions,seededEntities,legacyDeletes,startedAt,finishedAt:new Date().toISOString()});
     }catch(error){
-      console.error("ARISE sync",error);publish({status:"error",message:error.message||"Sync failed",startedAt,finishedAt:new Date().toISOString()});throw error;
+      console.error("ARISE sync",error);
+      const status=error&&error.code==="ARISE_SYNC_CONFLICT"?"conflict":"error";
+      publish({status,message:error.message||"Sync failed",conflict:error&&error.conflict||null,startedAt,finishedAt:new Date().toISOString()});
+      if(status==="conflict")return lastResult;
+      throw error;
     }finally{running=false;}
   }
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,transactionCurrencySnapshot,applyCategoryTombstones,applyGoalTombstones,seedEntityOutbox,drainEntityOutbox,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,conflictError,assertNoConflict,transactionCurrencySnapshot,applyCategoryTombstones,applyGoalTombstones,seedEntityOutbox,drainEntityOutbox,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
