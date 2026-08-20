@@ -35,3 +35,21 @@ test('stale-rate UI exposes source age snapshot warning and explicit refresh act
   assert.match(source,/data-refresh-stale-fx/);
   assert.match(source,/refreshRates\(true\)/);
 });
+
+test('backdated foreign-currency operations disclose the snapshot policy for income and expense flows',()=>{
+  const source=fs.readFileSync('currency-freshness-ui.js','utf8');
+  assert.match(source,/arise-fx-backdated/);
+  assert.match(source,/Операция записывается задним числом/);
+  assert.match(source,/Исторический курс за выбранную дату автоматически не подставляется/);
+  assert.match(source,/incomeDate/);
+  assert.match(source,/expenseDate/);
+  assert.match(source,/isBackdated/);
+});
+
+test('historical FX policy is documented as immutable snapshot-at-entry rather than fabricated historical lookup',()=>{
+  const policy=fs.readFileSync('docs/FX_POLICY.md','utf8');
+  assert.match(policy,/backdated/i);
+  assert.match(policy,/immutable/i);
+  assert.match(policy,/must not silently replace/i);
+  assert.match(policy,/import/i);
+});
