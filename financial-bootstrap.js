@@ -13,9 +13,14 @@
   }
 
   try{
+    const requiredCore=["planIncome","monthStats","availableFree","reserveBalance","goalBalance","validatePlan"];
     const integrity=globalThis.ARISE_RUNTIME_INTEGRITY&&globalThis.ARISE_RUNTIME_INTEGRITY.verify
       ?globalThis.ARISE_RUNTIME_INTEGRITY.verify()
-      :{ok:false,missing:["runtime-integrity"]};
+      :(()=>{
+          const core=globalThis.ARISE_FINANCE_CORE;
+          const missing=requiredCore.filter(name=>!core||typeof core[name]!=="function");
+          return {ok:missing.length===0,missing,engine:"ARISE_FINANCE_CORE",fallback:true};
+        })();
     if(!integrity.ok){
       console.error("ARISE canonical runtime integrity failed",integrity);
       const target=document.getElementById("root")||document.body;
