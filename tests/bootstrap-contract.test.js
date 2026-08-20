@@ -33,7 +33,7 @@ test('shell boundaries required by the loader still exist',()=>{
   assert.ok(init>ui,'initialization marker must follow UI');
 });
 
-test('loader wires financial, analytics, product, sync and A1-V3 layers in safe order',()=>{
+test('loader wires financial, analytics, history, product, sync and A1-V3 layers in safe order',()=>{
   const core=index.indexOf('./financial-core.js');
   const runtime=index.indexOf('./financial-runtime.js');
   const integration=index.indexOf('./financial-integration.js');
@@ -41,6 +41,8 @@ test('loader wires financial, analytics, product, sync and A1-V3 layers in safe 
   const analytics=index.indexOf('./analytics-engine.js');
   const productRules=index.indexOf('./product-rules.js');
   const v3=index.indexOf('./arise-v3.js');
+  const history=index.indexOf('./history-inspector.js');
+  const analyticsUi=index.indexOf('./analytics-ui.js');
   const supabase=index.indexOf('./supabase-client.js');
   const outbox=index.indexOf('./sync-outbox.js');
   const localStore=index.indexOf('./local-account-store.js');
@@ -53,12 +55,15 @@ test('loader wires financial, analytics, product, sync and A1-V3 layers in safe 
   assert.ok(analytics>reserveAnalytics,'analytics must consume financial/reserve core only');
   assert.ok(productRules>analytics);
   assert.ok(v3>productRules);
+  assert.ok(history>v3,'history inspector must wrap the final A1-V3 history renderer');
+  assert.ok(analyticsUi>history);
   assert.ok(supabase>v3);
   assert.ok(outbox>supabase);
   assert.ok(localStore>outbox,'outbox must exist before local save hooks');
   assert.ok(syncEngine>localStore,'sync engine must see local account storage');
   assert.ok(bootstrap>syncEngine);
   assert.ok(index.includes('./arise-v3.css'));
+  assert.ok(index.includes('./history-inspector.css'));
 });
 
 test('index inline bootstrap JavaScript parses',()=>{
@@ -68,7 +73,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['currency-engine.js','financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','history-inspector.js','history-inspector.css','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });
