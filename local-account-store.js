@@ -35,15 +35,19 @@
     return profile.ariseSync;
   }
 
+  function findMatchingProfile(profiles,oldProfile){
+    const oldRemoteId=remoteId(oldProfile);
+    return (profiles||[]).find(profile=>
+      String(profile.id)===String(oldProfile.id)||
+      (oldRemoteId&&remoteId(profile)===oldRemoteId)
+    )||null;
+  }
+
   function recordEntityDeletions(previous,next,{collection,tombstoneKey}){
     if(!previous||!Array.isArray(previous.profiles)||!next||!Array.isArray(next.profiles)) return;
 
     for(const oldProfile of previous.profiles){
-      const oldRemoteId=remoteId(oldProfile);
-      const currentProfile=next.profiles.find(profile=>
-        String(profile.id)===String(oldProfile.id)||
-        (oldRemoteId&&remoteId(profile)===oldRemoteId)
-      );
+      const currentProfile=findMatchingProfile(next.profiles,oldProfile);
       if(!currentProfile) continue;
 
       const currentEntities=Array.isArray(currentProfile[collection])?currentProfile[collection]:[];
@@ -75,6 +79,16 @@
     recordEntityDeletions(previous,next,{collection:"goals",tombstoneKey:"deletedGoalIds"});
   }
 
+  function recordTransactionOutbox(previous,next){
+    const outbox=root.ARISE_SYNC_OUTBOX;
+    if(!outbox||!outbox.recordTransactionChanges||!next||!Array.isArray(next.profiles)) return;
+    const previousProfiles=previous&&Array.isArray(previous.profiles)?previous.profiles:[];
+    for(const currentProfile of next.profiles){
+      const previousProfile=findMatchingProfile(previousProfiles,currentProfile)||previousProfiles.find(profile=>String(profile.id)===String(currentProfile.id))||null;
+      outbox.recordTransactionChanges(previousProfile,currentProfile);
+    }
+  }
+
   function write(){
     const key=activeAccountId?accountKey(activeAccountId):GUEST_KEY;
     if(state.account) delete state.account.password;
@@ -83,6 +97,7 @@
       const previous=read(key);
       recordCategoryDeletions(previous,state);
       recordGoalDeletions(previous,state);
+      recordTransactionOutbox(previous,state);
     }
 
     localStorage.setItem(key,JSON.stringify(state));
@@ -137,5 +152,5 @@
   function currentAccountId(){return activeAccountId;}
 
   preloadLastAccount();
-  root.ARISE_LOCAL_ACCOUNTS={activate,deactivate,currentAccountId,accountKey,recordCategoryDeletions,recordGoalDeletions};
+  root.ARISE_LOCAL_ACCOUNTS={activate,deactivate,currentAccountId,accountKey,recordCategoryDeletions,recordGoalDeletions,recordTransactionOutbox};
 })(typeof globalThis!=="undefined"?globalThis:window);
