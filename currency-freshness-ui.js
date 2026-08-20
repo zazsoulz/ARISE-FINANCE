@@ -20,6 +20,23 @@
     return `<div class="notice warning arise-fx-stale" style="margin-top:10px">Используется сохранённый курс ${escapeHTML(info.source||"кеш")} возрастом ${age}. Сумма будет сохранена с этим FX snapshot. <button class="btn small-btn" type="button" data-refresh-stale-fx>Обновить курс</button></div>`;
   }
 
+  function localDay(value){
+    if(!value)return "";
+    const match=String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+    return match?match[1]:"";
+  }
+
+  function isBackdated(date,currentDate=(typeof today==="function"?today():new Date().toISOString().slice(0,10))){
+    const operationDay=localDay(date);
+    const currentDay=localDay(currentDate);
+    return Boolean(operationDay&&currentDay&&operationDay<currentDay);
+  }
+
+  function backdatedNotice(date){
+    if(!isBackdated(date))return "";
+    return `<div class="notice arise-fx-backdated" style="margin-top:10px">Операция записывается задним числом. ARISE использует курс, доступный в момент сохранения, и фиксирует его в неизменяемом FX snapshot. Исторический курс за выбранную дату автоматически не подставляется.</div>`;
+  }
+
   async function refresh(button,rerender){
     if(button) button.disabled=true;
     try{
@@ -45,6 +62,9 @@
     const container=document.getElementById("incomePlan");
     const foreign=plan&&plan.originalCurrency&&plan.baseCurrency&&plan.originalCurrency!==plan.baseCurrency&&!plan.fxPending;
     if(!container||!foreign) return;
+    const date=plan.date||document.getElementById("incomeDate")?.value||"";
+    const historical=backdatedNotice(date);
+    if(historical)container.insertAdjacentHTML("beforeend",historical);
     const notice=staleNotice();
     if(notice) container.insertAdjacentHTML("beforeend",notice);
     bind(container,()=>{
@@ -61,10 +81,12 @@
     const snap=runtime.expenseFormSnapshot();
     const foreign=snap&&snap.originalCurrency!==snap.baseCurrency&&!snap.conversionPending;
     if(!preview||!foreign) return;
+    const historical=backdatedNotice(document.getElementById("expenseDate")?.value||"");
+    if(historical)preview.insertAdjacentHTML("beforeend",historical);
     const notice=staleNotice();
     if(notice) preview.insertAdjacentHTML("beforeend",notice);
     bind(preview,()=>root.updateExpensePreview());
   };
 
-  root.ARISE_FX_FRESHNESS_UI={status,staleNotice};
+  root.ARISE_FX_FRESHNESS_UI={status,staleNotice,isBackdated,backdatedNotice};
 })(typeof globalThis!=="undefined"?globalThis:window);
