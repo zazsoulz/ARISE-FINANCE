@@ -16,8 +16,12 @@ test('sync engine seeds and drains unified outbox instead of full transaction pu
   assert.equal(source.includes('for(const tx of profile.transactions||[]){await syncTransaction'),false);
 });
 
-test('legacy category and goal tombstones are migration-only cleanup before unified outbox drain',()=>{
-  assert.ok(source.includes('const legacyCategoryDeletes=await applyCategoryTombstones'));
-  assert.ok(source.includes('const legacyGoalDeletes=await applyGoalTombstones'));
-  assert.ok(source.includes('legacyDeletes:legacyCategoryDeletes+legacyGoalDeletes'));
+test('legacy category and goal tombstones migrate into the unified outbox before entity drain',()=>{
+  assert.ok(source.includes('const legacyCategoryDeletes=applyCategoryTombstones(profile)'));
+  assert.ok(source.includes('const legacyGoalDeletes=applyGoalTombstones(profile)'));
+  assert.ok(source.includes('migrateEntityTombstones'));
+  assert.ok(source.includes('entityRemoteId:remoteIdValue'));
+  assert.ok(source.includes('action:"delete"'));
+  assert.equal(source.includes('c.from(table).delete()'),false);
+  assert.ok(source.includes('legacyMigrated:legacyCategoryDeletes+legacyGoalDeletes'));
 });
