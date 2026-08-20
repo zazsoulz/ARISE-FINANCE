@@ -44,6 +44,45 @@ test('outbox records new changed and deleted transactions without queue duplicat
   assert.equal(byId.deleted.entityRemoteId,'remote-deleted');
 });
 
+test('category and goal changes use the same persistent mutation queue',()=>{
+  const outbox=loadOutbox();
+  const previous={
+    categories:[
+      {id:'cat-same',name:'Семья',percent:10},
+      {id:'cat-change',name:'Жизнь',percent:15},
+      {id:'cat-delete',name:'Старое',percent:5,ariseSync:{remoteId:'remote-cat-delete'}}
+    ],
+    goals:[
+      {id:'goal-change',name:'Отпуск',target:100000},
+      {id:'goal-delete',name:'Старая цель',target:50000,ariseSync:{remoteId:'remote-goal-delete'}}
+    ]
+  };
+  const next={
+    categories:[
+      {id:'cat-same',name:'Семья',percent:10},
+      {id:'cat-change',name:'Жизнь',percent:20},
+      {id:'cat-new',name:'Творчество',percent:10}
+    ],
+    goals:[
+      {id:'goal-change',name:'Отпуск',target:150000},
+      {id:'goal-new',name:'Подушка',target:300000}
+    ]
+  };
+
+  assert.equal(outbox.recordCategoryChanges(previous,next),3);
+  assert.equal(outbox.recordGoalChanges(previous,next),3);
+
+  const categories=Object.fromEntries(outbox.list(next,'category').map(item=>[item.entityLocalId,item]));
+  const goals=Object.fromEntries(outbox.list(next,'goal').map(item=>[item.entityLocalId,item]));
+
+  assert.deepEqual(Object.keys(categories).sort(),['cat-change','cat-delete','cat-new']);
+  assert.equal(categories['cat-delete'].action,'delete');
+  assert.equal(categories['cat-delete'].entityRemoteId,'remote-cat-delete');
+  assert.deepEqual(Object.keys(goals).sort(),['goal-change','goal-delete','goal-new']);
+  assert.equal(goals['goal-delete'].action,'delete');
+  assert.equal(goals['goal-delete'].entityRemoteId,'remote-goal-delete');
+});
+
 test('failed mutation stays queued and ack removes only the confirmed mutation',()=>{
   const outbox=loadOutbox();
   const profile={};
