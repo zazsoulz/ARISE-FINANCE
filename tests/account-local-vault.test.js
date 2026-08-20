@@ -26,6 +26,7 @@ function boot(){
   };
   context.globalThis=context;
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync('sync-outbox.js','utf8'),context);
   vm.runInContext(fs.readFileSync('local-account-store.js','utf8'),context);
   return {context,localStorage};
 }
@@ -66,4 +67,20 @@ test('last authenticated vault can preload for offline startup',()=>{
   const saved=localStorage.getItem('arise.finance.production.v1.account.user-a');
   assert.ok(saved);
   assert.equal(localStorage.getItem('arise.finance.production.v1.lastAccountId'),'user-a');
+});
+
+test('offline transaction change is persisted together with its sync outbox mutation',()=>{
+  const {context,localStorage}=boot();
+  context.ARISE_LOCAL_ACCOUNTS.activate('user-a');
+  context.saveState();
+  const profile=context.state.profiles[0];
+  profile.transactions.push({id:'offline-expense',type:'expense',amount:450,date:'2026-08-20'});
+  context.saveState();
+
+  const saved=JSON.parse(localStorage.getItem('arise.finance.production.v1.account.user-a'));
+  const savedProfile=saved.profiles[0];
+  assert.equal(savedProfile.transactions.some(tx=>tx.id==='offline-expense'),true);
+  const queued=savedProfile.ariseSync.outbox.filter(item=>item.entity==='transaction'&&item.entityLocalId==='offline-expense');
+  assert.equal(queued.length,1);
+  assert.equal(queued[0].action,'upsert');
 });
