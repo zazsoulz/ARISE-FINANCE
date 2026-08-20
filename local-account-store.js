@@ -92,6 +92,14 @@
     }
   }
 
+  function mirrorIndexedDb(){
+    const idb=root.ARISE_INDEXED_DB;
+    if(!activeAccountId||!idb||!idb.saveState) return;
+    Promise.resolve(idb.saveState(activeAccountId,state)).catch(error=>{
+      console.error("ARISE IndexedDB mirror",error);
+    });
+  }
+
   function write(){
     const key=activeAccountId?accountKey(activeAccountId):GUEST_KEY;
     if(state.account) delete state.account.password;
@@ -105,6 +113,8 @@
     }
 
     localStorage.setItem(key,JSON.stringify(state));
+    mirrorIndexedDb();
+
     if(!root.ARISE_SYNC_SILENT&&root.dispatchEvent){
       root.dispatchEvent(new CustomEvent("arise:local-change",{detail:{accountId:activeAccountId,at:new Date().toISOString()}}));
     }
@@ -120,6 +130,7 @@
     const existing=read(accountKey(activeAccountId));
     if(existing){
       state=existing;
+      mirrorIndexedDb();
       return state;
     }
 
@@ -150,6 +161,7 @@
     if(!existing) return false;
     activeAccountId=last;
     state=existing;
+    mirrorIndexedDb();
     return true;
   }
 
@@ -158,6 +170,6 @@
   preloadLastAccount();
   root.ARISE_LOCAL_ACCOUNTS={
     activate,deactivate,currentAccountId,accountKey,
-    recordCategoryDeletions,recordGoalDeletions,recordMutationOutbox
+    recordCategoryDeletions,recordGoalDeletions,recordMutationOutbox,mirrorIndexedDb
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
