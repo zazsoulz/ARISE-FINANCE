@@ -10,12 +10,17 @@
   function markProfileDirty(profile){
     profile.ariseSync={...(profile.ariseSync||{}),dirty:true,changedAt:new Date().toISOString()};
   }
+  function remoteId(profile){return profile&&profile.ariseSync&&profile.ariseSync.remoteId||null;}
   function hasFinancialHistory(profile){
     return !!((profile.transactions||[]).length||(profile.goals||[]).some(goal=>Number(goal.current||goal.ledgerStart||0)>0));
   }
   function canChangeBaseCurrency(profile,nextCurrency){
     const current=profile&&profile.settings&&profile.settings.currency||"RUB";
     return !nextCurrency||nextCurrency===current||!hasFinancialHistory(profile);
+  }
+  function currentSession(){
+    const remote=root.ARISE_SUPABASE;
+    return remote&&remote.currentSession&&remote.currentSession();
   }
 
   async function persistNewProfile(profile){
@@ -53,9 +58,9 @@
     const profile=state.profiles.find(p=>p.id===profileId);if(!profile)return false;
     if(!canChangeBaseCurrency(profile,currency)) return {ok:false,reason:"currency_locked"};
     profile.name=String(name||"").trim()||profile.name;if(currency)profile.settings.currency=currency;markProfileDirty(profile);saveState();
-    const remoteId=profile.ariseSync&&profile.ariseSync.remoteId,remote=root.ARISE_SUPABASE;
-    if(remoteId&&remote&&remote.currentSession&&remote.currentSession()){
-      try{await remote.updateFinanceProfile(remoteId,{name:profile.name,baseCurrency:profile.settings.currency,settings:profile.settings});syncMeta(profile,remoteId);root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}}
+    const id=remoteId(profile),remote=root.ARISE_SUPABASE;
+    if(id&&remote&&remote.currentSession&&remote.currentSession()){
+      try{await remote.updateFinanceProfile(id,{name:profile.name,baseCurrency:profile.settings.currency,settings:profile.settings});syncMeta(profile,id);root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}}
       catch(error){console.error("ARISE update finance profile",error);return {ok:false,reason:"sync_failed"};}
     }else if(root.ARISE_SYNC&&root.ARISE_SYNC.schedule)root.ARISE_SYNC.schedule();
     return {ok:true};
@@ -90,12 +95,70 @@
   async function removeProfile(profileId){
     if(state.profiles.length<=1){toast("Нельзя удалить единственный финансовый профиль.");return;}
     const profile=state.profiles.find(p=>p.id===profileId);if(!profile)return;
-    if(!confirm(`Удалить финансовый профиль «${profile.name}»? Его локальные данные будут удалены с этого устройства.`))return;
-    const remoteId=profile.ariseSync&&profile.ariseSync.remoteId,remote=root.ARISE_SUPABASE;
-    if(remoteId&&remote&&remote.currentSession&&remote.currentSession()){
-      try{await remote.archiveFinanceProfile(remoteId);}catch(error){console.error("ARISE archive finance profile",error);toast("Не удалось удалить профиль с сервера. Попробуй ещё раз при стабильном соединении.");return;}
+    const id=remoteId(profile),remote=root.ARISE_SUPABASE;
+
+    if(hasFinancialHistory(profile)&&!id){
+      toast("Сначала синхронизируй профиль. Профиль с финансовой историей нельзя удалить без серверной копии для восстановления.");
+      return;
     }
-    state.profiles=state.profiles.filter(p=>p.id!==profileId);if(state.activeProfileId===profileId)state.activeProfileId=state.profiles[0].id;saveState();render();
+    if(id&&(!remote||typeof remote.archiveFinanceProfile!=="function"||!currentSession())){
+      toast("Для безопасного удаления нужен вход в аккаунт и связь с сервером. Профиль останется на устройстве.");
+      return;
+    }
+
+    const recoverable=!!id;
+    const message=recoverable
+      ?`Архивировать финансовый профиль «${profile.name}»? Он исчезнет с этого устройства, но его можно будет восстановить из архива профилей.`
+      :`Удалить пустой несинхронизированный профиль «${profile.name}»? Серверной копии у него нет.`;
+    if(!confirm(message))return;
+
+    if(recoverable){
+      try{await remote.archiveFinanceProfile(id);}
+      catch(error){console.error("ARISE archive finance profile",error);toast("Не удалось безопасно архивировать профиль. Локальные данные не удалены.");return;}
+    }
+
+    state.profiles=state.profiles.filter(p=>p.id!==profileId);
+    if(state.activeProfileId===profileId)state.activeProfileId=state.profiles[0].id;
+    saveState();render();
+    toast(recoverable?"Профиль перемещён в архив. Его можно восстановить в настройках.":"Пустой профиль удалён.");
+  }
+
+  async function restoreArchivedProfile(profileRemoteId){
+    const remote=root.ARISE_SUPABASE;
+    if(!remote||typeof remote.restoreFinanceProfile!=="function"||!currentSession()){
+      toast("Для восстановления профиля нужен вход в аккаунт и связь с сервером.");return {ok:false,reason:"unavailable"};
+    }
+    try{
+      const row=await remote.restoreFinanceProfile(profileRemoteId);
+      const pull=root.ARISE_SYNC_PULL;
+      if(pull&&typeof pull.pullAll==="function")await pull.pullAll();
+      const local=(state.profiles||[]).find(profile=>remoteId(profile)===row.id);
+      if(local){state.activeProfileId=local.id;saveState();}
+      closeModal();render();toast("Профиль восстановлен вместе с серверной финансовой историей.");
+      return {ok:true,row,local:local||null};
+    }catch(error){
+      console.error("ARISE restore finance profile",error);toast("Не удалось восстановить профиль. Серверные данные не изменены локально.");return {ok:false,reason:"restore_failed"};
+    }
+  }
+
+  async function showArchivedProfiles(){
+    const remote=root.ARISE_SUPABASE;
+    if(!remote||typeof remote.listArchivedFinanceProfiles!=="function"||!currentSession()){
+      toast("Архив профилей доступен после входа в аккаунт.");return;
+    }
+    openModal(`<div class="kicker">ФИНАНСОВЫЕ ПРОФИЛИ</div><h2 class="title">Архив профилей</h2><div id="archivedProfilesBody" class="sub" style="margin-top:14px">Загружаю архив…</div><div class="actions"><button class="btn" id="archivedProfilesClose">Закрыть</button></div>`);
+    document.getElementById("archivedProfilesClose").onclick=closeModal;
+    const body=document.getElementById("archivedProfilesBody");
+    try{
+      const rows=await remote.listArchivedFinanceProfiles();
+      if(!rows.length){body.innerHTML='<div class="empty">В архиве нет финансовых профилей.</div>';return;}
+      body.innerHTML=rows.map(row=>`
+        <div class="row">
+          <div class="row-left"><strong>${escapeHTML(row.name||"Профиль")}</strong><div class="tiny muted">${escapeHTML(row.base_currency||"RUB")} · архивирован ${row.archived_at?formatDate(String(row.archived_at).slice(0,10)):"ранее"}</div></div>
+          <div class="row-right"><button class="btn small-btn" data-restore-profile="${escapeHTML(row.id)}">Восстановить</button></div>
+        </div>`).join("");
+      body.querySelectorAll("[data-restore-profile]").forEach(button=>{button.onclick=async()=>{button.disabled=true;await restoreArchivedProfile(button.dataset.restoreProfile);};});
+    }catch(error){console.error("ARISE archived finance profiles",error);body.innerHTML='<div class="notice danger">Не удалось загрузить архив профилей. Попробуй ещё раз при стабильном соединении.</div>';}
   }
 
   function attachEditButtons(){
@@ -107,6 +170,19 @@
     }
   }
 
-  root.renderSettings=function(){previousRenderSettings();const createButton=document.getElementById("newProfile");if(createButton)createButton.onclick=createProfileFromSettings;document.querySelectorAll("[data-delete-profile]").forEach(button=>{button.onclick=()=>removeProfile(button.dataset.deleteProfile);});attachEditButtons();};
-  root.ARISE_PROFILE_LIFECYCLE={createProfile:createProfileFromSettings,editProfile,renameProfile,removeProfile,hasFinancialHistory,canChangeBaseCurrency};
+  function attachArchiveButton(){
+    if(document.getElementById("archivedProfiles")||!root.ARISE_SUPABASE)return;
+    const createButton=document.getElementById("newProfile");
+    if(!createButton)return;
+    const button=document.createElement("button");button.type="button";button.className="btn";button.id="archivedProfiles";button.textContent="Архив профилей";button.onclick=showArchivedProfiles;
+    createButton.insertAdjacentElement("afterend",button);
+  }
+
+  root.renderSettings=function(){
+    previousRenderSettings();
+    const createButton=document.getElementById("newProfile");if(createButton)createButton.onclick=createProfileFromSettings;
+    document.querySelectorAll("[data-delete-profile]").forEach(button=>{button.onclick=()=>removeProfile(button.dataset.deleteProfile);});
+    attachEditButtons();attachArchiveButton();
+  };
+  root.ARISE_PROFILE_LIFECYCLE={createProfile:createProfileFromSettings,editProfile,renameProfile,removeProfile,restoreArchivedProfile,showArchivedProfiles,hasFinancialHistory,canChangeBaseCurrency};
 })(typeof globalThis!=="undefined"?globalThis:window);

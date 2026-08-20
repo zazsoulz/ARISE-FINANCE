@@ -20,15 +20,17 @@ test('profile edits persist locally first and update Supabase when available',()
   for(const token of [
     'markProfileDirty(profile)',
     'saveState();',
-    'remote.updateFinanceProfile(remoteId',
+    'remote.updateFinanceProfile(id',
     'baseCurrency:profile.settings.currency',
-    'syncMeta(profile,remoteId)',
+    'syncMeta(profile,id)',
     'ARISE_SYNC.schedule()'
   ]) assert.ok(source.includes(token),token+' missing');
 });
 
 test('profile deletion archives server profile before removing local data',()=>{
-  assert.ok(source.includes('remote.archiveFinanceProfile(remoteId)'));
+  assert.ok(source.includes('await remote.archiveFinanceProfile(id)'));
   assert.ok(source.includes('state.profiles=state.profiles.filter'));
   assert.ok(source.includes('Нельзя удалить единственный финансовый профиль'));
+  assert.ok(source.includes('restoreArchivedProfile'));
+  assert.ok(source.includes('Архив профилей'));
 });

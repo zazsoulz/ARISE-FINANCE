@@ -118,10 +118,21 @@
     return account.avatar_display_url||"";
   }
 
+  const PROFILE_FIELDS="id,user_id,name,base_currency,settings,created_at,updated_at,archived_at";
+
   async function listFinanceProfiles(){
     const supabase=getClient();
     if(!supabase) return [];
-    const {data,error}=await supabase.from("finance_profiles").select("id,user_id,name,base_currency,settings,created_at,updated_at").is("archived_at",null).order("created_at");
+    const {data,error}=await supabase.from("finance_profiles").select(PROFILE_FIELDS).is("archived_at",null).order("created_at");
+    if(error) throw error;
+    return data||[];
+  }
+
+  async function listArchivedFinanceProfiles(){
+    const supabase=getClient();
+    if(!supabase) return [];
+    await requireUser();
+    const {data,error}=await supabase.from("finance_profiles").select(PROFILE_FIELDS).not("archived_at","is",null).order("archived_at",{ascending:false});
     if(error) throw error;
     return data||[];
   }
@@ -131,7 +142,7 @@
     const user=await requireUser();
     const row={user_id:user.id,name:String(name||"Новый профиль").trim()||"Новый профиль",base_currency:baseCurrency};
     if(settings) row.settings=settings;
-    const {data,error}=await supabase.from("finance_profiles").insert(row).select("id,user_id,name,base_currency,settings,created_at,updated_at").single();
+    const {data,error}=await supabase.from("finance_profiles").insert(row).select(PROFILE_FIELDS).single();
     if(error) throw error;
     return data;
   }
@@ -143,7 +154,7 @@
     if(Object.prototype.hasOwnProperty.call(patch,"name")) row.name=String(patch.name||"").trim()||"Профиль";
     if(Object.prototype.hasOwnProperty.call(patch,"baseCurrency")) row.base_currency=patch.baseCurrency;
     if(Object.prototype.hasOwnProperty.call(patch,"settings")) row.settings=patch.settings;
-    const {data,error}=await supabase.from("finance_profiles").update(row).eq("id",profileId).is("archived_at",null).select("id,user_id,name,base_currency,settings,created_at,updated_at").single();
+    const {data,error}=await supabase.from("finance_profiles").update(row).eq("id",profileId).is("archived_at",null).select(PROFILE_FIELDS).single();
     if(error) throw error;
     return data;
   }
@@ -153,12 +164,20 @@
     await requireUser();
     const profiles=await listFinanceProfiles();
     if(profiles.length<=1) throw new Error("Нельзя архивировать единственный финансовый профиль.");
-    const {data,error}=await supabase.from("finance_profiles").update({archived_at:new Date().toISOString()}).eq("id",profileId).is("archived_at",null).select("id").single();
+    const {data,error}=await supabase.from("finance_profiles").update({archived_at:new Date().toISOString()}).eq("id",profileId).is("archived_at",null).select("id,archived_at").single();
+    if(error) throw error;
+    return data;
+  }
+
+  async function restoreFinanceProfile(profileId){
+    const supabase=getClient();
+    await requireUser();
+    const {data,error}=await supabase.from("finance_profiles").update({archived_at:null}).eq("id",profileId).not("archived_at","is",null).select(PROFILE_FIELDS).single();
     if(error) throw error;
     return data;
   }
 
   function currentSession(){return session;}
 
-  root.ARISE_SUPABASE={available,getClient,init,signUp,signIn,signOut,resetPassword,updatePassword,loadAccount,updateAccount,uploadAvatar,resolveAvatar,listFinanceProfiles,createFinanceProfile,updateFinanceProfile,archiveFinanceProfile,currentSession};
+  root.ARISE_SUPABASE={available,getClient,init,signUp,signIn,signOut,resetPassword,updatePassword,loadAccount,updateAccount,uploadAvatar,resolveAvatar,listFinanceProfiles,listArchivedFinanceProfiles,createFinanceProfile,updateFinanceProfile,archiveFinanceProfile,restoreFinanceProfile,currentSession};
 })(typeof globalThis!=="undefined"?globalThis:window);
