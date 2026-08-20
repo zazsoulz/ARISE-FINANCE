@@ -40,6 +40,7 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   const runtime=index.indexOf('./financial-runtime.js');
   const integration=index.indexOf('./financial-integration.js');
   const reserveAnalytics=index.indexOf('./reserve-analytics.js');
+  const reserveEssential=index.indexOf('./reserve-essential-spend.js');
   const analytics=index.indexOf('./analytics-engine.js');
   const productRules=index.indexOf('./product-rules.js');
   const v3=index.indexOf('./arise-v3.js');
@@ -54,6 +55,7 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   const syncPull=index.indexOf('./sync-pull.js');
   const syncHardening=index.indexOf('./sync-conflict-hardening.js');
   const productUi=index.indexOf('./product-ui.js');
+  const reserveLifecycleUi=index.indexOf('./reserve-lifecycle-ui.js');
   const syncConflictUi=index.indexOf('./sync-conflict-ui.js');
   const goalLifecycleUi=index.indexOf('./goal-lifecycle-ui.js');
   const modalAccessibility=index.indexOf('./modal-accessibility.js');
@@ -64,7 +66,8 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   assert.ok(runtime>expenseReconciliation);
   assert.ok(integration>runtime);
   assert.ok(reserveAnalytics>integration);
-  assert.ok(analytics>reserveAnalytics,'analytics must consume financial/reserve core only');
+  assert.ok(reserveEssential>reserveAnalytics,'reserve essential-spend model must consume canonical reserve/ledger data');
+  assert.ok(analytics>reserveEssential,'analytics must follow reserve domain helpers');
   assert.ok(productRules>analytics);
   assert.ok(v3>productRules);
   assert.ok(reconciliationUi>v3,'expense reconciliation UI must wrap the final expense/product behavior');
@@ -78,7 +81,8 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   assert.ok(syncPull>syncConflictPolicy,'pull must consume canonical conflict policy');
   assert.ok(syncHardening>syncPull,'delete-conflict hardening must wrap the final pull implementation');
   assert.ok(productUi>syncHardening,'product UI must decorate the already-loaded sync and history layers');
-  assert.ok(syncConflictUi>productUi,'conflict resolution UI must wrap the final product topbar');
+  assert.ok(reserveLifecycleUi>productUi,'reserve lifecycle UI must load after its domain model and product shell');
+  assert.ok(syncConflictUi>reserveLifecycleUi,'conflict resolution UI must wrap the final product topbar');
   assert.ok(goalLifecycleUi>syncConflictUi,'goal lifecycle UI must follow sync conflict controls');
   assert.ok(modalAccessibility>goalLifecycleUi,'modal accessibility must wrap the final modal behavior');
   assert.ok(bootstrap>modalAccessibility);
@@ -94,7 +98,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-reconciliation-ui.js','history-inspector.js','history-inspector.css','product-ui.js','product-ui.css','sync-conflict-ui.js','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-reconciliation-ui.js','history-inspector.js','history-inspector.css','product-ui.js','product-ui.css','reserve-lifecycle-ui.js','sync-conflict-ui.js','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });
