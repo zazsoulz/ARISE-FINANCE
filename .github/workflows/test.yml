@@ -21,6 +21,8 @@ jobs:
         run: npm install --no-save jsdom@26.1.0
       - name: Syntax check
         run: |
+          node --check currency-engine.js
+          node --check currency-runtime.js
           node --check financial-core.js
           node --check expense-reconciliation.js
           node --check financial-runtime.js
