@@ -35,6 +35,7 @@ jobs:
           node --check income-plan-consequences.js
           node --check canonical-ui-overrides.js
           node --check reserve-analytics.js
+          node --check reserve-essential-spend.js
           node --check analytics-engine.js
           node --check goal-completion-analytics.js
           node --check analytics-ui.js
