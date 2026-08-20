@@ -23,7 +23,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
     const initMarker=`/* =========================================================\n   INITIALIZATION\n========================================================= */`;
     const financialStart=html.indexOf(financialMarker),uiStart=html.indexOf(uiMarker);
     if(financialStart<0||uiStart<0||uiStart<=financialStart)throw new Error("ARISE shell financial boundary not found.");
-    html=html.slice(0,financialStart)+`/* Financial state and calculations are provided by the external ARISE runtime. */\n\n`+html.slice(uiStart);
+    html=html.slice(0,financialStart)+`/* Financial state and calculations are provided by the external ARISE runtime. */\nglobalThis.__ARISE_LEGACY_FINANCIAL_STRIPPED__=true;\n\n`+html.slice(uiStart);
     const scriptCloseTag="</scr"+"ipt>",initStart=html.indexOf(initMarker),scriptEnd=html.lastIndexOf(scriptCloseTag);
     if(initStart<0||scriptEnd<0||scriptEnd<=initStart)throw new Error("ARISE shell initialization boundary not found.");
     html=html.slice(0,initStart)+`/* Initialization is deferred until the financial runtime is loaded. */\n\n`+html.slice(scriptEnd);
@@ -76,6 +76,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"./goal-future-reroute-ui.js\">"+scriptClose+
       scriptOpen+" src=\"./goal-history-ui.js\">"+scriptClose+
       scriptOpen+" src=\"./modal-accessibility.js\">"+scriptClose+
+      scriptOpen+" src=\"./runtime-integrity.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-bootstrap.js\">"+scriptClose;
     const bootHide='<style id="arise-boot-hide">html{visibility:hidden}</style>',themeLinks='<link rel="stylesheet" href="./arise-v3.css"><link rel="stylesheet" href="./arise-v3-state.css"><link rel="stylesheet" href="./analytics-ui.css"><link rel="stylesheet" href="./history-inspector.css"><link rel="stylesheet" href="./product-ui.css">';
     if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,themeLinks+bootHide+"</head>");else html=themeLinks+bootHide+html;
