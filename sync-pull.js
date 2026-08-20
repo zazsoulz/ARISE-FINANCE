@@ -8,7 +8,8 @@
   function session(){return api()&&api().currentSession?api().currentSession():null;}
   function rid(entity){return entity&&entity[META_KEY]&&entity[META_KEY].remoteId||null;}
   function meta(remoteId,syncedAt){return {remoteId,syncedAt:syncedAt||new Date().toISOString(),dirty:false};}
-  function shouldUseRemote(remoteUpdated,localEntity){
+
+  function conflictDecision(remoteUpdated,localEntity){
     const localMeta=localEntity&&localEntity[META_KEY]||{};
     const policy=root.ARISE_SYNC_CONFLICTS;
     if(policy&&typeof policy.resolve==="function"){
@@ -16,15 +17,25 @@
         localMeta,
         remoteUpdatedAt:remoteUpdated,
         localChangedAt:localMeta.changedAt
-      }).winner==="remote";
+      });
     }
-    if(localMeta.dirty) return false;
-    if(!localMeta.syncedAt) return false;
-    return new Date(remoteUpdated||0).getTime()>new Date(localMeta.syncedAt||0).getTime();
+    if(localMeta.dirty) return {winner:"local",reason:"local_dirty"};
+    if(!localMeta.syncedAt) return {winner:"local",reason:"local_unsynced"};
+    const remoteTime=new Date(remoteUpdated||0).getTime();
+    const localTime=new Date(localMeta.syncedAt||0).getTime();
+    return remoteTime>localTime
+      ? {winner:"remote",reason:"remote_newer"}
+      : {winner:"local",reason:"local_newer_or_equal"};
   }
+
+  function shouldUseRemote(remoteUpdated,localEntity){
+    return conflictDecision(remoteUpdated,localEntity).winner==="remote";
+  }
+
   function isEmptyLocalProfile(profile){
     return !(profile.transactions||[]).length&&!(profile.goals||[]).length;
   }
+
   function localCategoryFrom(row){
     return {
       id:uid(),name:row.name||"Категория",type:row.rule_type==="fixed"?"fixed":"percentage",
@@ -34,6 +45,7 @@
       color:"green",[META_KEY]:meta(row.id,row.updated_at)
     };
   }
+
   function localGoalFrom(row){
     const current=Math.max(0,Number(row.ledger_start)||0);
     return {
@@ -45,6 +57,7 @@
       completedAt:row.completed_at||"",[META_KEY]:meta(row.id,row.updated_at)
     };
   }
+
   function allocationGroups(rows){
     const map=new Map();
     for(const row of rows||[]){
@@ -53,6 +66,7 @@
     }
     return map;
   }
+
   function localTransactionFrom(row,profile,allocationRows){
     const payload=row.payload&&typeof row.payload==="object"?row.payload:{};
     const byRemoteCategory=new Map((profile.categories||[]).map(c=>[rid(c),c]));
@@ -68,7 +82,7 @@
     });
     const category=byRemoteCategory.get(row.category_id);
     const goal=byRemoteGoal.get(row.goal_id);
-    const tx={
+    return {
       id:payload.localId||uid(),type:row.type,date:row.date||today(),month:payload.month||monthKey(row.date||today()),
       amount:Number(row.amount)||0,currency:row.currency||profile.settings.currency,source:row.source||"",note:row.note||"",
       categoryId:category?category.id:null,categoryName:category?category.name:(row.type==="expense"?"Нераспределено":""),
@@ -77,7 +91,6 @@
       allocations:allocations.length?allocations:(payload.allocations||[]),goalAllocations:goalAllocations.length?goalAllocations:(payload.goalAllocations||[]),
       fundingBreakdown:payload.fundingBreakdown||null,createdAt:row.created_at||new Date().toISOString(),[META_KEY]:meta(row.id,row.updated_at)
     };
-    return tx;
   }
 
   async function fetchProfileBundle(profileId){
@@ -96,16 +109,25 @@
     const bundle=await fetchProfileBundle(row.id);
     const target=localProfile||createProfile(row.name||"Профиль");
     const replace=!localProfile||isEmptyLocalProfile(target);
+    const useRemoteProfile=replace||shouldUseRemote(row.updated_at,target);
 
-    target.name=row.name||target.name||"Профиль";
-    target.settings={...(target.settings||{}),...(row.settings||{}),currency:row.base_currency||target.settings&&target.settings.currency||"RUB"};
-    target[META_KEY]=meta(row.id,row.updated_at);
+    if(useRemoteProfile){
+      target.name=row.name||target.name||"Профиль";
+      target.settings={...(target.settings||{}),...(row.settings||{}),currency:row.base_currency||target.settings&&target.settings.currency||"RUB"};
+      target[META_KEY]=meta(row.id,row.updated_at);
+    }else{
+      target[META_KEY]={...(target[META_KEY]||{}),remoteId:row.id};
+    }
 
     const existingCategories=new Map((target.categories||[]).map(item=>[rid(item),item]));
     const remoteCategories=[];
     for(const remoteRow of bundle.categories){
       const existing=existingCategories.get(remoteRow.id);
-      if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){remoteCategories.push(existing);continue;}
+      if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){
+        if(!rid(existing)) existing[META_KEY]={...(existing[META_KEY]||{}),remoteId:remoteRow.id};
+        remoteCategories.push(existing);
+        continue;
+      }
       const next=localCategoryFrom(remoteRow);
       if(existing) next.id=existing.id;
       remoteCategories.push(next);
@@ -120,7 +142,11 @@
     const remoteGoals=[];
     for(const remoteRow of bundle.goals){
       const existing=existingGoals.get(remoteRow.id);
-      if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){remoteGoals.push(existing);continue;}
+      if(existing&&!shouldUseRemote(remoteRow.updated_at,existing)){
+        if(!rid(existing)) existing[META_KEY]={...(existing[META_KEY]||{}),remoteId:remoteRow.id};
+        remoteGoals.push(existing);
+        continue;
+      }
       const next=localGoalFrom(remoteRow);
       if(existing) next.id=existing.id;
       remoteGoals.push(next);
@@ -139,8 +165,14 @@
       const localId=remoteRow.payload&&remoteRow.payload.localId;
       const existing=existingTxByRemote.get(remoteRow.id)||(localId&&existingTxByLocal.get(localId));
       if(existing){
-        if(!rid(existing)) existing[META_KEY]=meta(remoteRow.id,remoteRow.updated_at);
-        remoteTransactions.push(existing);
+        if(shouldUseRemote(remoteRow.updated_at,existing)){
+          const next=localTransactionFrom(remoteRow,target,allocationMap.get(remoteRow.id)||[]);
+          next.id=existing.id;
+          remoteTransactions.push(next);
+        }else{
+          existing[META_KEY]={...(existing[META_KEY]||{}),remoteId:remoteRow.id};
+          remoteTransactions.push(existing);
+        }
         continue;
       }
       remoteTransactions.push(localTransactionFrom(remoteRow,target,allocationMap.get(remoteRow.id)||[]));
@@ -176,13 +208,16 @@
       merged.push(hydrated);imported++;
     }
 
-    for(const local of state.profiles||[]){if(!claimedLocal.has(local)&&!merged.includes(local)) merged.push(local);}
+    for(const local of state.profiles||[]){
+      if(!claimedLocal.has(local)&&!merged.includes(local)) merged.push(local);
+    }
     if(merged.length) state.profiles=merged;
     if(!state.profiles.some(p=>p.id===state.activeProfileId)) state.activeProfileId=state.profiles[0]&&state.profiles[0].id||null;
     if(state.account) delete state.account.password;
-    root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
+    root.ARISE_SYNC_SILENT=true;
+    try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
     return {status:"pulled",imported};
   }
 
-  root.ARISE_SYNC_PULL={pullAll,shouldUseRemote};
+  root.ARISE_SYNC_PULL={pullAll,shouldUseRemote,conflictDecision,hydrateRemoteProfile};
 })(typeof globalThis!=="undefined"?globalThis:window);
