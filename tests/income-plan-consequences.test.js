@@ -5,7 +5,7 @@ const vm=require('node:vm');
 
 function boot(){
   const profile={
-    settings:{currency:'RUB'},
+    settings:{currency:'RUB',reserve:{targetBalance:100000}},
     goals:[{id:'trip',name:'Поездка',target:120000,deadline:'2026-12-31',monthlyContribution:30000}],
     transactions:[]
   };
@@ -13,10 +13,19 @@ function boot(){
     console,globalThis:null,window:null,
     ARISE_FINANCE_CORE:{
       goalBalance:()=>20000,
+      reserveBalance:()=>30000,
       goalDeadlineStatus:()=>({months:4}),
       validatePlan:plan=>{
         const allocated=(plan.allocations||[]).reduce((s,a)=>s+Number(a.amount||0),0)+(plan.goalAllocations||[]).reduce((s,a)=>s+Number(a.amount||0),0)+Number(plan.reserve||0);
         return {valid:allocated<=plan.total,remainder:Math.max(0,plan.total-allocated),difference:plan.total-allocated};
+      }
+    },
+    ARISE_RESERVE_ANALYTICS:{
+      reserveProgress:({reserveBalance,targetBalance})=>{
+        const balance=Math.max(0,Math.round(Number(reserveBalance)||0));
+        const target=Math.max(0,Math.round(Number(targetBalance)||0));
+        if(!target)return {status:'no_target',remaining:null,percent:null};
+        return {status:'ok',remaining:Math.max(0,target-balance),percent:Math.min(100,balance/target*100)};
       }
     },
     activeProfile:()=>profile,
@@ -49,7 +58,17 @@ test('reserve and unallocated changes are explained without mutating the plan',(
   const rows=ctx.ARISE_INCOME_PLAN_CONSEQUENCES.consequences(plan,edited);
   assert.ok(rows.some(row=>row.includes('Категория «Жизнь»')&&row.includes('−10000 ₽')));
   assert.ok(rows.some(row=>row.includes('Финансовая подушка')&&row.includes('−10000 ₽')));
+  assert.ok(rows.some(row=>row.includes('Прогресс подушки после этого дохода')&&row.includes('50% → 40%')&&row.includes('50000 ₽ → 60000 ₽')));
   assert.ok(rows.some(row=>row.includes('Нераспределённый остаток')&&row.includes('10000 ₽ → 30000 ₽')));
   assert.equal(plan.reserve,20000);
   assert.equal(plan.allocations[0].amount,50000);
+});
+
+test('reserve target consequence is omitted when no reserve target is configured',()=>{
+  const {ctx,profile}=boot();
+  profile.settings.reserve.targetBalance=0;
+  const rows=ctx.ARISE_INCOME_PLAN_CONSEQUENCES.consequences({
+    total:50000,baseCurrency:'RUB',date:'2026-08-20',remainder:30000,reserve:20000,allocations:[],goalAllocations:[]
+  },{allocations:[],goalAllocations:[],reserve:10000});
+  assert.equal(rows.some(row=>row.includes('Прогресс подушки после этого дохода')),false);
 });
