@@ -9,6 +9,7 @@
   const safe=v=>Math.max(0,Number(v)||0);
   const pct=(v,total)=>total>0?Math.round(safe(v)/safe(total)*100):0;
   const fmtPct=value=>value==null?"—":`${Math.abs(value).toLocaleString("ru-RU",{maximumFractionDigits:0})}%`;
+  let selectedAnalyticsMonth=null;
 
   function monthLabel(key){try{return formatMonth(key);}catch(_){return key;}}
   function deltaBadge(item,{inverse=false}={}){
@@ -71,12 +72,15 @@
   root.renderAnalytics=function(){
     const profile=activeProfile();
     const months=analytics.months(profile);
-    const currentMonth=months.includes(activeMonth)?activeMonth:(months[months.length-1]||activeMonth);
+    if(!selectedAnalyticsMonth||!months.includes(selectedAnalyticsMonth)){
+      selectedAnalyticsMonth=months.includes(activeMonth)?activeMonth:(months[months.length-1]||activeMonth);
+    }
+    const currentMonth=selectedAnalyticsMonth;
     const currentIndex=months.indexOf(currentMonth);
     const previousMonth=currentIndex>0?months[currentIndex-1]:null;
     const current=analytics.monthly(profile,currentMonth);
     const comparison=previousMonth?analytics.compare(profile,currentMonth,previousMonth):null;
-    const series=analytics.series(profile,6);
+    const series=analytics.series(profile,999).filter(row=>row.month<=currentMonth).slice(-6);
     const incomes=series.map(row=>row.income),expenses=series.map(row=>row.expenses);
     const runway=averageExpenseRunway(profile);
     const reserveBalance=core.reserveBalance(profile);
@@ -104,8 +108,8 @@
       </div>
     </main>`;
     const select=document.getElementById("analyticsMonth");
-    if(select)select.onchange=()=>{activeMonth=select.value;root.renderAnalytics();};
+    if(select)select.onchange=()=>{selectedAnalyticsMonth=select.value;root.renderAnalytics();};
   };
 
-  root.ARISE_ANALYTICS_UI={deltaBadge,path,averageExpenseRunway};
+  root.ARISE_ANALYTICS_UI={deltaBadge,path,averageExpenseRunway,getSelectedMonth:()=>selectedAnalyticsMonth};
 })(typeof globalThis!=="undefined"?globalThis:window);
