@@ -33,7 +33,7 @@ test('shell boundaries required by the loader still exist',()=>{
   assert.ok(init>ui,'initialization marker must follow UI');
 });
 
-test('loader wires financial, analytics, history, product UI, sync and A1-V3 layers in safe order',()=>{
+test('loader wires financial, analytics, history, product UI, accessibility, sync and A1-V3 layers in safe order',()=>{
   const core=index.indexOf('./financial-core.js');
   const runtime=index.indexOf('./financial-runtime.js');
   const integration=index.indexOf('./financial-integration.js');
@@ -48,6 +48,7 @@ test('loader wires financial, analytics, history, product UI, sync and A1-V3 lay
   const localStore=index.indexOf('./local-account-store.js');
   const syncEngine=index.indexOf('./sync-engine.js');
   const productUi=index.indexOf('./product-ui.js');
+  const modalAccessibility=index.indexOf('./modal-accessibility.js');
   const bootstrap=index.indexOf('./financial-bootstrap.js');
   assert.ok(core>=0);
   assert.ok(runtime>core);
@@ -63,7 +64,8 @@ test('loader wires financial, analytics, history, product UI, sync and A1-V3 lay
   assert.ok(localStore>outbox,'outbox must exist before local save hooks');
   assert.ok(syncEngine>localStore,'sync engine must see local account storage');
   assert.ok(productUi>syncEngine,'product UI must decorate the already-loaded sync and history layers');
-  assert.ok(bootstrap>productUi);
+  assert.ok(modalAccessibility>productUi,'modal accessibility must wrap the final product modal behavior');
+  assert.ok(bootstrap>modalAccessibility);
   assert.ok(index.includes('./arise-v3.css'));
   assert.ok(index.includes('./history-inspector.css'));
   assert.ok(index.includes('./product-ui.css'));
@@ -76,7 +78,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['currency-engine.js','financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','history-inspector.js','history-inspector.css','product-ui.js','product-ui.css','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','history-inspector.js','history-inspector.css','product-ui.js','product-ui.css','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });

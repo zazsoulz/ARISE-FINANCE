@@ -38,6 +38,7 @@ jobs:
           node --check history-inspector.js
           node --check settings-currency-guard.js
           node --check product-ui.js
+          node --check modal-accessibility.js
           node --check supabase-public-config.js
           node --check supabase-client.js
           node --check sync-outbox.js

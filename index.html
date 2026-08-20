@@ -59,6 +59,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"./profile-lifecycle.js\">"+scriptClose+
       scriptOpen+" src=\"./settings-currency-guard.js\">"+scriptClose+
       scriptOpen+" src=\"./product-ui.js\">"+scriptClose+
+      scriptOpen+" src=\"./modal-accessibility.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-bootstrap.js\">"+scriptClose;
     const bootHide='<style id="arise-boot-hide">html{visibility:hidden}</style>',themeLinks='<link rel="stylesheet" href="./arise-v3.css"><link rel="stylesheet" href="./arise-v3-state.css"><link rel="stylesheet" href="./analytics-ui.css"><link rel="stylesheet" href="./history-inspector.css"><link rel="stylesheet" href="./product-ui.css">';
     if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,themeLinks+bootHide+"</head>");else html=themeLinks+bootHide+html;
