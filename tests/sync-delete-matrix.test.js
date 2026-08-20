@@ -58,7 +58,7 @@ test('transaction remote deletion uses the same clean versus dirty matrix',()=>{
   const dirty={id:'dirty',ariseSync:{remoteId:'r-dirty',dirty:true,changedAt:'2026-08-20T06:00:00Z'}};
   const profile={transactions:[clean,dirty]};
   const result=context.ARISE_SYNC_CONFLICT_HARDENING.reconcileCollection(profile,'transactions','transaction',new Set());
-  assert.deepEqual(profile.transactions.map(tx=>tx.id),['dirty']);
+  assert.equal(profile.transactions.map(tx=>tx.id).join(','),'dirty');
   assert.equal(dirty.ariseSync.remoteId,null);
   assert.deepEqual({...result},{removed:1,detached:1,conflictsKept:0});
 });
