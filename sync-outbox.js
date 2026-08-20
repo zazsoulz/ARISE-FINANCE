@@ -29,8 +29,12 @@
     };
     next.id=mutationKey(next);
     const index=meta[OUTBOX_KEY].findIndex(item=>item.id===next.id);
-    if(index>=0) meta[OUTBOX_KEY][index]={...meta[OUTBOX_KEY][index],...next,createdAt:meta[OUTBOX_KEY][index].createdAt||next.createdAt};
-    else meta[OUTBOX_KEY].push(next);
+    if(index>=0){
+      const previous=meta[OUTBOX_KEY][index];
+      meta[OUTBOX_KEY][index]={...previous,...next,createdAt:previous.createdAt||next.createdAt};
+    }else{
+      meta[OUTBOX_KEY].push(next);
+    }
     meta.dirty=true;
     meta.changedAt=now;
     return next;
@@ -58,36 +62,51 @@
     return true;
   }
 
-  function transactionSnapshot(tx){
-    if(!tx||typeof tx!=="object") return "";
-    const copy={...tx};
+  function snapshot(entity){
+    if(!entity||typeof entity!=="object") return "";
+    const copy={...entity};
     delete copy[META_KEY];
     return JSON.stringify(copy);
   }
 
-  function recordTransactionChanges(previousProfile,nextProfile){
+  function recordCollectionChanges(previousProfile,nextProfile,{collection,entity}){
     if(!nextProfile) return 0;
-    const previous=previousProfile&&Array.isArray(previousProfile.transactions)?previousProfile.transactions:[];
-    const current=Array.isArray(nextProfile.transactions)?nextProfile.transactions:[];
-    const previousById=new Map(previous.map(tx=>[String(tx.id),tx]));
-    const currentById=new Map(current.map(tx=>[String(tx.id),tx]));
+    const previous=previousProfile&&Array.isArray(previousProfile[collection])?previousProfile[collection]:[];
+    const current=Array.isArray(nextProfile[collection])?nextProfile[collection]:[];
+    const previousById=new Map(previous.map(item=>[String(item.id),item]));
+    const currentById=new Map(current.map(item=>[String(item.id),item]));
     let count=0;
 
-    for(const tx of current){
-      const old=previousById.get(String(tx.id));
-      if(!old||transactionSnapshot(old)!==transactionSnapshot(tx)){
-        enqueue(nextProfile,{entity:"transaction",entityLocalId:tx.id,entityRemoteId:tx[META_KEY]&&tx[META_KEY].remoteId||null,action:"upsert"});
+    for(const item of current){
+      const old=previousById.get(String(item.id));
+      if(!old||snapshot(old)!==snapshot(item)){
+        enqueue(nextProfile,{entity,entityLocalId:item.id,entityRemoteId:item[META_KEY]&&item[META_KEY].remoteId||null,action:"upsert"});
         count++;
       }
     }
 
     for(const old of previous){
       if(currentById.has(String(old.id))) continue;
-      enqueue(nextProfile,{entity:"transaction",entityLocalId:old.id,entityRemoteId:old[META_KEY]&&old[META_KEY].remoteId||null,action:"delete"});
+      enqueue(nextProfile,{entity,entityLocalId:old.id,entityRemoteId:old[META_KEY]&&old[META_KEY].remoteId||null,action:"delete"});
       count++;
     }
     return count;
   }
 
-  root.ARISE_SYNC_OUTBOX={ensureMeta,enqueue,list,ack,fail,recordTransactionChanges};
+  function recordTransactionChanges(previousProfile,nextProfile){
+    return recordCollectionChanges(previousProfile,nextProfile,{collection:"transactions",entity:"transaction"});
+  }
+
+  function recordCategoryChanges(previousProfile,nextProfile){
+    return recordCollectionChanges(previousProfile,nextProfile,{collection:"categories",entity:"category"});
+  }
+
+  function recordGoalChanges(previousProfile,nextProfile){
+    return recordCollectionChanges(previousProfile,nextProfile,{collection:"goals",entity:"goal"});
+  }
+
+  root.ARISE_SYNC_OUTBOX={
+    ensureMeta,enqueue,list,ack,fail,snapshot,recordCollectionChanges,
+    recordTransactionChanges,recordCategoryChanges,recordGoalChanges
+  };
 })(typeof globalThis!=="undefined"?globalThis:window);
