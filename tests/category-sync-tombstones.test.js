@@ -18,15 +18,7 @@ function bootLocalStore(){
   const goal={id:'local-goal',name:'Отпуск',target:100000,current:0,ariseSync:{remoteId:'55555555-5555-4555-8555-555555555555',dirty:false}};
   const profile={id:'local-profile',name:'Основной',categories:[category],goals:[goal],transactions:[],settings:{currency:'RUB'},ariseSync:{remoteId:'22222222-2222-4222-8222-222222222222',dirty:false}};
   const initial={version:1,account:{registered:true},profiles:[profile],activeProfileId:profile.id};
-  const context={
-    console,
-    localStorage,
-    STORAGE_KEY:'arise.finance.production.v1',
-    state:JSON.parse(JSON.stringify(initial)),
-    clone:value=>JSON.parse(JSON.stringify(value)),
-    normalizeState:value=>value,
-    defaultState:()=>({version:1,account:{registered:false},profiles:[],activeProfileId:null})
-  };
+  const context={console,localStorage,STORAGE_KEY:'arise.finance.production.v1',state:JSON.parse(JSON.stringify(initial)),clone:value=>JSON.parse(JSON.stringify(value)),normalizeState:value=>value,defaultState:()=>({version:1,account:{registered:false},profiles:[],activeProfileId:null})};
   context.globalThis=context;
   vm.createContext(context);
   vm.runInContext(fs.readFileSync('sync-outbox.js','utf8'),context);
@@ -39,13 +31,11 @@ test('deleting a synced category records a persistent outbox delete mutation ins
   const {context,localStorage}=bootLocalStore();
   context.state.profiles[0].categories=[];
   context.saveState();
-
   const profile=context.state.profiles[0];
   const mutation=context.ARISE_SYNC_OUTBOX.list(profile,'category')[0];
   assert.equal(mutation.action,'delete');
   assert.equal(mutation.entityRemoteId,'11111111-1111-4111-8111-111111111111');
   assert.equal(profile.ariseSync.deletedCategoryIds,undefined);
-
   const persisted=JSON.parse(localStorage.getItem('arise.finance.production.v1.account.user-a'));
   assert.equal(persisted.profiles[0].ariseSync.outbox[0].entity,'category');
 });
@@ -54,13 +44,11 @@ test('deleting a synced goal records a persistent outbox delete mutation instead
   const {context,localStorage}=bootLocalStore();
   context.state.profiles[0].goals=[];
   context.saveState();
-
   const profile=context.state.profiles[0];
   const mutation=context.ARISE_SYNC_OUTBOX.list(profile,'goal')[0];
   assert.equal(mutation.action,'delete');
   assert.equal(mutation.entityRemoteId,'55555555-5555-4555-8555-555555555555');
   assert.equal(profile.ariseSync.deletedGoalIds,undefined);
-
   const persisted=JSON.parse(localStorage.getItem('arise.finance.production.v1.account.user-a'));
   assert.equal(persisted.profiles[0].ariseSync.outbox[0].entity,'goal');
 });
@@ -75,52 +63,50 @@ test('silent remote hydration does not manufacture deletion outbox mutations',()
   assert.equal(context.ARISE_SYNC_OUTBOX.list(context.state.profiles[0]).length,0);
 });
 
-function bootSyncEngine(expectedTable){
-  const calls=[];
-  const query={
-    delete(){calls.push(['delete']);return this;},
-    eq(column,value){calls.push(['eq',column,value]);return this;},
-    then(resolve){resolve({error:null});}
-  };
-  const context={
-    console,
-    navigator:{onLine:true},
-    setTimeout,
-    clearTimeout,
-    state:{profiles:[]},
-    ARISE_SUPABASE:{
-      getClient:()=>({from:table=>{assert.equal(table,expectedTable);return query;}}),
-      currentSession:()=>null
-    }
-  };
+function bootSyncEngine(){
+  const context={console,navigator:{onLine:true},setTimeout,clearTimeout,state:{profiles:[]}};
   context.globalThis=context;
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync('sync-outbox.js','utf8'),context);
   vm.runInContext(fs.readFileSync('sync-engine.js','utf8'),context);
-  return {context,calls};
+  return context;
 }
 
-test('sync engine still drains legacy category tombstones from older vaults exactly once',async()=>{
-  const {context,calls}=bootSyncEngine('finance_categories');
+test('legacy category tombstones migrate to the unified outbox without a direct remote delete',async()=>{
+  const context=bootSyncEngine();
   const profile={ariseSync:{deletedCategoryIds:['33333333-3333-4333-8333-333333333333']}};
-  const count=await context.ARISE_SYNC.applyCategoryTombstones(profile,'44444444-4444-4444-8444-444444444444');
+  const count=await context.ARISE_SYNC.applyCategoryTombstones(profile,'ignored-profile-id');
   assert.equal(count,1);
-  assert.deepEqual([...profile.ariseSync.deletedCategoryIds],[]);
-  assert.deepEqual(calls,[
-    ['delete'],
-    ['eq','id','33333333-3333-4333-8333-333333333333'],
-    ['eq','profile_id','44444444-4444-4444-8444-444444444444']
-  ]);
+  assert.equal(profile.ariseSync.deletedCategoryIds,undefined);
+  const mutation=context.ARISE_SYNC_OUTBOX.list(profile,'category')[0];
+  assert.equal(mutation.action,'delete');
+  assert.equal(mutation.entityLocalId,null);
+  assert.equal(mutation.entityRemoteId,'33333333-3333-4333-8333-333333333333');
 });
 
-test('sync engine still drains legacy goal tombstones from older vaults exactly once',async()=>{
-  const {context,calls}=bootSyncEngine('finance_goals');
+test('legacy goal tombstones migrate to the unified outbox without a direct remote delete',async()=>{
+  const context=bootSyncEngine();
   const profile={ariseSync:{deletedGoalIds:['66666666-6666-4666-8666-666666666666']}};
-  const count=await context.ARISE_SYNC.applyGoalTombstones(profile,'77777777-7777-4777-8777-777777777777');
+  const count=await context.ARISE_SYNC.applyGoalTombstones(profile,'ignored-profile-id');
   assert.equal(count,1);
-  assert.deepEqual([...profile.ariseSync.deletedGoalIds],[]);
-  assert.deepEqual(calls,[
-    ['delete'],
-    ['eq','id','66666666-6666-4666-8666-666666666666'],
-    ['eq','profile_id','77777777-7777-4777-8777-777777777777']
-  ]);
+  assert.equal(profile.ariseSync.deletedGoalIds,undefined);
+  const mutation=context.ARISE_SYNC_OUTBOX.list(profile,'goal')[0];
+  assert.equal(mutation.action,'delete');
+  assert.equal(mutation.entityLocalId,null);
+  assert.equal(mutation.entityRemoteId,'66666666-6666-4666-8666-666666666666');
+});
+
+test('legacy migration is idempotent and deduplicates repeated remote ids',()=>{
+  const context=bootSyncEngine();
+  const profile={ariseSync:{deletedCategoryIds:['33333333-3333-4333-8333-333333333333','33333333-3333-4333-8333-333333333333']}};
+  assert.equal(context.ARISE_SYNC.applyCategoryTombstones(profile),1);
+  assert.equal(context.ARISE_SYNC.applyCategoryTombstones(profile),0);
+  assert.equal(context.ARISE_SYNC_OUTBOX.list(profile,'category').length,1);
+});
+
+test('sync engine contains no direct category/goal tombstone delete write path',()=>{
+  const source=fs.readFileSync('sync-engine.js','utf8');
+  assert.equal(source.includes('from(table).delete()'),false);
+  assert.match(source,/migrateEntityTombstones/);
+  assert.match(source,/entityRemoteId:remoteIdValue/);
 });
