@@ -45,12 +45,12 @@
     if(error)throw error;id=data.id;mark(localProfile,id);return id;
   }
 
-  function seedLegacyEntityTombstones(profile,{metaKey,entity}){
+  function migrateEntityTombstones(profile,{metaKey,entity}){
     const outbox=root.ARISE_SYNC_OUTBOX;
     if(!outbox||!outbox.enqueue||!outbox.list)return 0;
     const meta=ensureMeta(profile);
     const ids=[...new Set((meta[metaKey]||[]).filter(Boolean).map(String))];
-    if(!ids.length)return 0;
+    if(!ids.length){delete meta[metaKey];return 0;}
     const queued=new Set(outbox.list(profile,entity)
       .filter(item=>item.action==="delete"&&item.entityRemoteId)
       .map(item=>String(item.entityRemoteId)));
@@ -60,12 +60,12 @@
       outbox.enqueue(profile,{entity,entityLocalId:null,entityRemoteId:id,action:"delete"});
       queued.add(id);count++;
     }
-    meta[metaKey]=[];
+    delete meta[metaKey];
     return count;
   }
 
-  function applyCategoryTombstones(profile){return seedLegacyEntityTombstones(profile,{metaKey:"deletedCategoryIds",entity:"category"});}
-  function applyGoalTombstones(profile){return seedLegacyEntityTombstones(profile,{metaKey:"deletedGoalIds",entity:"goal"});}
+  function applyCategoryTombstones(profile){return migrateEntityTombstones(profile,{metaKey:"deletedCategoryIds",entity:"category"});}
+  function applyGoalTombstones(profile){return migrateEntityTombstones(profile,{metaKey:"deletedGoalIds",entity:"goal"});}
 
   function seedEntityOutbox(profile,entity,collection){
     const outbox=root.ARISE_SYNC_OUTBOX;
@@ -224,5 +224,5 @@
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,conflictError,assertNoConflict,transactionCurrencySnapshot,seedLegacyEntityTombstones,applyCategoryTombstones,applyGoalTombstones,seedEntityOutbox,drainEntityOutbox,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,conflictError,assertNoConflict,transactionCurrencySnapshot,migrateEntityTombstones,applyCategoryTombstones,applyGoalTombstones,seedEntityOutbox,drainEntityOutbox,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
