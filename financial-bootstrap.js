@@ -13,6 +13,16 @@
   }
 
   try{
+    const integrity=globalThis.ARISE_RUNTIME_INTEGRITY&&globalThis.ARISE_RUNTIME_INTEGRITY.verify
+      ?globalThis.ARISE_RUNTIME_INTEGRITY.verify()
+      :{ok:false,missing:["runtime-integrity"]};
+    if(!integrity.ok){
+      console.error("ARISE canonical runtime integrity failed",integrity);
+      const target=document.getElementById("root")||document.body;
+      if(target)target.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#080b0f;color:#f0f2f3;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"><div style="max-width:520px"><strong>ARISE не удалось безопасно запустить финансовый движок.</strong><div style="margin-top:8px;color:#858e98;line-height:1.5">Данные не изменены. Обнови приложение и попробуй снова.</div></div></div>';
+      return;
+    }
+
     if(state.account&&Object.prototype.hasOwnProperty.call(state.account,"password")){
       delete state.account.password;
       saveState();
@@ -52,7 +62,6 @@
           saveState();
         }
       }catch(error){
-        // Offline/temporary service failure: the preloaded last authenticated vault remains usable.
         console.error("ARISE auth bootstrap",error);
       }
     }
