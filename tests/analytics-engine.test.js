@@ -8,10 +8,10 @@ function profile(){
     categories:[{id:'food',name:'Жизнь'}],goals:[],
     transactions:[
       {id:'i1',type:'income',date:'2026-07-05',month:'2026-07',amount:100000,currency:'RUB',source:'Работа',allocations:[],goalAllocations:[],reserve:10000,remainder:90000},
-      {id:'e1',type:'expense',date:'2026-07-10',month:'2026-07',amount:20000,currency:'RUB',categoryId:null,controlledAmount:20000,uncontrolledAmount:0},
+      {id:'e1',type:'expense',date:'2026-07-10',month:'2026-07',amount:20000,currency:'RUB',categoryId:null,categoryName:'Не распределено',controlledAmount:20000,uncontrolledAmount:0},
       {id:'i2',type:'income',date:'2026-08-05',month:'2026-08',amount:150000,currency:'RUB',source:'Работа',allocations:[{categoryId:'food',name:'Жизнь',amount:30000}],goalAllocations:[],reserve:15000,remainder:105000},
       {id:'i3',type:'income',date:'2026-08-12',month:'2026-08',amount:50000,currency:'RUB',source:'Фриланс',allocations:[],goalAllocations:[],reserve:0,remainder:50000},
-      {id:'e2',type:'expense',date:'2026-08-13',month:'2026-08',amount:40000,currency:'RUB',categoryId:'food',controlledAmount:40000,uncontrolledAmount:0,fundingBreakdown:{category:30000,unallocated:10000,uncontrolled:0}}
+      {id:'e2',type:'expense',date:'2026-08-13',month:'2026-08',amount:40000,currency:'RUB',categoryId:'food',categoryName:'Жизнь',controlledAmount:40000,uncontrolledAmount:0,fundingBreakdown:{category:30000,unallocated:10000,uncontrolled:0}}
     ]
   };
 }
@@ -39,6 +39,17 @@ test('income source shares come from actual income transactions',()=>{
   assert.equal(rows[0].value,150000);
   assert.equal(rows[0].share,0.75);
   assert.equal(rows[1].share,0.25);
+});
+
+test('expense composition uses the full expense purpose even when funding is split',()=>{
+  const rows=analytics.expenseComposition(profile(),{month:'2026-08'});
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].name,'Жизнь');
+  assert.equal(rows[0].value,40000);
+  assert.equal(rows[0].share,1);
+  const monthly=analytics.monthly(profile(),'2026-08');
+  assert.equal(monthly.categorySpent['Жизнь'],30000,'ledger category funding remains distinct');
+  assert.equal(monthly.expenseGroups['Жизнь'],40000,'user spending purpose keeps the full operation amount');
 });
 
 test('series is chronological and lifetime analytics stay transaction-derived',()=>{
