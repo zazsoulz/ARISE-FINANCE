@@ -14,7 +14,6 @@
   function markDirty(entity){const meta=ensureMeta(entity);meta.dirty=true;meta.changedAt=new Date().toISOString();}
   function remoteId(entity){return entity&&entity[META_KEY]&&entity[META_KEY].remoteId||null;}
   function currency(profile,value){return value||profile.settings&&profile.settings.currency||"RUB";}
-  function categoryRuleType(category){return category.type==="fixed"?"fixed":"percentage";}
   function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""));}
 
   async function getUser(){
@@ -53,38 +52,31 @@
   function applyCategoryTombstones(profile,profileId){return applyEntityTombstones(profile,profileId,{metaKey:"deletedCategoryIds",table:"finance_categories"});}
   function applyGoalTombstones(profile,profileId){return applyEntityTombstones(profile,profileId,{metaKey:"deletedGoalIds",table:"finance_goals"});}
 
-  async function syncCategories(profile,profileId,user){
-    const c=client();let count=0;
-    await applyCategoryTombstones(profile,profileId);
-    const {data:existing,error:existingError}=await c.from("finance_categories").select("id,name,rule_type").eq("profile_id",profileId);
-    if(existingError)throw existingError;
-    const claimed=new Set((profile.categories||[]).map(remoteId).filter(Boolean));
-    for(const category of profile.categories||[]){
-      const payload={profile_id:profileId,user_id:user.id,name:String(category.name||"Категория"),rule_type:categoryRuleType(category),percent:Math.max(0,Math.min(100,Math.round(Number(category.percent)||0))),fixed_amount:Math.max(0,Number(category.fixedAmount)||0),priority:Math.max(1,Math.min(5,Math.round(Number(category.priority)||3))),monthly_limit:category.limit===""||category.limit==null?null:Math.max(0,Number(category.limit)||0),enabled:category.enabled!==false,sort_order:Math.max(0,Number(category.sortOrder)||0)};
-      let id=remoteId(category);
-      if(!id){
-        const candidate=(existing||[]).find(row=>!claimed.has(row.id)&&row.name===payload.name&&row.rule_type===payload.rule_type)||(existing||[]).find(row=>!claimed.has(row.id)&&row.name===payload.name);
-        if(candidate){id=candidate.id;claimed.add(id);mark(category,id);}
-      }
-      let data,error;
-      if(id)({data,error}=await c.from("finance_categories").update(payload).eq("id",id).select("id").single());
-      else({data,error}=await c.from("finance_categories").insert(payload).select("id").single());
-      if(error)throw error;claimed.add(data.id);mark(category,data.id);count++;
+  function seedEntityOutbox(profile,entity,collection){
+    const outbox=root.ARISE_SYNC_OUTBOX;
+    if(!outbox||!outbox.enqueue||!outbox.list)return 0;
+    const queued=new Set(outbox.list(profile,entity).map(item=>String(item.entityLocalId)));
+    let count=0;
+    for(const item of profile[collection]||[]){
+      if(remoteId(item)||queued.has(String(item.id)))continue;
+      outbox.enqueue(profile,{entity,entityLocalId:item.id,action:"upsert"});
+      queued.add(String(item.id));
+      count++;
     }
     return count;
   }
 
-  async function syncGoals(profile,profileId,user){
-    const c=client();let count=0;
-    await applyGoalTombstones(profile,profileId);
-    for(const goal of profile.goals||[]){
-      const payload={profile_id:profileId,user_id:user.id,name:String(goal.name||"Цель"),target_amount:Math.max(0,Number(goal.target)||0),ledger_start:Math.max(0,Number(goal.ledgerStart==null?goal.current:goal.ledgerStart)||0),currency:currency(profile,goal.currency),priority:Math.max(1,Math.min(5,Math.round(Number(goal.priority)||3))),deadline:goal.deadline||null,monthly_contribution:Math.max(0,Number(goal.monthlyContribution)||0),auto_allocate:goal.autoAllocate!==false,status:goal.status==="completed"?"completed":goal.status==="archived"?"archived":"active",note:String(goal.note||""),completed_at:goal.completedAt||null};
-      const id=remoteId(goal);let data,error;
-      if(id)({data,error}=await c.from("finance_goals").update(payload).eq("id",id).select("id").single());
-      else({data,error}=await c.from("finance_goals").insert(payload).select("id").single());
-      if(error)throw error;mark(goal,data.id);count++;
+  async function drainEntityOutbox(profile,profileId,user){
+    // Process old tombstone state once, then rely on the unified outbox.
+    const legacyCategoryDeletes=await applyCategoryTombstones(profile,profileId);
+    const legacyGoalDeletes=await applyGoalTombstones(profile,profileId);
+    const seededCategories=seedEntityOutbox(profile,"category","categories");
+    const seededGoals=seedEntityOutbox(profile,"goal","goals");
+    let drained=0;
+    if(root.ARISE_ENTITY_OUTBOX&&root.ARISE_ENTITY_OUTBOX.drainProfile){
+      drained=await root.ARISE_ENTITY_OUTBOX.drainProfile(profile,user.id);
     }
-    return count;
+    return {drained,seededCategories,seededGoals,legacyDeletes:legacyCategoryDeletes+legacyGoalDeletes};
   }
 
   function transactionType(tx){if(["income","expense","goal_contribution","goal_withdrawal","reserve_deposit","reserve_withdrawal","transfer"].includes(tx.type))return tx.type;return tx.type==="goalContribution"?"goal_contribution":"transfer";}
@@ -164,12 +156,17 @@
   async function syncProfile(profile,profileId,user){
     const c=client();
     const {error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId);if(error)throw error;
-    await syncCategories(profile,profileId,user);
-    await syncGoals(profile,profileId,user);
+    const entityResult=await drainEntityOutbox(profile,profileId,user);
     const seededTransactions=seedTransactionOutbox(profile);
-    const outboxCount=await flushTransactionOutbox(profile,profileId,user);
+    const transactionOutboxCount=await flushTransactionOutbox(profile,profileId,user);
     mark(profile,profileId);
-    return {txCount:outboxCount,outboxCount,seededTransactions};
+    return {
+      txCount:transactionOutboxCount,
+      outboxCount:transactionOutboxCount+entityResult.drained,
+      seededTransactions,
+      seededEntities:entityResult.seededCategories+entityResult.seededGoals,
+      legacyDeletes:entityResult.legacyDeletes
+    };
   }
 
   async function pushAll(){
@@ -178,7 +175,7 @@
     const c=client();const user=await getUser();if(!c||!user)return {status:"signed_out"};
     running=true;const startedAt=new Date().toISOString();
     try{
-      const serverProfiles=await loadServerProfiles();let txCount=0;let outboxCount=0;let seededTransactions=0;
+      const serverProfiles=await loadServerProfiles();let txCount=0;let outboxCount=0;let seededTransactions=0;let seededEntities=0;let legacyDeletes=0;
       for(let i=0;i<(state.profiles||[]).length;i++){
         const profile=state.profiles[i];
         const profileId=await ensureProfile(profile,user,serverProfiles,i);
@@ -186,10 +183,12 @@
         txCount+=result.txCount;
         outboxCount+=result.outboxCount;
         seededTransactions+=result.seededTransactions;
+        seededEntities+=result.seededEntities;
+        legacyDeletes+=result.legacyDeletes;
       }
       if(state.account)delete state.account.password;
       root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
-      lastResult={status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,seededTransactions,startedAt,finishedAt:new Date().toISOString()};
+      lastResult={status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,seededTransactions,seededEntities,legacyDeletes,startedAt,finishedAt:new Date().toISOString()};
       if(root.dispatchEvent)root.dispatchEvent(new CustomEvent("arise:sync",{detail:lastResult}));return lastResult;
     }catch(error){
       console.error("ARISE sync",error);lastResult={status:"error",message:error.message||"Sync failed",startedAt,finishedAt:new Date().toISOString()};
@@ -199,5 +198,5 @@
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,seedEntityOutbox,drainEntityOutbox,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
