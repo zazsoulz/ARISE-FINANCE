@@ -60,3 +60,10 @@ test('goal lifecycle rejects withdrawals above balance and transfers that cannot
   assert.throws(()=>core.createGoalWithdrawal(p,{id:'w',goalId:'from',amount:81,destinationAccount:'free',date:'2026-08-20'}),/больше её текущего баланса/);
   assert.throws(()=>core.createGoalTransfer(p,{goalId:'from',targetGoalId:'to',amount:80,date:'2026-08-20',withdrawalId:'w',contributionId:'c'}),/недостаточно места/);
 });
+
+test('closed goal with auto allocation disabled never receives a future income allocation',()=>{
+  const p=profile({goals:[{id:'g1',name:'Закрытая',target:100000,current:0,ledgerStart:0,status:'closed',autoAllocate:false,priority:5,monthlyContribution:50000}]});
+  const plan=core.planIncome(p,100000,'2026-09-01');
+  assert.equal(plan.goalAllocations.some(item=>item.goalId==='g1'),false);
+  assert.equal(plan.remainder,100000);
+});
