@@ -53,5 +53,5 @@ test('failed mutation stays queued and ack removes only the confirmed mutation',
   assert.equal(outbox.list(profile)[0].attempts,1);
   assert.equal(outbox.list(profile)[0].lastError,'offline');
   assert.equal(outbox.ack(profile,first.id),true);
-  assert.deepEqual(outbox.list(profile).map(item=>item.entityLocalId),['b']);
+  assert.deepEqual([...outbox.list(profile).map(item=>item.entityLocalId)],['b']);
 });
