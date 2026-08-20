@@ -31,6 +31,7 @@
   }
 
   function goalPayload(profile,profileId,userId,goal){
+    const status=["active","completed","archived","closed"].includes(goal.status)?goal.status:"active";
     return {
       profile_id:profileId,
       user_id:userId,
@@ -41,10 +42,13 @@
       priority:Math.max(1,Math.min(5,Math.round(Number(goal.priority)||3))),
       deadline:goal.deadline||null,
       monthly_contribution:Math.max(0,Number(goal.monthlyContribution)||0),
-      auto_allocate:goal.autoAllocate!==false,
-      status:goal.status==="completed"?"completed":goal.status==="archived"?"archived":"active",
+      auto_allocate:goal.autoAllocate!==false&&status!=="closed",
+      status,
       note:String(goal.note||""),
-      completed_at:goal.completedAt||null
+      completed_at:goal.completedAt||null,
+      closed_at:goal.closedAt||null,
+      closure_balance:goal.closureBalance==null?null:Math.max(0,Number(goal.closureBalance)||0),
+      closure_destination:goal.closureDestination||null
     };
   }
 
@@ -76,8 +80,12 @@
         let remoteId=rid(entity)||mutation.entityRemoteId||null;
         let data,error;
         if(remoteId){
-          ({data,error}=await c.from(config.table).update(payload).eq("id",remoteId).eq("profile_id",profileId).select("id").single());
-        }else{
+          ({data,error}=await c.from(config.table).update(payload).eq("id",remoteId).eq("profile_id",profileId).select("id").maybeSingle());
+          if(!error&&!data){
+            remoteId=null;
+          }
+        }
+        if(!remoteId){
           ({data,error}=await c.from(config.table).insert(payload).select("id").single());
         }
         if(error) throw error;
