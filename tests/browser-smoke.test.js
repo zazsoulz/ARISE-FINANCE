@@ -26,9 +26,11 @@ function executeFile(context,path){return execute(context,fs.readFileSync(path,'
 function boot({registered=false}={}){
   const dom=new JSDOM(shell,{url:'https://arise.local/',runScripts:'outside-only',pretendToBeVisual:true});
   const {window}=dom; window.alert=()=>{}; window.confirm=()=>true;
-  const context=dom.getInternalVMContext(); execute(context,effectiveShellScript(),'app-shell-effective.js');
+  const context=dom.getInternalVMContext();
+  execute(context,effectiveShellScript(),'app-shell-effective.js');
+  execute(context,'globalThis.__ARISE_LEGACY_FINANCIAL_STRIPPED__=true;','loader-strip-marker.js');
   if(registered) execute(context,`state.account.registered=true; state.account.name='QA'; state.account.email='qa@example.com'; saveState();`,'seed-state.js');
-  for(const path of ['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','financial-bootstrap.js']) executeFile(context,path);
+  for(const path of ['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','runtime-integrity.js','financial-bootstrap.js']) executeFile(context,path);
   return {dom,context};
 }
 
