@@ -58,6 +58,24 @@ test('history exposes canonical filters without mutating ledger data',()=>{
   dom.window.close();
 });
 
+test('history filters reset when financial profile changes',()=>{
+  const {dom,context}=boot();seed(context);let document=dom.window.document;
+  const category=document.querySelector('[data-history-filter="category"]');
+  category.value='life';category.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  assert.equal(run(context,'ARISE_HISTORY_INSPECTOR.state.category','filter-a.js'),'life');
+  run(context,`(()=>{
+    const second=createProfile('Второй');
+    second.categories=[{id:'food',name:'Еда',type:'percent',percent:20,priority:2,limit:null,enabled:true}];
+    second.transactions=[{id:'second-expense',type:'expense',date:'2026-08-15',month:'2026-08',amount:3000,currency:'RUB',source:'Магазин',categoryId:'food',categoryName:'Еда',controlledAmount:3000,uncontrolledAmount:0}];
+    state.profiles.push(second);state.activeProfileId=second.id;activePage='history';activeMonth='2026-08';render();
+  })()`,'switch-profile.js');
+  document=dom.window.document;
+  assert.equal(run(context,'ARISE_HISTORY_INSPECTOR.state.category','filter-b.js'),'all');
+  assert.equal(document.querySelectorAll('[data-history-tx]').length,1);
+  assert.match(document.querySelector('.v3-transactions').textContent,/Магазин|3/);
+  dom.window.close();
+});
+
 test('history can switch to all-time scope and filter by completed goal',()=>{
   const {dom,context}=boot();seed(context);let document=dom.window.document;
   const scope=document.querySelector('[data-history-filter="scope"]');
