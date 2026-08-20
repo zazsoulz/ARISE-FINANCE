@@ -1,0 +1,1 @@
+This placeholder intentionally keeps the earlier draft test out of the Node test glob. Category consequence behavior is guarded by source and loader contracts until a browser-level interaction test is added.
