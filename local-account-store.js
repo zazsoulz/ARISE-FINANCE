@@ -26,9 +26,55 @@
     }
   }
 
+  function remoteId(entity){
+    return entity&&entity.ariseSync&&entity.ariseSync.remoteId||null;
+  }
+
+  function ensureProfileSync(profile){
+    if(!profile.ariseSync||typeof profile.ariseSync!=="object") profile.ariseSync={};
+    return profile.ariseSync;
+  }
+
+  function recordCategoryDeletions(previous,next){
+    if(!previous||!Array.isArray(previous.profiles)||!next||!Array.isArray(next.profiles)) return;
+
+    for(const oldProfile of previous.profiles){
+      const oldRemoteId=remoteId(oldProfile);
+      const currentProfile=next.profiles.find(profile=>
+        String(profile.id)===String(oldProfile.id)||
+        (oldRemoteId&&remoteId(profile)===oldRemoteId)
+      );
+      if(!currentProfile) continue;
+
+      const currentLocalIds=new Set((currentProfile.categories||[]).map(category=>String(category.id)));
+      const currentRemoteIds=new Set((currentProfile.categories||[]).map(remoteId).filter(Boolean));
+      const deleted=[];
+
+      for(const oldCategory of oldProfile.categories||[]){
+        const id=remoteId(oldCategory);
+        if(!id) continue;
+        if(currentLocalIds.has(String(oldCategory.id))||currentRemoteIds.has(id)) continue;
+        deleted.push(id);
+      }
+
+      if(deleted.length){
+        const meta=ensureProfileSync(currentProfile);
+        meta.deletedCategoryIds=[...new Set([...(meta.deletedCategoryIds||[]),...deleted])];
+        meta.dirty=true;
+        meta.changedAt=new Date().toISOString();
+      }
+    }
+  }
+
   function write(){
     const key=activeAccountId?accountKey(activeAccountId):GUEST_KEY;
     if(state.account) delete state.account.password;
+
+    if(!root.ARISE_SYNC_SILENT){
+      const previous=read(key);
+      recordCategoryDeletions(previous,state);
+    }
+
     localStorage.setItem(key,JSON.stringify(state));
     if(!root.ARISE_SYNC_SILENT&&root.dispatchEvent){
       root.dispatchEvent(new CustomEvent("arise:local-change",{detail:{accountId:activeAccountId,at:new Date().toISOString()}}));
@@ -81,5 +127,5 @@
   function currentAccountId(){return activeAccountId;}
 
   preloadLastAccount();
-  root.ARISE_LOCAL_ACCOUNTS={activate,deactivate,currentAccountId,accountKey};
+  root.ARISE_LOCAL_ACCOUNTS={activate,deactivate,currentAccountId,accountKey,recordCategoryDeletions};
 })(typeof globalThis!=="undefined"?globalThis:window);
