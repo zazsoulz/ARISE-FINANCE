@@ -1,0 +1,37 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const fx=require('../currency-engine.js');
+
+const fresh={base:'USD',rates:{USD:1,EUR:0.8,RUB:80},fetchedAt:'2026-08-20T12:00:00.000Z',source:'fx-rates'};
+
+test('rate freshness status distinguishes fresh stale and unavailable books',()=>{
+  const now=new Date('2026-08-20T20:00:00.000Z').getTime();
+  assert.deepEqual(fx.rateBookStatus(fresh,{now}),{
+    available:true,fresh:true,stale:false,ageMs:8*60*60*1000,fetchedAt:fresh.fetchedAt,source:'fx-rates'
+  });
+  const stale=fx.rateBookStatus(fresh,{now:new Date('2026-08-22T12:00:00.000Z').getTime()});
+  assert.equal(stale.available,true);
+  assert.equal(stale.fresh,false);
+  assert.equal(stale.stale,true);
+  assert.equal(stale.source,'fx-rates');
+  assert.deepEqual(fx.rateBookStatus(null,{now}),{
+    available:false,fresh:false,stale:false,ageMs:Infinity,fetchedAt:null,source:null
+  });
+});
+
+test('production loader wires stale-rate disclosure immediately after currency runtime',()=>{
+  const index=fs.readFileSync('index.html','utf8');
+  const runtime=index.indexOf('./currency-runtime.js');
+  const disclosure=index.indexOf('./currency-freshness-ui.js');
+  assert.ok(runtime>=0);
+  assert.ok(disclosure>runtime);
+});
+
+test('stale-rate UI exposes source age snapshot warning and explicit refresh action',()=>{
+  const source=fs.readFileSync('currency-freshness-ui.js','utf8');
+  assert.match(source,/arise-fx-stale/);
+  assert.match(source,/Сумма будет сохранена с этим FX snapshot/);
+  assert.match(source,/data-refresh-stale-fx/);
+  assert.match(source,/refreshRates\(true\)/);
+});

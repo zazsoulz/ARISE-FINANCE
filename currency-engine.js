@@ -59,6 +59,23 @@
 
   function isFresh(book,maxAgeMs=MAX_CACHE_AGE_MS){return !!sanitizeRateBook(book)&&ageMs(book)<=maxAgeMs;}
 
+  function rateBookStatus(book,{now=Date.now(),maxAgeMs=MAX_CACHE_AGE_MS}={}){
+    const normalized=sanitizeRateBook(book);
+    if(!normalized){
+      return {available:false,fresh:false,stale:false,ageMs:Infinity,fetchedAt:null,source:null};
+    }
+    const age=ageMs(normalized,now);
+    const fresh=age<=maxAgeMs;
+    return {
+      available:true,
+      fresh,
+      stale:!fresh,
+      ageMs:age,
+      fetchedAt:normalized.fetchedAt,
+      source:normalized.source
+    };
+  }
+
   function rate(book,from,to){
     const normalized=sanitizeRateBook(book);
     const source=normalizeCurrency(from);
@@ -159,7 +176,7 @@
 
   return {
     CURRENCIES,SYMBOLS,CACHE_KEY,MAX_CACHE_AGE_MS,
-    normalizeCurrency,validRateBook,sanitizeRateBook,loadCached,saveCached,ageMs,isFresh,
+    normalizeCurrency,validRateBook,sanitizeRateBook,loadCached,saveCached,ageMs,isFresh,rateBookStatus,
     rate,convert,snapshot,transactionBaseAmount,fetchLatest,ensureRateBook,format
   };
 });
