@@ -23,7 +23,12 @@
 
   async function finishAuthenticatedSession(session){
     const remote=root.ARISE_SUPABASE;
-    if(root.ARISE_LOCAL_ACCOUNTS) root.ARISE_LOCAL_ACCOUNTS.activate(session.user.id);
+    const localAccounts=root.ARISE_LOCAL_ACCOUNTS;
+    if(localAccounts){
+      if(localAccounts.restoreFromIndexedDb) await localAccounts.restoreFromIndexedDb(session.user.id);
+      localAccounts.activate(session.user.id);
+    }
+
     let account=null;
     try{account=await remote.loadAccount();}catch(error){console.error("ARISE account load",error);}
     state.account.name=(account&&account.name)||session.user.user_metadata?.name||session.user.email?.split("@")[0]||"";
@@ -42,6 +47,7 @@
     try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
     render();
     if(root.ARISE_SYNC) root.ARISE_SYNC.schedule();
+    if(root.ARISE_ENTITY_OUTBOX) root.ARISE_ENTITY_OUTBOX.schedule();
   }
 
   function bindAuth(){
