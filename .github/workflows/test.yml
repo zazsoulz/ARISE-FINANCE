@@ -26,6 +26,7 @@ jobs:
           node --check currency-display.js
           node --check financial-core.js
           node --check goal-lifecycle-core.js
+          node --check goal-future-reroute-core.js
           node --check expense-reconciliation.js
           node --check financial-runtime.js
           node --check financial-integration.js
@@ -42,6 +43,7 @@ jobs:
           node --check product-ui.js
           node --check sync-conflict-ui.js
           node --check goal-lifecycle-ui.js
+          node --check goal-future-reroute-ui.js
           node --check modal-accessibility.js
           node --check supabase-public-config.js
           node --check supabase-client.js
