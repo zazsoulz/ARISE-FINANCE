@@ -35,7 +35,7 @@
     return profile.ariseSync;
   }
 
-  function recordCategoryDeletions(previous,next){
+  function recordEntityDeletions(previous,next,{collection,tombstoneKey}){
     if(!previous||!Array.isArray(previous.profiles)||!next||!Array.isArray(next.profiles)) return;
 
     for(const oldProfile of previous.profiles){
@@ -46,24 +46,33 @@
       );
       if(!currentProfile) continue;
 
-      const currentLocalIds=new Set((currentProfile.categories||[]).map(category=>String(category.id)));
-      const currentRemoteIds=new Set((currentProfile.categories||[]).map(remoteId).filter(Boolean));
+      const currentEntities=Array.isArray(currentProfile[collection])?currentProfile[collection]:[];
+      const currentLocalIds=new Set(currentEntities.map(entity=>String(entity.id)));
+      const currentRemoteIds=new Set(currentEntities.map(remoteId).filter(Boolean));
       const deleted=[];
 
-      for(const oldCategory of oldProfile.categories||[]){
-        const id=remoteId(oldCategory);
+      for(const oldEntity of oldProfile[collection]||[]){
+        const id=remoteId(oldEntity);
         if(!id) continue;
-        if(currentLocalIds.has(String(oldCategory.id))||currentRemoteIds.has(id)) continue;
+        if(currentLocalIds.has(String(oldEntity.id))||currentRemoteIds.has(id)) continue;
         deleted.push(id);
       }
 
       if(deleted.length){
         const meta=ensureProfileSync(currentProfile);
-        meta.deletedCategoryIds=[...new Set([...(meta.deletedCategoryIds||[]),...deleted])];
+        meta[tombstoneKey]=[...new Set([...(meta[tombstoneKey]||[]),...deleted])];
         meta.dirty=true;
         meta.changedAt=new Date().toISOString();
       }
     }
+  }
+
+  function recordCategoryDeletions(previous,next){
+    recordEntityDeletions(previous,next,{collection:"categories",tombstoneKey:"deletedCategoryIds"});
+  }
+
+  function recordGoalDeletions(previous,next){
+    recordEntityDeletions(previous,next,{collection:"goals",tombstoneKey:"deletedGoalIds"});
   }
 
   function write(){
@@ -73,6 +82,7 @@
     if(!root.ARISE_SYNC_SILENT){
       const previous=read(key);
       recordCategoryDeletions(previous,state);
+      recordGoalDeletions(previous,state);
     }
 
     localStorage.setItem(key,JSON.stringify(state));
@@ -127,5 +137,5 @@
   function currentAccountId(){return activeAccountId;}
 
   preloadLastAccount();
-  root.ARISE_LOCAL_ACCOUNTS={activate,deactivate,currentAccountId,accountKey,recordCategoryDeletions};
+  root.ARISE_LOCAL_ACCOUNTS={activate,deactivate,currentAccountId,accountKey,recordCategoryDeletions,recordGoalDeletions};
 })(typeof globalThis!=="undefined"?globalThis:window);
