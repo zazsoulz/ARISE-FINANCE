@@ -37,8 +37,24 @@
     if(error)throw error;id=data.id;mark(localProfile,id);return id;
   }
 
+  async function applyCategoryTombstones(profile,profileId){
+    const c=client();
+    const meta=ensureMeta(profile);
+    const ids=[...new Set((meta.deletedCategoryIds||[]).filter(Boolean))];
+    if(!ids.length) return 0;
+
+    for(const id of ids){
+      const {error}=await c.from("finance_categories").delete().eq("id",id).eq("profile_id",profileId);
+      if(error) throw error;
+    }
+
+    meta.deletedCategoryIds=[];
+    return ids.length;
+  }
+
   async function syncCategories(profile,profileId,user){
     const c=client();let count=0;
+    await applyCategoryTombstones(profile,profileId);
     const {data:existing,error:existingError}=await c.from("finance_categories").select("id,name,rule_type").eq("profile_id",profileId);
     if(existingError)throw existingError;
     const claimed=new Set((profile.categories||[]).map(remoteId).filter(Boolean));
@@ -131,5 +147,5 @@
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
