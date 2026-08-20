@@ -29,58 +29,50 @@ function bootLocalStore(){
   };
   context.globalThis=context;
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync('sync-outbox.js','utf8'),context);
   vm.runInContext(fs.readFileSync('local-account-store.js','utf8'),context);
   context.ARISE_LOCAL_ACCOUNTS.activate('user-a');
   return {context,localStorage};
 }
 
-test('deleting a synced category records a persistent server tombstone',()=>{
+test('deleting a synced category records a persistent outbox delete mutation instead of a new tombstone',()=>{
   const {context,localStorage}=bootLocalStore();
   context.state.profiles[0].categories=[];
   context.saveState();
 
   const profile=context.state.profiles[0];
-  assert.deepEqual(
-    [...profile.ariseSync.deletedCategoryIds],
-    ['11111111-1111-4111-8111-111111111111']
-  );
-  assert.equal(profile.ariseSync.dirty,true);
+  const mutation=context.ARISE_SYNC_OUTBOX.list(profile,'category')[0];
+  assert.equal(mutation.action,'delete');
+  assert.equal(mutation.entityRemoteId,'11111111-1111-4111-8111-111111111111');
+  assert.equal(profile.ariseSync.deletedCategoryIds,undefined);
 
   const persisted=JSON.parse(localStorage.getItem('arise.finance.production.v1.account.user-a'));
-  assert.deepEqual(
-    persisted.profiles[0].ariseSync.deletedCategoryIds,
-    ['11111111-1111-4111-8111-111111111111']
-  );
+  assert.equal(persisted.profiles[0].ariseSync.outbox[0].entity,'category');
 });
 
-test('deleting a synced goal records a persistent server tombstone',()=>{
+test('deleting a synced goal records a persistent outbox delete mutation instead of a new tombstone',()=>{
   const {context,localStorage}=bootLocalStore();
   context.state.profiles[0].goals=[];
   context.saveState();
 
   const profile=context.state.profiles[0];
-  assert.deepEqual(
-    [...profile.ariseSync.deletedGoalIds],
-    ['55555555-5555-4555-8555-555555555555']
-  );
-  assert.equal(profile.ariseSync.dirty,true);
+  const mutation=context.ARISE_SYNC_OUTBOX.list(profile,'goal')[0];
+  assert.equal(mutation.action,'delete');
+  assert.equal(mutation.entityRemoteId,'55555555-5555-4555-8555-555555555555');
+  assert.equal(profile.ariseSync.deletedGoalIds,undefined);
 
   const persisted=JSON.parse(localStorage.getItem('arise.finance.production.v1.account.user-a'));
-  assert.deepEqual(
-    persisted.profiles[0].ariseSync.deletedGoalIds,
-    ['55555555-5555-4555-8555-555555555555']
-  );
+  assert.equal(persisted.profiles[0].ariseSync.outbox[0].entity,'goal');
 });
 
-test('silent remote hydration does not manufacture deletion tombstones',()=>{
+test('silent remote hydration does not manufacture deletion outbox mutations',()=>{
   const {context}=bootLocalStore();
   context.state.profiles[0].categories=[];
   context.state.profiles[0].goals=[];
   context.ARISE_SYNC_SILENT=true;
   context.saveState();
   context.ARISE_SYNC_SILENT=false;
-  assert.equal(context.state.profiles[0].ariseSync.deletedCategoryIds,undefined);
-  assert.equal(context.state.profiles[0].ariseSync.deletedGoalIds,undefined);
+  assert.equal(context.ARISE_SYNC_OUTBOX.list(context.state.profiles[0]).length,0);
 });
 
 function bootSyncEngine(expectedTable){
@@ -107,7 +99,7 @@ function bootSyncEngine(expectedTable){
   return {context,calls};
 }
 
-test('sync engine deletes tombstoned remote categories and clears the tombstone only after success',async()=>{
+test('sync engine still drains legacy category tombstones from older vaults exactly once',async()=>{
   const {context,calls}=bootSyncEngine('finance_categories');
   const profile={ariseSync:{deletedCategoryIds:['33333333-3333-4333-8333-333333333333']}};
   const count=await context.ARISE_SYNC.applyCategoryTombstones(profile,'44444444-4444-4444-8444-444444444444');
@@ -120,7 +112,7 @@ test('sync engine deletes tombstoned remote categories and clears the tombstone 
   ]);
 });
 
-test('sync engine deletes tombstoned remote goals and clears the tombstone only after success',async()=>{
+test('sync engine still drains legacy goal tombstones from older vaults exactly once',async()=>{
   const {context,calls}=bootSyncEngine('finance_goals');
   const profile={ariseSync:{deletedGoalIds:['66666666-6666-4666-8666-666666666666']}};
   const count=await context.ARISE_SYNC.applyGoalTombstones(profile,'77777777-7777-4777-8777-777777777777');
