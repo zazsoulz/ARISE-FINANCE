@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/app-shell.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    }
+  ]
+}
