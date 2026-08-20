@@ -128,12 +128,39 @@
     }
   }
 
+  async function flushTransactionOutbox(profile,profileId,user){
+    const outbox=root.ARISE_SYNC_OUTBOX;
+    if(!outbox||!outbox.list) return 0;
+    const c=client();let count=0;
+    for(const mutation of outbox.list(profile,"transaction")){
+      try{
+        if(mutation.action==="delete"){
+          let id=mutation.entityRemoteId||null;
+          if(!id&&mutation.entityLocalId) id=await findExistingTransaction(c,user.id,{id:mutation.entityLocalId});
+          if(id){
+            const {error}=await c.from("finance_transactions").delete().eq("id",id).eq("profile_id",profileId);
+            if(error)throw error;
+          }
+        }else{
+          const tx=(profile.transactions||[]).find(item=>String(item.id)===String(mutation.entityLocalId));
+          if(tx) await syncTransaction(profile,profileId,user,tx);
+        }
+        outbox.ack(profile,mutation.id);count++;
+      }catch(error){
+        if(outbox.fail)outbox.fail(profile,mutation.id,error);
+        throw error;
+      }
+    }
+    return count;
+  }
+
   async function syncProfile(profile,profileId,user){
     const c=client();
     const {error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId);if(error)throw error;
     await syncCategories(profile,profileId,user);await syncGoals(profile,profileId,user);
+    const outboxCount=await flushTransactionOutbox(profile,profileId,user);
     let txCount=0;for(const tx of profile.transactions||[]){await syncTransaction(profile,profileId,user,tx);txCount++;}
-    mark(profile,profileId);return txCount;
+    mark(profile,profileId);return {txCount,outboxCount};
   }
 
   async function pushAll(){
@@ -142,11 +169,13 @@
     const c=client();const user=await getUser();if(!c||!user)return {status:"signed_out"};
     running=true;const startedAt=new Date().toISOString();
     try{
-      const serverProfiles=await loadServerProfiles();let txCount=0;
-      for(let i=0;i<(state.profiles||[]).length;i++){const profile=state.profiles[i];const profileId=await ensureProfile(profile,user,serverProfiles,i);txCount+=await syncProfile(profile,profileId,user);}
+      const serverProfiles=await loadServerProfiles();let txCount=0;let outboxCount=0;
+      for(let i=0;i<(state.profiles||[]).length;i++){
+        const profile=state.profiles[i];const profileId=await ensureProfile(profile,user,serverProfiles,i);const result=await syncProfile(profile,profileId,user);txCount+=result.txCount;outboxCount+=result.outboxCount;
+      }
       if(state.account)delete state.account.password;
       root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
-      lastResult={status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,startedAt,finishedAt:new Date().toISOString()};
+      lastResult={status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,startedAt,finishedAt:new Date().toISOString()};
       if(root.dispatchEvent)root.dispatchEvent(new CustomEvent("arise:sync",{detail:lastResult}));return lastResult;
     }catch(error){
       console.error("ARISE sync",error);lastResult={status:"error",message:error.message||"Sync failed",startedAt,finishedAt:new Date().toISOString()};
@@ -156,5 +185,5 @@
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,flushTransactionOutbox,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
