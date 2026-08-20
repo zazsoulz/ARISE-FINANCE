@@ -12,20 +12,28 @@
     analytics:'<path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
     minus:'<path d="M5 12h14"/>',
-    settings:'<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1H9.55a1.7 1.7 0 0 0-.4-1.1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 3.75 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4V9.55a1.7 1.7 0 0 0 1.1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.86-2.86.06.06A1.7 1.7 0 0 0 8.15 3.75a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1h4.05a1.7 1.7 0 0 0 .4 1.1 1.7 1.7 0 0 0 1 .6 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 19.4 8.15c.14.4.35.74.6 1 .3.3.67.43 1.1.4v4.05c-.43-.03-.8.1-1.1.4-.25.26-.46.6-.6 1Z"/>'
+    settings:'<circle cx="12" cy="12" r="3.2"/>'
   };
 
-  function icon(name,size=18){
-    return `<svg class="product-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;
-  }
+  function icon(name,size=18){return `<svg class="product-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;}
 
   function syncState(){
     if(typeof navigator!=="undefined"&&navigator.onLine===false)return {kind:'offline',label:'Офлайн'};
     const sync=root.ARISE_SYNC&&root.ARISE_SYNC.lastResult?root.ARISE_SYNC.lastResult():null;
     if(sync&&sync.status==='error')return {kind:'error',label:'Ошибка синхронизации'};
+    if(sync&&sync.status==='busy')return {kind:'syncing',label:'Синхронизация'};
     if(sync&&sync.status==='synced')return {kind:'online',label:'Синхронизировано'};
     return {kind:'online',label:'Онлайн'};
   }
+  function updateSyncIndicator(){
+    const el=typeof document!=="undefined"&&document.querySelector('.product-sync');
+    if(!el)return;
+    const next=syncState();
+    el.className=`product-sync ${next.kind}`;
+    el.title=next.label;
+    const label=el.querySelector('span');if(label)label.textContent=next.label;
+  }
+  function modalIsOpen(){const modal=typeof document!=="undefined"&&document.getElementById('modal');return !!(modal&&modal.classList.contains('open'));}
 
   root.renderNav=function(){
     const items=[['home','Главная','home'],['income','Распределение','income'],['goals','Цели','goals'],['history','История','history'],['analytics','Аналитика','analytics']];
@@ -40,11 +48,12 @@
     return `<header class="topbar product-topbar"><div class="product-brand"><div class="logo">ARISE <span>FINANCE</span></div><div class="product-profile-name">${escapeHTML(profile&&profile.name||'Финансовый профиль')}</div></div><div class="user"><div class="product-sync ${sync.kind}" title="${escapeHTML(sync.label)}"><i></i><span>${escapeHTML(sync.label)}</span></div><button class="avatar product-avatar" data-page="settings" aria-label="Настройки профиля">${account.avatar?`<img src="${escapeHTML(account.avatar)}" alt="">`:escapeHTML(letter)}</button></div></header>`;
   };
 
+  function runQuick(action){if(modalIsOpen())return false;action();return true;}
   function bindQuickActions(scope){
     const income=scope&&scope.querySelector('[data-quick-income]');
     const expense=scope&&scope.querySelector('[data-quick-expense]');
-    if(income)income.onclick=()=>showIncomeModal();
-    if(expense)expense.onclick=()=>showExpenseModal();
+    if(income)income.onclick=()=>runQuick(()=>showIncomeModal());
+    if(expense)expense.onclick=()=>runQuick(()=>showExpenseModal());
   }
 
   root.renderHome=function(){
@@ -68,5 +77,11 @@
     if(expense&&!expense.querySelector('svg'))expense.innerHTML=`${icon('minus',16)}<span>Расход</span>`;
   };
 
-  root.ARISE_PRODUCT_UI={icon,syncState,bindQuickActions};
+  if(root.addEventListener){
+    root.addEventListener('online',updateSyncIndicator);
+    root.addEventListener('offline',updateSyncIndicator);
+    root.addEventListener('arise:sync',updateSyncIndicator);
+  }
+
+  root.ARISE_PRODUCT_UI={icon,syncState,updateSyncIndicator,modalIsOpen,runQuick,bindQuickActions};
 })(typeof globalThis!=="undefined"?globalThis:window);
