@@ -36,7 +36,9 @@ jobs:
           node --check canonical-ui-overrides.js
           node --check reserve-analytics.js
           node --check analytics-engine.js
+          node --check goal-completion-analytics.js
           node --check analytics-ui.js
+          node --check goal-completion-analytics-ui.js
           node --check analytics-expense-ui.js
           node --check product-rules.js
           node --check arise-v3.js
