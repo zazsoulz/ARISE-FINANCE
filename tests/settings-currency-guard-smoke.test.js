@@ -10,7 +10,7 @@ function boot({withHistory}){
   let toastText='';
   const lifecycle={
     hasFinancialHistory:p=>!!((p.transactions||[]).length||(p.goals||[]).some(g=>Number(g.current||g.ledgerStart||0)>0)),
-    canChangeBaseCurrency(p,next)=>!next||next===(p.settings.currency||'RUB')||!((p.transactions||[]).length)
+    canChangeBaseCurrency:(p,next)=>!next||next===(p.settings.currency||'RUB')||!((p.transactions||[]).length)
   };
   const ctx={console,document:dom.window.document,window:null,globalThis:null,ARISE_PROFILE_LIFECYCLE:lifecycle,
     activeProfile:()=>profile,toast:text=>{toastText=text;},
