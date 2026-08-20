@@ -17,7 +17,7 @@ test('analytics visuals consume canonical analytics engine instead of parallel c
   for(const token of [
     'analytics.monthly(profile,currentMonth)',
     'analytics.compare(profile,currentMonth,previousMonth)',
-    'analytics.series(profile,6)',
+    'analytics.series(profile,999).filter(row=>row.month<=currentMonth).slice(-6)',
     'analytics.incomeSources(profile,{month})',
     'analytics.goals(profile,new Date())',
     'core.reserveBalance(profile)'
@@ -28,4 +28,10 @@ test('analytics UI includes custom pulse, source composition, goals and reserve 
   for(const token of ['analytics-pulse','analytics-source-row','analytics-goal-ring','analytics-reserve-orbit','Financial pulse','Расходы вне плана']){
     assert.ok(source.includes(token)||css.includes(token),token+' missing');
   }
+});
+
+test('analytics month filter is isolated from global app month',()=>{
+  assert.ok(source.includes('let selectedAnalyticsMonth=null'));
+  assert.ok(source.includes('selectedAnalyticsMonth=select.value;root.renderAnalytics()'));
+  assert.equal(source.includes('activeMonth=select.value'),false);
 });
