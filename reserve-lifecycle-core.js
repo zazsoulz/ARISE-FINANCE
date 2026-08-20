@@ -46,7 +46,7 @@
     return {
       ...stats,
       reserve:safe(stats.reserve)+flow.deposits,
-      reserveWithdrawn:safe(stats.reserveWithdrawn)+flow.withdrawals,
+      reserveWithdrawn:safe(stats.reserveWithdrawn),
       free:Math.max(0,safe(stats.free)+cumulative),
       freeSpent:safe(stats.freeSpent)+flow.freeSpent,
       freeGenerated:safe(stats.freeGenerated)+flow.freeGenerated
