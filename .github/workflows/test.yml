@@ -36,6 +36,7 @@ jobs:
           node --check analytics-expense-ui.js
           node --check product-rules.js
           node --check arise-v3.js
+          node --check expense-reconciliation-ui.js
           node --check history-inspector.js
           node --check settings-currency-guard.js
           node --check product-ui.js
