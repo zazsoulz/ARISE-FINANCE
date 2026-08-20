@@ -1,212 +1,184 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs current `main` implementation as of 2026-08-19.
+Basis: `docs/ARISE_SPEC.md` vs `main` at `f38cc1ba754a03cfe1d4a5c7de524408a623b971` (2026-08-20).
 
-Legend: ✅ substantially present; 🟡 partial/incorrect; ❌ absent or architecturally incompatible.
+Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
 ## Executive summary
-The current application is a useful UI/CRUD prototype, not yet a production financial system. The strongest reusable asset is the visual/UI shell and basic transaction/profile CRUD. The weakest area is the financial domain model: account/auth, free money/remainder, goals, reserve, categories, analytics and storage are not yet governed by one coherent source-of-truth model.
+ARISE has moved beyond the original CRUD prototype. The current product now has a ledger-backed financial core, real account authentication, isolated financial profiles, Supabase persistence, local-first synchronization, mixed-currency support, transaction-derived analytics/history, and the A1-V3 product UI shell.
 
-Do not add large new UI features until the financial engine and persistence model are stabilized.
+The highest-value remaining work is no longer foundational auth or basic ledger correctness. It is lifecycle completeness and production hardening: funded-goal closure/rerouting, completed-goal destination rules, stricter expense reconciliation UX, broader reserve semantics/runway inputs, sync conflict hardening, first-launch/onboarding cleanup, interactive chart polish, and beta/release verification.
 
-## Product/UI shell
-- ✅ Mobile-responsive dark premium visual language exists.
-- ✅ Main navigation/screens exist: home, income, expenses, goals, history, analytics, settings.
-- ✅ Modal, cards, stats, basic charts, progress UI and feedback/toasts exist.
-- 🟡 Charts are static/simple bar visuals rather than the target interactive ARISE analytics language.
-- 🟡 Current app is a ~147 KB single `index.html`, mixing styles, domain logic, state, persistence and rendering. This materially increases regression risk.
+Vercel remains intentionally outside the active development loop. GitHub Actions, branch/PR review and standalone/local artifacts are the active verification path until stable beta.
 
-## Account/auth
-- 🟡 A registration UI exists with name/email/password/avatar file.
-- ❌ Registration is not secure production authentication; `registered` is a local state flag.
-- ❌ Plain password is stored in local application state/localStorage.
-- ❌ Real login/session/logout is absent.
-- ❌ Password change/recovery is absent.
-- ❌ Notification preference exists in state but has no complete settings UX.
-- 🟡 Account settings currently expose only part of canonical account data.
-- ✅ Avatar file input has replaced URL-only photo entry in current code.
-
-Required action: stop extending local fake auth; implement Supabase Auth and a local session/offline-compatible user model.
-
-## Financial profiles
-- ✅ Multiple profiles can be created, switched and deleted.
-- ✅ Transactions/goals/categories/settings are nested per profile locally, giving basic isolation.
-- 🟡 Production persistence/sync for finance profiles is absent.
-- 🟡 Profile creation modes/template/copy described in old README are not reliably present in current implementation.
+## Financial core
+- ✅ `financial-core.js` is the single financial calculation source of truth in the effective runtime.
+- ✅ Exact currency-unit conservation is enforced for accepted income plans.
+- ✅ System unallocated/free remainder is separate from categories and does not depend on a category name.
+- ✅ Category priority materially affects constrained allocation order.
+- ✅ Monthly category and reserve limits are cumulative across multiple incomes.
+- ✅ Goals participate in income allocation by priority/deadline/required pace.
+- ✅ Goal balances are derived from ledger operations.
+- ✅ Reserve is a ledger balance and supports withdrawals/transfers to goals.
+- ✅ Expense controlled/uncontrolled amounts are explicit and derived from real available balances.
+- ✅ Multi-profile financial isolation has regression coverage.
+- 🟡 The main core is still surrounded by compatibility layers from the historical single-file shell; architecture is correct at runtime but not yet fully simplified physically.
 
 ## Categories
-- ✅ User categories have name, type, percent, fixed amount, priority, limit, enabled state.
-- 🟡 Category editor still exposes a special `remainder` type, which conflicts with the canonical rule that system remainder is not a category mode.
-- 🟡 Starter template has been edited during development and is not yet locked to canonical first-launch behavior.
-- 🟡 Percent preset model is hard-coded and does not fully express the desired whole-number 1–100 rule cleanly.
-- 🟡 Priority is largely cosmetic: percentage categories are sorted by priority but still receive their independent percentage; priority does not meaningfully resolve constrained allocation.
-- 🟡 Limits are applied per income calculation, not robustly as accumulated monthly limits across all incomes.
+- ✅ User categories are editable and deletable.
+- ✅ No magic category names.
+- ✅ Primary fixed and percentage allocation semantics are implemented.
+- ✅ Whole-number percentage model and cumulative monthly limits are enforced by the canonical engine.
+- ✅ Category deletion has offline-sync tombstone protection.
+- 🟡 First-launch category templates and onboarding copy still need a final product pass so examples never look like mandatory system categories.
+- 🟡 Category settings UX can still be simplified and visually aligned more tightly with A1-V3.
 
 ## Reserve
-- ✅ Reserve is already modeled separately from categories in profile settings.
-- ✅ Enabled/percent/per-income limit UI exists.
-- 🟡 Current reserve logic is contribution-oriented, not a full reserve ledger/balance model.
-- ❌ Reserve target/progress is not a first-class model.
-- ❌ Financial runway (months of protection based on living/essential spend) is absent.
-- 🟡 `lifetimeReserve` sums income allocation records; reserve withdrawals/uses are not modeled as a robust balance flow.
-
-## Income
-- ✅ Every income is stored separately with amount/date/source/currency/note/allocations.
-- ✅ Multiple incomes per month work naturally.
-- ✅ Automatic proposal and manual editing UI exist.
-- 🟡 Proposal validation currently expects exact full distribution and treats positive unallocated room as an error.
-- 🟡 Current engine is not goal-aware.
-- 🟡 Current engine does not enforce accumulated monthly category limits.
-- 🟡 Manual plan editing does not explain consequence changes to goals/reserve.
-
-## Free money / system remainder
-- ❌ Current `monthStats()` still treats `stats.allocations["Свободные деньги"]` as system free money.
-- ❌ This makes a user category name act as a reserved implementation key.
-- 🟡 `remainder` has begun to be added to income transactions, but the complete chain (validation → save → statistics → expenses → backwards compatibility) is not yet finished in `main`.
-- 🟡 Expense default source still uses the literal label «Свободные деньги», which conflates product wording with domain identity.
-
-This is the current highest-priority engine bug and is being handled in a dedicated PR.
-
-## Expenses / uncontrolled money
-- ✅ Expense transaction CRUD exists.
-- ✅ User may select a category or leave category blank.
-- 🟡 Spending from a selected category subtracts from derived allocation statistics but there is no rigorous category ledger/balance model.
-- ❌ Uncontrolled/untracked funds are not modeled as a distinct financial event/value.
-- ❌ Overspend is currently warning-only; unexplained excess is not stored and therefore cannot appear correctly in analytics/history.
-- ❌ ARISE does not yet offer the canonical strict reconciliation flow (identify source vs accept uncontrolled funds).
+- ✅ Reserve is separate from categories.
+- ✅ Ledger-derived balance exists.
+- ✅ Contribution settings and target/progress exist.
+- ✅ Reserve withdrawals and reserve-to-goal funding preserve money conservation.
+- ✅ Deterministic reserve progress/runway analytics helpers exist and analytics UI can show runway where inputs are available.
+- 🟡 The product still needs a canonical user-facing definition of which expenses count as essential/living expenses for runway.
+- 🟡 Reserve lifecycle UX should expose deposits/withdrawals/history as deliberately as goal flows.
 
 ## Goals
-- ✅ Goal CRUD, target/current, priority, deadline, monthlyContribution, progress, basic forecast and completed state exist.
-- ❌ Goal funding is not financially connected to transactions/allocations: current manual funding can increase `goal.current` without moving money from any real source.
-- ❌ Goals do not participate in income distribution.
-- 🟡 Forecast uses configured monthlyContribution rather than robust historical contribution dynamics.
-- ❌ Contribution history is not a first-class ledger.
-- ❌ Completed-goal rerouting rule is absent.
-- ❌ Closing/deleting a funded goal does not reconcile the money destination.
-- 🟡 Completed goals are displayed, but not with the requested full historical analysis.
+- ✅ Goals are financial entities integrated into allocation.
+- ✅ Funding is represented by real operations; manual counter-only money creation is prevented.
+- ✅ Goal contribution history is traceable from transactions.
+- ✅ Completed goals stop receiving automatic allocations.
+- ✅ Forecast/pace responds to target, deadline, priority and monthly plan.
+- ✅ Goal sync, persistence and deletion tombstones exist for safely deletable goals.
+- ✅ Funded goals are protected from destructive deletion.
+- ❌ Canonical funded-goal close/delete flow is not complete: the user must be able to choose where remaining goal money goes without losing history or value.
+- ❌ Canonical completed-goal future-funds rerouting rule is not yet persisted as a first-class destination rule.
+- 🟡 Completed-goal history exists in History/filters, but the dedicated completion summary (duration, original vs actual forecast, completion method) can be richer.
 
-This is the second major domain rewrite after the core allocation model.
+## Income and allocation
+- ✅ Every income is an individual transaction with stable ID, date, source, note and currency metadata.
+- ✅ Any number of incomes per month is supported.
+- ✅ Income proposals are generated before save and may be edited.
+- ✅ Positive unallocated remainder is valid.
+- ✅ Goal/reserve/category allocations share one canonical planner.
+- ✅ FX conversion preserves original currency while storing base-equivalent values.
+- 🟡 Consequence explanations for manual proposal changes are still limited; the core has the data needed, but UX should explain goal delay / reserve impact more directly.
 
-## History/statistics/analytics
-- ✅ Transactions remain individually inspectable and months are derived from transaction dates.
-- ✅ Basic monthly income/expense/reserve/category aggregation exists.
-- ✅ Basic all-time income/expense, source and expense-category analytics exist.
-- 🟡 History filtering is very limited compared with spec.
-- ❌ Uncontrolled funds analytics absent.
-- ❌ Goal contribution analytics/history absent.
-- ❌ Reserve runway absent.
-- 🟡 Cross-month comparison is basic and visually generic.
-- 🟡 Currency conversion is not implemented; values of different currencies can be aggregated incorrectly as if numerically comparable.
+## Expenses and reconciliation
+- ✅ Each expense is an individual transaction with stable identity.
+- ✅ Explicit category vs unallocated funding source semantics exist.
+- ✅ Overspend is split into `controlledAmount` and `uncontrolledAmount` rather than silently corrupting balances.
+- ✅ Category overspend consumes only the real category balance before becoming uncontrolled.
+- ✅ History and analytics expose uncontrolled amounts.
+- 🟡 The canonical reconciliation UX is still incomplete: when uncontrolled money appears, ARISE should offer a deliberate “identify the true source / accept uncontrolled” resolution flow rather than only reporting the result.
+- 🟡 Editing an already-recorded expense should preserve reconciliation invariants with equally explicit UX.
+
+## Account and authentication
+- ✅ Supabase email/password authentication is implemented.
+- ✅ Login/session/logout are real account actions.
+- ✅ Password recovery/change exists.
+- ✅ Plaintext password is not stored in local financial state.
+- ✅ Account name/email/avatar/notification preferences are separate from financial profiles.
+- ✅ Private avatar upload is supported.
+- 🟡 Google/Apple/phone sign-in remain optional future convenience methods, not MVP blockers.
+- 🟡 Production auth still needs final environment/RLS/recovery verification against a real beta Supabase project before release.
+
+## Financial profiles
+- ✅ One account may own multiple independent financial profiles.
+- ✅ Profile categories/goals/transactions/settings remain isolated locally and remotely.
+- ✅ Profile switching and local vault isolation have regression coverage.
+- ✅ Base-currency change is guarded once financial history exists.
+- 🟡 Profile creation/copy/template onboarding needs a final UX pass.
+- 🟡 Destructive profile deletion should receive a final server/local recovery and backup review before beta.
+
+## Supabase persistence
+- ✅ Auth-linked account data is persisted.
+- ✅ Finance profiles, categories, goals and transactions are persisted.
+- ✅ Remote IDs and sync metadata exist.
+- ✅ RLS-oriented schema/migrations are part of the repository.
+- ✅ FX rates have persistence/server-source support.
+- 🟡 Schema and client contracts should receive one consolidated migration audit before beta so compatibility migrations can be collapsed/documented cleanly.
+- 🟡 Backup/restore and migration rollback procedures are not yet production-ready.
+
+## Offline-first and sync
+- ✅ Core financial work remains local-first.
+- ✅ Structured local account vaults are isolated by authenticated account.
+- ✅ IndexedDB/local persistence recovery path exists.
+- ✅ Persistent mutation outbox exists for transactions/categories/goals.
+- ✅ Stable IDs, remote IDs, mutation IDs and retry metadata are used for idempotency.
+- ✅ Tombstones prevent deleted categories/goals from resurrecting after pull.
+- ✅ Ambiguous-failure transaction retry is regression-tested against duplication.
+- ✅ Sync status is exposed in the product UI.
+- 🟡 Multi-device concurrent edits still need a dedicated end-to-end conflict matrix (same entity edited on two devices, delete-vs-edit, offline reorder, stale pull after newer local write).
+- 🟡 Transition-era full-push/fallback paths should be reviewed and removed once the unified mutation queue is proven complete for every entity type.
 
 ## Currency
-- ✅ RUB/EUR/USD UI values exist and transactions retain currency.
-- ❌ Base-currency conversion using exchange rates is not wired into statistics.
-- ❌ Existing `exchange_rates` SQL table is unused by the current client.
-- ❌ Historical/original vs converted analytics policy is not implemented.
+- ✅ RUB, EUR and USD are supported.
+- ✅ Financial profile has a base currency.
+- ✅ Transactions preserve original currency permanently.
+- ✅ Immutable FX snapshots/base-equivalent amounts support mixed-currency ledger calculations.
+- ✅ Offline FX cache and Supabase FX persistence/function source exist.
+- ✅ Analytics no longer sum unrelated currencies as if numerically identical.
+- 🟡 FX freshness/source disclosure and stale-rate UX can be improved before beta.
+- 🟡 Historical-rate policy should be documented explicitly for edits/imports/backdated transactions.
 
-## Offline-first / persistence
-- ✅ LocalStorage currently makes the prototype usable without internet on one browser/device.
-- ✅ Stable random UUID-like IDs are used for local entities/operations.
-- ❌ There is no real synchronization queue/outbox.
-- ❌ There is no server reconciliation/conflict strategy.
-- ❌ Duplicate prevention/idempotency across devices is absent.
-- ❌ Sync metadata/version/timestamps appropriate for conflict resolution are incomplete.
+## History and analytics
+- ✅ Transactions remain the source of truth.
+- ✅ Monthly/lifetime analytics are derived from ledger operations.
+- ✅ Income, expenses, allocations, categories, goals, reserve, uncontrolled funds and trend comparisons are represented.
+- ✅ History filters include month/period, type, category, goal, source and currency.
+- ✅ Completed-goal filtering is available.
+- ✅ Transaction inspector exposes reconciliation/currency/allocation detail.
+- ✅ Profile switching resets history filters to avoid cross-profile UI leakage.
+- 🟡 Charts are substantially improved but are not yet at the final interactive ARISE visual standard (touch inspection, richer semantic transitions, accessibility, drill-down).
+- 🟡 Completed-goal analytics deserve a dedicated lifecycle view rather than only generic transaction/history inspection.
 
-## Supabase/schema
-- ✅ Repository contains a Supabase schema with auth-linked user profile, finance profiles, goals, transactions, allocations, RLS and exchange rates.
-- ✅ Repository contains a publishable Supabase configuration file.
-- ❌ `index.html` does not currently use Supabase APIs.
-- 🟡 SQL schema is not yet sufficient for canonical product: categories, reserve ledger/target, goal contribution history, expense funding source, uncontrolled funds, sync metadata/outbox semantics and richer allocations need explicit modeling.
-- 🟡 `profiles` table naming may confuse account profile vs finance profile; domain naming should be clarified during migration.
+## Visual system and interactions
+- ✅ A1-V3 dark premium visual language is integrated.
+- ✅ Main navigation uses a mobile bottom bar and desktop sticky navigation.
+- ✅ Quick income/expense actions are available from the main experience.
+- ✅ Sync/offline state is visible.
+- ✅ Responsive behavior, focus/touch states and modal polish have dedicated regression coverage.
+- ✅ Motion is restrained and respects reduced-motion preferences.
+- 🟡 A full dead-button/interaction inventory should still be run after each screen cleanup because legacy shell markup remains underneath compatibility layers.
+- 🟡 Final iconography, empty states, skeleton/loading states and chart interactions need one coherent beta polish pass.
 
-## Source-of-truth violations
-Current implementation has several places where financial meaning is inferred from display/category names or maintained through mutable counters rather than operations:
-- system free money inferred from category name;
-- goal current balance can be manually incremented without a transaction;
-- reserve is summarized only from income records, with no reserve flow ledger;
-- category balances are inferred from aggregated allocation names/expense names;
-- currency values may be summed without conversion.
+## Architecture
+- ✅ Financial engine, runtime integration, product rules, account/auth, sync, currency, analytics and UI overrides are separated into modules.
+- ✅ `index.html` strips the legacy financial block before effective runtime execution, avoiding a second financial truth.
+- ✅ GitHub Actions provide syntax, financial regression, loader/bootstrap and headless UI coverage.
+- 🟡 `app-shell.html` is still a large historical compatibility artifact; final simplification should remove dead inline code instead of only stripping it at boot.
+- 🟡 CSS/JS override layers should be consolidated after behavior stabilizes to reduce long-term maintenance cost.
 
-Canonical fix: transactions + typed allocations/transfers are source of truth; balances/statistics derive from those operations.
+## Immediate prioritized backlog
+### P0 — lifecycle correctness
+1. Implement funded-goal close/delete transfer workflow with typed destination and preserved history.
+2. Persist completed-goal future-funds rerouting destination.
+3. Add strict expense reconciliation resolution flow for uncontrolled money.
+4. Build a dedicated sync conflict matrix and eliminate any remaining full-push fallback once proven safe.
 
-## Old README drift
-Current README claims features such as Calendar, What-if, onboarding, dynamic goal priority, profile template/copy modes and production auth hooks that do not match the current `main/index.html` consistently. README should be replaced/updated after the architecture stabilization and must not be used as product truth.
+### P1 — product completeness
+1. Finalize reserve essential-expense/runway input model and reserve lifecycle UX.
+2. Finish first-launch/profile/category onboarding and template cleanup.
+3. Add explicit consequence previews when users manually alter an income plan.
+4. Expand completed-goal lifecycle analytics.
 
-## Recommended build sequence
-### Phase 0 — Freeze the contract
-1. Merge `ARISE_SPEC.md`.
-2. Keep product decisions in spec; later decisions explicitly amend it.
-3. Add financial-engine tests before significant new UI.
+### P2 — beta polish
+1. Consolidate legacy shell/override layers and remove dead code/buttons.
+2. Upgrade chart interaction/accessibility/drill-down.
+3. Review loading/error/offline/retry states across every screen.
+4. Run mobile/desktop browser verification from standalone artifacts.
+5. Perform Supabase migration/RLS/auth recovery audit and backup/restore rehearsal.
 
-### Phase 1 — Financial core
-1. Remove magic category names and special remainder category semantics.
-2. Define typed money destinations and exact balance equations.
-3. Implement one allocation engine.
-4. Implement accumulated monthly limits.
-5. Make priority meaningful under constrained funds.
-6. Implement one currency-unit rounding correction mechanism.
-7. Add deterministic tests for at least 20 financial scenarios.
-
-### Phase 2 — Goals and reserve
-1. Connect goals to allocations/transfers.
-2. Build goal contribution ledger/history and forecasting.
-3. Implement completion/closure rerouting.
-4. Build reserve as a real balance/target flow.
-5. Add reserve runway calculation.
-
-### Phase 3 — Expenses/reconciliation
-1. Define category/free/goal/reserve funding sources explicitly by ID/type.
-2. Record uncontrolled/untracked funding amount when required.
-3. Build reconciliation UX and strict but human explanations.
-
-### Phase 4 — Account/Supabase
-1. Implement real Supabase Auth and session lifecycle.
-2. Remove plaintext password/local fake registration.
-3. Align Supabase tables with canonical domain model.
-4. Persist accounts/finance profiles/categories/goals/transactions/allocations.
-
-### Phase 5 — Offline sync
-1. Introduce local database/store (prefer IndexedDB for structured/offline data rather than one large localStorage blob).
-2. Add sync outbox, operation IDs, server timestamps/versioning and idempotent writes.
-3. Resolve conflicts by entity/operation rules.
-4. Test offline → edits → reconnect → multi-device synchronization.
-
-### Phase 6 — Analytics and currency
-1. Implement base-currency conversion while preserving original transaction currency.
-2. Build derived monthly analytics from transaction ledger only.
-3. Build ARISE-specific interactive charts.
-4. Add filters and completed-goal history.
-
-### Phase 7 — UI polish / production
-1. Split monolithic `index.html` into modules/styles even if remaining vanilla JS.
-2. Human error handling and loading/sync states.
-3. Mobile-first UX pass.
-4. Production tests, migrations, backup/recovery and deployment cleanup.
-
-## Recommended immediate engineering structure
-Avoid a framework rewrite solely for its own sake. First separate responsibilities, e.g.:
-- `src/domain/finance-engine.js`
-- `src/domain/statistics.js`
-- `src/domain/goals.js`
-- `src/domain/currency.js`
-- `src/storage/local-store.js`
-- `src/storage/sync.js`
-- `src/services/supabase.js`
-- `src/ui/*`
-- `styles/*`
-- `tests/finance-engine.test.js`
-
-The existing visual shell can then be migrated incrementally instead of rewritten blindly.
-
-## Definition of MVP-ready core
-Do not call the product financially reliable until these are true:
-- exact conservation of money for every accepted plan;
-- no magic category names;
-- goal balances trace to real money operations;
-- reserve balance traceable to operations;
-- overspend/uncontrolled portion is recorded explicitly;
-- cross-currency statistics are correct;
-- multi-profile isolation is tested;
-- offline writes survive and synchronize without duplication;
-- authentication is real and plaintext passwords are gone;
-- financial engine has deterministic automated tests.
+## Definition of beta-ready core
+Do not reintroduce Vercel as an active dependency until all of the following are true:
+- money conservation and cross-currency tests remain green;
+- goal/reserve/category/free balances remain transaction-derived;
+- funded-goal closure cannot lose or duplicate money;
+- uncontrolled expense resolution is explicit;
+- multi-profile isolation remains covered;
+- offline mutations survive reconnect/retry without duplicates;
+- multi-device conflict cases are covered;
+- Supabase auth/RLS/migrations are verified against a beta environment;
+- no known dead primary action exists;
+- standalone mobile/desktop verification passes;
+- the remaining release work is operational rather than architectural.
