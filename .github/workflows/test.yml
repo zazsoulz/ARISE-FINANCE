@@ -50,6 +50,7 @@ jobs:
           node --check settings-currency-guard.js
           node --check product-ui.js
           node --check reserve-lifecycle-ui.js
+          node --check reserve-history-drilldown.js
           node --check sync-conflict-ui.js
           node --check goal-lifecycle-ui.js
           node --check goal-future-reroute-ui.js
