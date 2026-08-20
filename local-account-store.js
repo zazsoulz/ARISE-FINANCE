@@ -26,6 +26,11 @@
     }
   }
 
+  function hasVault(accountId){
+    if(!accountId) return false;
+    return !!read(accountKey(String(accountId)));
+  }
+
   function remoteId(entity){
     return entity&&entity.ariseSync&&entity.ariseSync.remoteId||null;
   }
@@ -169,7 +174,7 @@
 
   preloadLastAccount();
   root.ARISE_LOCAL_ACCOUNTS={
-    activate,deactivate,currentAccountId,accountKey,
+    activate,deactivate,currentAccountId,accountKey,hasVault,
     recordCategoryDeletions,recordGoalDeletions,recordMutationOutbox,mirrorIndexedDb
   };
 })(typeof globalThis!=="undefined"?globalThis:window);
