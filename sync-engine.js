@@ -10,7 +10,7 @@
   function session(){return remote()&&remote().currentSession?remote().currentSession():null;}
   function online(){return typeof navigator==="undefined"||navigator.onLine!==false;}
   function ensureMeta(entity){if(!entity[META_KEY]||typeof entity[META_KEY]!=="object") entity[META_KEY]={};return entity[META_KEY];}
-  function mark(entity,remoteId){const meta=ensureMeta(entity);if(remoteId) meta.remoteId=remoteId;meta.syncedAt=new Date().toISOString();meta.dirty=false;return meta;}
+  function mark(entity,remoteId){const meta=ensureMeta(entity);if(remoteId)meta.remoteId=remoteId;meta.syncedAt=new Date().toISOString();meta.dirty=false;return meta;}
   function markDirty(entity){const meta=ensureMeta(entity);meta.dirty=true;meta.changedAt=new Date().toISOString();}
   function remoteId(entity){return entity&&entity[META_KEY]&&entity[META_KEY].remoteId||null;}
   function currency(profile,value){return value||profile.settings&&profile.settings.currency||"RUB";}
@@ -19,7 +19,7 @@
 
   async function getUser(){
     const s=session();
-    if(s&&s.user) return s.user;
+    if(s&&s.user)return s.user;
     const c=client();if(!c)return null;
     const {data,error}=await c.auth.getUser();if(error)throw error;
     return data.user||null;
@@ -41,24 +41,17 @@
     const c=client();
     const meta=ensureMeta(profile);
     const ids=[...new Set((meta[metaKey]||[]).filter(Boolean))];
-    if(!ids.length) return 0;
-
+    if(!ids.length)return 0;
     for(const id of ids){
       const {error}=await c.from(table).delete().eq("id",id).eq("profile_id",profileId);
-      if(error) throw error;
+      if(error)throw error;
     }
-
     meta[metaKey]=[];
     return ids.length;
   }
 
-  function applyCategoryTombstones(profile,profileId){
-    return applyEntityTombstones(profile,profileId,{metaKey:"deletedCategoryIds",table:"finance_categories"});
-  }
-
-  function applyGoalTombstones(profile,profileId){
-    return applyEntityTombstones(profile,profileId,{metaKey:"deletedGoalIds",table:"finance_goals"});
-  }
+  function applyCategoryTombstones(profile,profileId){return applyEntityTombstones(profile,profileId,{metaKey:"deletedCategoryIds",table:"finance_categories"});}
+  function applyGoalTombstones(profile,profileId){return applyEntityTombstones(profile,profileId,{metaKey:"deletedGoalIds",table:"finance_goals"});}
 
   async function syncCategories(profile,profileId,user){
     const c=client();let count=0;
@@ -128,22 +121,36 @@
     }
   }
 
+  function seedTransactionOutbox(profile){
+    const outbox=root.ARISE_SYNC_OUTBOX;
+    if(!outbox||!outbox.enqueue||!outbox.list)return 0;
+    const queued=new Set(outbox.list(profile,"transaction").map(item=>String(item.entityLocalId)));
+    let count=0;
+    for(const tx of profile.transactions||[]){
+      if(remoteId(tx)||queued.has(String(tx.id)))continue;
+      outbox.enqueue(profile,{entity:"transaction",entityLocalId:tx.id,action:"upsert"});
+      queued.add(String(tx.id));
+      count++;
+    }
+    return count;
+  }
+
   async function flushTransactionOutbox(profile,profileId,user){
     const outbox=root.ARISE_SYNC_OUTBOX;
-    if(!outbox||!outbox.list) return 0;
+    if(!outbox||!outbox.list)return 0;
     const c=client();let count=0;
     for(const mutation of outbox.list(profile,"transaction")){
       try{
         if(mutation.action==="delete"){
           let id=mutation.entityRemoteId||null;
-          if(!id&&mutation.entityLocalId) id=await findExistingTransaction(c,user.id,{id:mutation.entityLocalId});
+          if(!id&&mutation.entityLocalId)id=await findExistingTransaction(c,user.id,{id:mutation.entityLocalId});
           if(id){
             const {error}=await c.from("finance_transactions").delete().eq("id",id).eq("profile_id",profileId);
             if(error)throw error;
           }
         }else{
           const tx=(profile.transactions||[]).find(item=>String(item.id)===String(mutation.entityLocalId));
-          if(tx) await syncTransaction(profile,profileId,user,tx);
+          if(tx)await syncTransaction(profile,profileId,user,tx);
         }
         outbox.ack(profile,mutation.id);count++;
       }catch(error){
@@ -157,10 +164,12 @@
   async function syncProfile(profile,profileId,user){
     const c=client();
     const {error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId);if(error)throw error;
-    await syncCategories(profile,profileId,user);await syncGoals(profile,profileId,user);
+    await syncCategories(profile,profileId,user);
+    await syncGoals(profile,profileId,user);
+    const seededTransactions=seedTransactionOutbox(profile);
     const outboxCount=await flushTransactionOutbox(profile,profileId,user);
-    let txCount=0;for(const tx of profile.transactions||[]){await syncTransaction(profile,profileId,user,tx);txCount++;}
-    mark(profile,profileId);return {txCount,outboxCount};
+    mark(profile,profileId);
+    return {txCount:outboxCount,outboxCount,seededTransactions};
   }
 
   async function pushAll(){
@@ -169,13 +178,18 @@
     const c=client();const user=await getUser();if(!c||!user)return {status:"signed_out"};
     running=true;const startedAt=new Date().toISOString();
     try{
-      const serverProfiles=await loadServerProfiles();let txCount=0;let outboxCount=0;
+      const serverProfiles=await loadServerProfiles();let txCount=0;let outboxCount=0;let seededTransactions=0;
       for(let i=0;i<(state.profiles||[]).length;i++){
-        const profile=state.profiles[i];const profileId=await ensureProfile(profile,user,serverProfiles,i);const result=await syncProfile(profile,profileId,user);txCount+=result.txCount;outboxCount+=result.outboxCount;
+        const profile=state.profiles[i];
+        const profileId=await ensureProfile(profile,user,serverProfiles,i);
+        const result=await syncProfile(profile,profileId,user);
+        txCount+=result.txCount;
+        outboxCount+=result.outboxCount;
+        seededTransactions+=result.seededTransactions;
       }
       if(state.account)delete state.account.password;
       root.ARISE_SYNC_SILENT=true;try{saveState();}finally{root.ARISE_SYNC_SILENT=false;}
-      lastResult={status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,startedAt,finishedAt:new Date().toISOString()};
+      lastResult={status:"synced",profiles:(state.profiles||[]).length,transactions:txCount,outboxMutations:outboxCount,seededTransactions,startedAt,finishedAt:new Date().toISOString()};
       if(root.dispatchEvent)root.dispatchEvent(new CustomEvent("arise:sync",{detail:lastResult}));return lastResult;
     }catch(error){
       console.error("ARISE sync",error);lastResult={status:"error",message:error.message||"Sync failed",startedAt,finishedAt:new Date().toISOString()};
@@ -185,5 +199,5 @@
 
   function schedule(){if(!online()||!session())return;clearTimeout(schedule.timer);schedule.timer=setTimeout(()=>pushAll().catch(()=>{}),700);}
   if(root.addEventListener){root.addEventListener("online",schedule);root.addEventListener("arise:local-change",schedule);}
-  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,flushTransactionOutbox,lastResult:()=>lastResult};
+  root.ARISE_SYNC={pushAll,schedule,markDirty,remoteId,applyCategoryTombstones,applyGoalTombstones,seedTransactionOutbox,flushTransactionOutbox,lastResult:()=>lastResult};
 })(typeof globalThis!=="undefined"?globalThis:window);
