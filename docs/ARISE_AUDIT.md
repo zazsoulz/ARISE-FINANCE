@@ -1,16 +1,17 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `a7fee1213ea7265cf2de428800524da7d3e53b13` (2026-08-20).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `1ae866b6cc70d1e2b0019cbe53259e17a133d6a9` (2026-08-20).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
 ## Executive summary
-ARISE is now beyond foundational ledger/auth/sync work. `main` contains a ledger-backed financial core, account auth, isolated financial profiles, Supabase persistence, local-first mutation outboxes, conflict detection and explicit local-vs-server resolution UI, mixed-currency support, transaction-derived history/analytics, funded-goal lifecycle protection, completed-goal future-funds rerouting, explicit create/edit expense reconciliation, transaction-backed reserve lifecycle, consequence previews for manual income-plan edits, onboarding templates, and the A1-V3 product shell.
+ARISE is beyond foundational ledger/auth/sync work. `main` contains a ledger-backed financial core, account auth, isolated financial profiles, Supabase persistence, local-first mutation outboxes, conflict detection and explicit local-vs-server resolution UI, mixed-currency support, transaction-derived history/analytics, funded-goal lifecycle protection, completed-goal future-funds rerouting, explicit create/edit expense reconciliation, transaction-backed reserve lifecycle, consequence previews for manual income-plan edits, onboarding templates, completed-goal lifecycle analytics, stale-FX disclosure, explicit essential-expense reserve runway inputs, and the A1-V3 product shell.
 
-The previous P0 lifecycle-correctness backlog is substantially closed. The highest-value remaining work is beta hardening, removal of compatibility-era paths, product polish, and real beta-environment verification rather than rebuilding foundations. Vercel remains intentionally outside the active development loop; GitHub Actions, branch/PR review and standalone/local artifacts are the verification path until stable beta.
+The previous lifecycle-correctness and compatibility-delete P0 backlog is closed. The highest-value remaining work is real beta-environment verification, operational Supabase hardening, compatibility-shell consolidation and final product polish. Vercel remains intentionally outside the active development loop; GitHub Actions, branch/PR review and standalone/local artifacts remain the verification path until stable beta.
 
 ## Financial core
 - ✅ One effective financial calculation source of truth is used at runtime.
+- ✅ Startup fails closed if the canonical financial runtime is missing or the compatibility financial engine was not stripped.
 - ✅ Exact currency-unit conservation is regression-tested.
 - ✅ System unallocated remainder is separate from user categories and names.
 - ✅ Category priority, monthly limits, reserve and goals materially participate in allocation.
@@ -22,7 +23,8 @@ The previous P0 lifecycle-correctness backlog is substantially closed. The highe
 ## Categories
 - ✅ User-defined categories are editable/deletable and have no magic names.
 - ✅ Fixed and integer-percentage rules, priority, enabled state and monthly limits are implemented.
-- ✅ Category sync uses persistent mutation queues/tombstones and conflict protection.
+- ✅ Category sync uses persistent mutation queues and conflict protection.
+- ✅ Legacy category tombstones are migrated one-way into the unified entity outbox; no direct compatibility delete write-path remains.
 - ✅ New-profile onboarding offers explicit starter templates instead of silently imposing one canonical budget.
 - 🟡 Category settings still need a final visual/usability pass and clearer consequence language around priority/limit changes.
 
@@ -32,8 +34,8 @@ The previous P0 lifecycle-correctness backlog is substantially closed. The highe
 - ✅ Reserve deposits and withdrawals are transaction-backed.
 - ✅ Reserve-to-goal funding preserves money conservation and transfer semantics through sync.
 - ✅ Reserve lifecycle UI exposes deposit/withdrawal/history-oriented actions without mutating a standalone balance counter.
-- 🟡 The canonical user-facing definition of essential/living expenses for runway still needs to be finalized.
-- 🟡 Reserve history/analytics can still receive richer drill-down and completion-state polish.
+- ✅ Runway uses an explicit user-controlled model: manual monthly essential spend or explicitly selected essential categories; ARISE no longer silently treats all spending as essential.
+- 🟡 Reserve lifecycle analytics can still receive richer transaction drill-down and completion-state polish.
 
 ## Goals
 - ✅ Goals participate in automatic allocation by priority/deadline/pace.
@@ -44,7 +46,8 @@ The previous P0 lifecycle-correctness backlog is substantially closed. The highe
 - ✅ Goal closure metadata is persisted/synced (`closed_at`, `closure_balance`, `closure_destination`).
 - ✅ Closed goals remain visible as historical lifecycle entities.
 - ✅ Completed-goal future-funds rerouting is persisted and applied by the canonical allocation engine rather than a second planner.
-- 🟡 Completion analytics can still be richer (duration, original vs actual forecast, completion method, rerouted future contributions).
+- ✅ Completed-goal analytics derive duration, original-vs-actual forecast delta, contribution totals and average pace from ledger-backed history.
+- 🟡 Completion method / future-reroute presentation can still receive final UX polish.
 
 ## Income and allocation
 - ✅ Every income is an individual stable-ID transaction.
@@ -70,8 +73,10 @@ The previous P0 lifecycle-correctness backlog is substantially closed. The highe
 - ✅ Plaintext passwords are not stored in financial state.
 - ✅ Account identity/preferences/avatar are separate from financial profiles.
 - ✅ Private avatar upload exists.
+- ✅ Live canonical RLS ownership policies were audited against the connected Supabase project.
+- 🟡 Supabase leaked-password protection is disabled in the live project and should be enabled before beta sign-off.
 - 🟡 Optional Google/Apple/phone sign-in remains non-blocking future convenience.
-- 🟡 Real beta-environment auth/recovery/RLS verification remains a release task.
+- 🟡 Real beta-environment auth/recovery verification remains a release task.
 
 ## Financial profiles
 - ✅ One account may own multiple isolated financial profiles.
@@ -87,31 +92,33 @@ The previous P0 lifecycle-correctness backlog is substantially closed. The highe
 - ✅ Remote IDs, sync metadata, RLS-oriented schema/migrations and FX persistence exist.
 - ✅ Goal lifecycle persistence has dedicated schema hardening.
 - ✅ Canonical performance migration adds targeted indexes without weakening RLS boundaries.
-- 🟡 Migration history should receive one consolidated compatibility/rollback audit before beta.
+- ✅ Browser runtime has a regression fence preventing direct dependency on legacy Supabase tables.
+- ✅ Live canonical `finance_*` RLS/policy structure and migration intent were audited.
+- 🟡 Migration history still needs an isolated replay/restore rehearsal instead of rewriting already-applied history.
 - 🟡 Backup/restore rehearsal is not yet production-ready.
+- 🟡 Compatibility-era tables still exist and should only be removed after recovery/replay proof.
 
 ## Offline-first and sync
 - ✅ Core financial work remains local-first.
 - ✅ Account-local vaults and IndexedDB recovery exist.
 - ✅ Persistent mutation outboxes exist for transactions/categories/goals.
 - ✅ Stable IDs, remote IDs, mutation IDs and retry metadata support idempotency.
-- ✅ New category/goal deletions are represented as outbox delete mutations rather than new tombstones.
-- ✅ Legacy tombstones are still drained for backward compatibility with older vaults.
+- ✅ Category/goal deletions use outbox delete mutations.
+- ✅ Legacy tombstones are converted one-way into canonical outbox deletes and no longer perform direct remote writes.
 - ✅ Ambiguous-failure transaction retry is regression-tested against duplication.
 - ✅ Concurrent remote changes are detected instead of silently overwritten.
 - ✅ Remote-delete vs local-edit conflict cases have a dedicated matrix.
 - ✅ Explicit local-vs-server conflict resolution UI exists and is locked into runtime loader order/tests.
-- ✅ The sync engine seeds/drains mutation queues and no longer contains a full transaction push loop; this contract has dedicated regression coverage.
-- 🟡 Legacy tombstone migration still has a direct compatibility delete path; migrate that final compatibility path into the unified outbox before beta.
-- 🟡 A final end-to-end two-device test matrix should be run against a beta Supabase environment.
+- ✅ A consolidated two-device regression matrix covers offline edit, concurrent edit, delete-vs-edit, ambiguous retry and both conflict-resolution choices.
+- 🟡 A final real two-device matrix still needs to be run against the beta Supabase environment.
 
 ## Currency
 - ✅ RUB, EUR and USD are supported.
 - ✅ Each profile has a base currency while each transaction retains original currency.
 - ✅ Immutable FX snapshot/base-equivalent values support mixed-currency analytics.
 - ✅ Offline FX cache plus Supabase-backed rate persistence/source exist.
-- 🟡 FX freshness/source disclosure and stale-rate UX can be improved.
-- 🟡 Historical-rate policy for edits/imports/backdated operations should be documented explicitly.
+- ✅ Stale cached-rate age/source is disclosed in UI without blocking offline-first work.
+- 🟡 Historical-rate policy for imports and newly entered backdated operations should be documented explicitly.
 
 ## History and analytics
 - ✅ Ledger operations remain the source of truth.
@@ -119,8 +126,8 @@ The previous P0 lifecycle-correctness backlog is substantially closed. The highe
 - ✅ Income, expenses, allocations, categories, goals, reserve, uncontrolled funds and trends are represented.
 - ✅ History filters cover period/type/category/goal/source/currency/completed goals.
 - ✅ Transaction inspector exposes reconciliation/currency/allocation details.
+- ✅ Completed-goal lifecycle analytics are present and ledger-derived.
 - 🟡 Charts still need final touch inspection, accessibility and drill-down polish.
-- 🟡 Completed-goal analytics deserve a dedicated lifecycle summary.
 - 🟡 Reserve lifecycle analytics deserve a dedicated transaction drill-down.
 
 ## Visual system and interactions
@@ -135,22 +142,24 @@ The previous P0 lifecycle-correctness backlog is substantially closed. The highe
 ## Architecture
 - ✅ Financial, product, account/auth, sync, currency, analytics and UI responsibilities are separated into modules.
 - ✅ `index.html` removes the legacy financial block before effective runtime execution, preventing a second financial truth.
+- ✅ Runtime-integrity checks enforce the canonical financial core at startup.
 - ✅ GitHub Actions cover syntax, financial regressions, loader/bootstrap and headless UI contracts.
+- ✅ Browser runtime is fenced from direct legacy Supabase-table access.
 - 🟡 `app-shell.html` remains a large compatibility artifact and should eventually be physically simplified.
 - 🟡 CSS/JS override layers should be consolidated after behavior stabilizes.
-- 🟡 Legacy tombstone compatibility should be converted into a one-way outbox migration so all remote entity writes use one mutation path.
 
 ## Immediate prioritized backlog
 ### P0 — beta correctness/hardening
-1. Convert legacy category/goal tombstone cleanup into the unified mutation outbox and remove the remaining direct compatibility delete write-path.
-2. Run an end-to-end two-device sync matrix against a beta Supabase environment, including offline edit, concurrent edit, delete-vs-edit, retry after ambiguous failure, and explicit conflict resolution.
-3. Perform one consolidated Supabase migration/RLS/auth-recovery audit and backup/restore rehearsal.
+1. Run the real end-to-end two-device sync matrix against the beta Supabase environment, including offline edit, concurrent edit, delete-vs-edit, retry after ambiguous failure and explicit conflict resolution.
+2. Perform isolated migration replay plus backup/restore rehearsal against a disposable/beta environment; do not rewrite applied production migration history.
+3. Enable leaked-password protection in Supabase Auth and re-run the security/auth-recovery/RLS advisor checks before beta sign-off.
+4. Review destructive financial-profile deletion against backup/recovery guarantees before exposing it as a beta-safe action.
 
 ### P1 — product completeness
-1. Finalize reserve essential-expense/runway input model.
-2. Expand completed-goal and reserve lifecycle analytics.
-3. Refine onboarding/profile templates and category-setting consequence copy after real-device use.
-4. Document historical FX-rate policy for edits/imports/backdated operations and expose stale-rate/source state clearly.
+1. Expand reserve lifecycle analytics with dedicated transaction drill-down.
+2. Refine onboarding/profile templates and category-setting consequence copy after real-device use.
+3. Document historical FX-rate policy for imports and newly entered backdated operations.
+4. Make manual allocation consequence previews more quantitative where the calculation is trustworthy and useful.
 
 ### P2 — beta polish
 1. Consolidate legacy shell/override layers and remove dead code/buttons.
@@ -171,6 +180,8 @@ Do not reintroduce Vercel as an active dependency until all of the following are
 - conflict cases are covered and explicitly resolvable;
 - all entity writes use the canonical mutation/outbox path apart from deliberate one-way migrations;
 - Supabase auth/RLS/migrations are verified against a beta environment;
+- leaked-password protection is enabled before beta sign-off;
+- backup/restore and migration replay have been rehearsed safely;
 - no known dead primary action exists;
 - standalone mobile/desktop verification passes;
 - remaining release work is operational rather than architectural.
