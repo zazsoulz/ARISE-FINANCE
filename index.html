@@ -7,13 +7,25 @@
 <title>ARISE Finance</title>
 <style>
 html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-#boot{min-height:100vh;display:grid;place-items:center;font-size:13px;color:#858e98}
+#boot{min-height:100vh;display:grid;place-items:center;font-size:13px;color:#858e98;padding:24px;box-sizing:border-box}
+.boot-failure{width:min(420px,100%);text-align:center;padding:30px 24px;border:1px solid rgba(255,255,255,.08);border-radius:22px;background:rgba(255,255,255,.025);box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.boot-failure strong{display:block;color:#eeeae2;font-size:18px;font-weight:620;margin-bottom:10px}.boot-failure p{margin:0;color:#858e98;line-height:1.55}.boot-failure button{margin-top:20px;border:1px solid rgba(198,168,107,.22);border-radius:14px;padding:11px 16px;background:rgba(198,168,107,.09);color:#e8dcc0;cursor:pointer}.boot-failure button:focus-visible{outline:2px solid #c6a86b;outline-offset:3px}
 </style>
 </head>
 <body>
 <div id="boot">ARISE</div>
 <script>
 (async function(){
+  function renderBootFailure(error){
+    const boot=document.getElementById("boot");
+    if(!boot)return;
+    const offline=typeof navigator!=="undefined"&&navigator.onLine===false;
+    boot.setAttribute("role","alert");
+    boot.innerHTML=`<div class="boot-failure"><strong>ARISE не удалось загрузить</strong><p>${offline?"Сейчас нет подключения к сети. Если приложение уже открывалось на этом устройстве, локальные финансовые данные остаются сохранены.":"Не удалось запустить интерфейс. Финансовые данные не изменены — можно безопасно повторить загрузку."}</p><button type="button" id="bootRetry">Повторить</button></div>`;
+    const retry=document.getElementById("bootRetry");
+    if(retry)retry.onclick=()=>location.reload();
+    if(error&&error.message)boot.dataset.error="bootstrap";
+  }
   try{
     const response=await fetch("./app-shell.html",{cache:"no-store"});
     if(!response.ok) throw new Error("app-shell.html: HTTP "+response.status);
@@ -90,7 +102,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
     if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,themeLinks+bootHide+"</head>");else html=themeLinks+bootHide+html;
     if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,runtime+"</body>");else html+=runtime;
     document.open();document.write(html);document.close();
-  }catch(error){console.error(error);document.getElementById("boot").textContent="ARISE не удалось загрузить приложение.";}
+  }catch(error){console.error(error);renderBootFailure(error);}
 })();
 </script>
 </body>
