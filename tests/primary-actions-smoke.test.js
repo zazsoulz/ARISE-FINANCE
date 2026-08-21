@@ -72,3 +72,39 @@ test('history primary income and expense actions remain live after product UI de
   assert.ok(document.getElementById('expenseAmount'),'history expense action is dead');
   dom.window.close();
 });
+
+test('distribution primary actions open income entry and route to settings',()=>{
+  const {dom,ctx,document}=boot();
+  run(ctx,`activePage='income'; render();`,'income-screen.js');
+  const addIncome=document.getElementById('incomeStart');
+  const settings=document.getElementById('incomeSettings');
+  assert.ok(addIncome&&settings,'distribution primary actions missing');
+  addIncome.click();
+  assert.ok(document.getElementById('incomeAmount'),'distribution add-income action is dead');
+  run(ctx,'closeModal(); activePage="income"; render();','income-screen-again.js');
+  document.getElementById('incomeSettings').click();
+  assert.equal(run(ctx,'activePage','read-active-page.js'),'settings');
+  assert.ok(document.getElementById('settingsProfileName'),'distribution settings action did not render settings');
+  dom.window.close();
+});
+
+test('goals primary create action opens the canonical goal sheet',()=>{
+  const {dom,ctx,document}=boot();
+  run(ctx,`activePage='goals'; render();`,'goals-screen.js');
+  const create=document.getElementById('createGoal');
+  assert.ok(create,'goal create action missing');
+  create.click();
+  assert.ok(document.getElementById('goalName'),'goal create action is dead');
+  assert.ok(document.getElementById('goalTarget'),'goal sheet is missing target input');
+  dom.window.close();
+});
+
+test('profile control routes to account and financial settings instead of a dead surface',()=>{
+  const {dom,ctx,document}=boot();
+  const profile=document.querySelector('.avatar[data-page="settings"]');
+  assert.ok(profile,'profile settings control missing');
+  profile.click();
+  assert.equal(run(ctx,'activePage','profile-active-page.js'),'settings');
+  assert.ok(document.getElementById('settingsProfileName'),'profile control did not open financial settings');
+  dom.window.close();
+});
