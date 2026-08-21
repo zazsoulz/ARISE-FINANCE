@@ -10,7 +10,7 @@ function boot(){
     transactions:[]
   };
   const ctx={
-    console,globalThis:null,window:null,
+    console,Intl,globalThis:null,window:null,
     ARISE_FINANCE_CORE:{
       goalBalance:()=>20000,
       reserveBalance:()=>30000,
@@ -34,11 +34,11 @@ function boot(){
     today:()=> '2026-08-20',
     money:v=>`${Math.round(Number(v)||0)} ₽`,
     escapeHTML:v=>String(v??''),
-    document:{getElementById:()=>null}
+    document:{querySelector:()=>null,getElementById:()=>null,querySelectorAll:()=>[],createElement:()=>({})}
   };
   ctx.globalThis=ctx;ctx.window=ctx;
   vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync('income-plan-consequences.js','utf8'),ctx,{filename:'income-plan-consequences.js'});
+  vm.runInContext(fs.readFileSync('product-ui.js','utf8'),ctx,{filename:'product-ui.js'});
   return {ctx,profile};
 }
 
@@ -71,4 +71,13 @@ test('reserve target consequence is omitted when no reserve target is configured
     total:50000,baseCurrency:'RUB',date:'2026-08-20',remainder:30000,reserve:20000,allocations:[],goalAllocations:[]
   },{allocations:[],goalAllocations:[],reserve:10000});
   assert.equal(rows.some(row=>row.includes('Прогресс подушки после этого дохода')),false);
+});
+
+test('income plan consequences live in product UI and retired runtime stays absent',()=>{
+  const index=fs.readFileSync('index.html','utf8');
+  const product=fs.readFileSync('product-ui.js','utf8');
+  assert.equal(fs.existsSync('income-plan-consequences.js'),false);
+  assert.equal(index.includes('./income-plan-consequences.js'),false);
+  assert.equal(product.includes('ARISE_INCOME_PLAN_CONSEQUENCES'),true);
+  assert.ok(index.indexOf('./product-ui.js')>index.indexOf('./currency-runtime.js'));
 });
