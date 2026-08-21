@@ -61,7 +61,18 @@
     else if(!event.shiftKey&&(active===last||!items.includes(active))){event.preventDefault();first.focus();}
   }
 
-  if(typeof document!=="undefined")document.addEventListener("keydown",trapTab);
+  function closeOnEscape(event){
+    if(event.key!=="Escape")return;
+    const overlay=modal();
+    if(!overlay||!overlay.classList.contains("open"))return;
+    event.preventDefault();
+    root.closeModal();
+  }
 
-  root.ARISE_MODAL_ACCESSIBILITY={prepareDialog,focusables,trapTab};
+  if(typeof document!=="undefined"){
+    document.addEventListener("keydown",trapTab);
+    document.addEventListener("keydown",closeOnEscape);
+  }
+
+  root.ARISE_MODAL_ACCESSIBILITY={prepareDialog,focusables,trapTab,closeOnEscape};
 })(typeof globalThis!=="undefined"?globalThis:window);

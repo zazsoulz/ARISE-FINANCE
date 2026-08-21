@@ -42,3 +42,27 @@ test('tab navigation stays inside an open modal',()=>{
   assert.equal(document.activeElement.id,'last');
   dom.window.close();
 });
+
+test('Escape closes an open modal and restores focus to its opener',()=>{
+  const {context,dom,document}=boot();
+  const opener=document.getElementById('open');
+  opener.focus();
+  context.openModal('<h2 class="title">Цель</h2><button id="inside">Готово</button>');
+  assert.equal(document.getElementById('modal').classList.contains('open'),true);
+  assert.equal(document.activeElement.id,'inside');
+  const event=new dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true});
+  document.dispatchEvent(event);
+  assert.equal(event.defaultPrevented,true);
+  assert.equal(document.getElementById('modal').classList.contains('open'),false);
+  assert.equal(document.activeElement.id,'open');
+  dom.window.close();
+});
+
+test('Escape is ignored when no modal is open',()=>{
+  const {dom,document}=boot();
+  const event=new dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true});
+  document.dispatchEvent(event);
+  assert.equal(event.defaultPrevented,false);
+  assert.equal(document.getElementById('modal').classList.contains('open'),false);
+  dom.window.close();
+});
