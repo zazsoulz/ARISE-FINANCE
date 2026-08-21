@@ -15,6 +15,10 @@ test('Vercel deployment is canonical static root with no framework build pipelin
   assert.equal('redirects' in config,false);
 });
 
+test('Vercel deployments require an explicit manual trigger',()=>{
+  assert.deepEqual(config.git,{deploymentEnabled:false});
+});
+
 test('production entry files exist at repository root',()=>{
   assert.equal(fs.existsSync('index.html'),true);
   assert.equal(fs.existsSync('app-shell.html'),true);
