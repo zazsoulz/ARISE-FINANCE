@@ -30,6 +30,13 @@ test("standalone preview strips the legacy engine and eager shell bootstrap",()=
   assert.ok(html.includes('id="arise-boot-hide"'));
 });
 
+test("standalone preview embeds project-local visual assets",()=>{
+  const {html}=buildStandalone();
+  assert.equal(html.includes('url("./assets/'),false);
+  assert.ok(html.includes('data:font/ttf;base64,'));
+  assert.ok(html.includes('data:image/webp;base64,'));
+});
+
 test("standalone preview boots offline into the canonical auth screen",async()=>{
   const {html}=buildStandalone();
   const offlineHtml=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2"><\/script>/,"");

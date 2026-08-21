@@ -53,9 +53,22 @@ function safeInline(source,closingTag){
   return source.replace(new RegExp(`</${closingTag}`,"gi"),`<\\/${closingTag}`);
 }
 
+function assetMime(filePath){
+  const extension=path.extname(filePath).toLowerCase();
+  return ({".webp":"image/webp",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".woff":"font/woff",".woff2":"font/woff2",".ttf":"font/ttf",".otf":"font/otf"})[extension]||"application/octet-stream";
+}
+
+function inlineCssAssets(rootDir,content){
+  return content.replace(/url\((['"]?)(\.\/[^)'"\s]+)\1\)/g,(match,_quote,source)=>{
+    const filePath=localPath(rootDir,source);
+    const data=fs.readFileSync(filePath).toString("base64");
+    return `url("data:${assetMime(filePath)};base64,${data}")`;
+  });
+}
+
 function inlineStyles(rootDir,styles){
   return styles.map(source=>{
-    const content=fs.readFileSync(localPath(rootDir,source),"utf8");
+    const content=inlineCssAssets(rootDir,fs.readFileSync(localPath(rootDir,source),"utf8"));
     return `<style data-arise-source="${source.replace(/^\.\//,"")}">\n${safeInline(content,"style")}\n</style>`;
   }).join("\n");
 }
@@ -102,6 +115,7 @@ module.exports={
   INIT_MARKER,
   extractManifest,
   stripLegacyRuntime,
+  inlineCssAssets,
   buildStandalone,
   writeStandalone
 };

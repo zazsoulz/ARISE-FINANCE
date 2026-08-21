@@ -69,8 +69,10 @@
     const currencies=unique(txs.map(txCurrency));
     const types=unique(txs.map(tx=>String(tx.type||"")));
     const months=unique(txs.map(monthOf)).reverse();
-    return `<section class="history-filter-panel" aria-label="Фильтры истории">
-      <div class="history-filter-head"><div><span>Фильтры</span><strong>Найти конкретные операции</strong></div><button type="button" data-history-reset>Сбросить</button></div>
+    return `<details class="history-filter-panel" aria-label="Фильтры истории">
+      <summary class="history-filter-summary"><span>Фильтры операций</span><strong>Уточнить выбор</strong><i aria-hidden="true">+</i></summary>
+      <div class="history-filter-content">
+      <div class="history-filter-head"><div><span>Точный поиск</span><strong>Найти конкретные операции</strong></div><button type="button" data-history-reset>Сбросить</button></div>
       <div class="history-filter-grid">
         <label><span>Период</span><select data-history-filter="scope">${option("month","Выбранный месяц",filters.scope)}${option("all","Вся история",filters.scope)}</select></label>
         <label><span>Месяц</span><select data-history-month ${filters.scope==="all"?"disabled":""}>${months.length?months.map(month=>option(month,formatMonth(month),activeMonth)).join(""):option(activeMonth,formatMonth(activeMonth),activeMonth)}</select></label>
@@ -80,7 +82,8 @@
         <label><span>Источник</span><select data-history-filter="source">${option("all","Все источники",filters.source)}${sources.map(source=>option(source,source,filters.source)).join("")}</select></label>
         <label><span>Валюта</span><select data-history-filter="currency">${option("all","Все валюты",filters.currency)}${currencies.map(currency=>option(currency,currency,filters.currency)).join("")}</select></label>
       </div>
-    </section>`;
+      </div>
+    </details>`;
   }
 
   function transactionAmount(tx){

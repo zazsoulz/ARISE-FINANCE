@@ -17,7 +17,7 @@
     const value=Number(item.difference)||0;
     if(value===0)return `<span class="analytics-delta neutral">без изменений</span>`;
     const positive=inverse?value<0:value>0;
-    return `<span class="analytics-delta ${positive?"up":"down"}">${value>0?"↑":"↓"} ${fmtPct(item.percent)} к прошлому месяцу</span>`;
+    return `<span class="analytics-delta ${positive?"up":"down"}" title="К прошлому месяцу">${value>0?"↑":"↓"} ${fmtPct(item.percent)}</span>`;
   }
   function path(values,width=720,height=200,pad=20,maxScale=null){
     if(!values.length)return "";

@@ -223,6 +223,45 @@
     if(fixedField) fixedField.style.display=type==="fixed"?"":"none";
   }
 
+  function categorySummary(editor){
+    const name=field(editor,".category-name")||"Без названия";
+    const type=field(editor,".category-type");
+    const percent=amount(field(editor,".category-percent"));
+    const fixed=amount(field(editor,".category-fixed"));
+    const rawLimit=field(editor,".category-limit");
+    const limit=rawLimit===""?null:amount(rawLimit);
+    const rule=type==="fixed"
+      ? `${money(fixed)} в месяц`
+      : type==="percentage"
+        ? `${percent}% с дохода`
+        : "получает остаток";
+    const cap=limit===null?"без лимита":`лимит ${money(limit)}`;
+    return {name,meta:`${rule} · ${cap}`,active:enabled(editor)};
+  }
+
+  function decorateCategoryEditors(page){
+    const container=page?.querySelector("#categoryEditors");
+    if(!container)return;
+    const editors=[...container.querySelectorAll("[data-category-editor]")];
+    editors.forEach(editor=>{
+      if(editor.parentElement?.classList.contains("category-editor-shell"))return;
+      const shell=document.createElement("details");
+      shell.className="category-editor-shell";
+      const summary=document.createElement("summary");
+      summary.className="category-editor-summary";
+      const update=()=>{
+        const data=categorySummary(editor);
+        const escape=root.escapeHTML||((value)=>String(value??""));
+        summary.innerHTML=`<i aria-hidden="true"></i><span><strong>${escape(data.name)}</strong><small>${escape(data.meta)}</small></span><em class="${data.active?"is-active":"is-paused"}">${data.active?"активна":"выключена"}</em><b aria-hidden="true">⌄</b>`;
+      };
+      editor.before(shell);
+      shell.append(summary,editor);
+      editor.addEventListener("input",update);
+      editor.addEventListener("change",update);
+      update();
+    });
+  }
+
   function decorateSettings(page){
     if(!page)return;
     const icon=root.ARISE_PRODUCT_UI&&root.ARISE_PRODUCT_UI.icon;
@@ -235,16 +274,28 @@
       ["#exportData","data","data"]
     ];
     const seen=new Set();
+    const navigation=[];
     sections.forEach(([selector,glyph,tone],index)=>{
       const card=page.querySelector(selector)?.closest(".card");
       if(!card||seen.has(card))return;
       seen.add(card);
       card.classList.add("settings-card",`settings-${tone}`);
       card.style.setProperty("--settings-i",String(index));
+      card.id=`settingsSection${tone[0].toUpperCase()}${tone.slice(1)}`;
+      const cell=card.closest(".c12,.c8,.c7,.c6,.c5,.c4,.c3");
+      if(cell)cell.classList.add("settings-cell",`settings-cell-${tone}`);
       if(!card.querySelector(".settings-card-mark")){
         card.insertAdjacentHTML("afterbegin",`<span class="settings-card-mark" aria-hidden="true">${typeof icon==="function"?icon(glyph,18):""}</span>`);
       }
+      const title=card.querySelector(".title")?.textContent?.trim()||tone;
+      navigation.push({id:card.id,title,glyph});
     });
+    if(navigation.length&&!page.querySelector(".settings-index")){
+      const head=page.querySelector(".arise-settings-head");
+      head?.insertAdjacentHTML("afterend",`<nav class="settings-index" aria-label="Разделы настроек">${navigation.map(item=>`<button type="button" data-settings-target="${item.id}">${typeof icon==="function"?icon(item.glyph,16):""}<span>${root.escapeHTML?root.escapeHTML(item.title):item.title}</span></button>`).join("")}</nav>`);
+      page.querySelectorAll("[data-settings-target]").forEach(button=>button.addEventListener("click",()=>page.querySelector(`#${button.dataset.settingsTarget}`)?.scrollIntoView({behavior:"smooth",block:"start"})));
+    }
+    decorateCategoryEditors(page);
   }
 
   function bind(scope=document){
@@ -281,7 +332,7 @@
     };
   }
 
-  root.ARISE_CATEGORY_SETTINGS_CONSEQUENCES={describe,bind,decorateSettings};
+  root.ARISE_CATEGORY_SETTINGS_CONSEQUENCES={describe,bind,decorateSettings,decorateCategoryEditors,categorySummary};
 })(typeof globalThis!=="undefined"?globalThis:window);
 
 (function(root){

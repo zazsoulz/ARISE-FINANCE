@@ -50,3 +50,14 @@ test("finishing layer covers motion, surfaces and reduced-motion safety",()=>{
   ])assert.ok(productCss.includes(token),`${token} is missing from the finishing layer`);
   assert.match(productCss,/@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.arise-flow-particles,[\s\S]*?\.v3-summary-particles,[\s\S]*?\.login-flow-particles\{[\s\S]*?display:none!important/);
 });
+
+test("final art direction uses the approved type and organic flow assets",()=>{
+  assert.match(productCss,/ARISE FINAL ART-DIRECTION CORRECTION/);
+  assert.match(productCss,/@font-face\{[\s\S]*?font-family:"ARISE Manrope"/);
+  assert.match(productCss,/arise-flow-organic-v3\.webp/);
+  assert.match(productCss,/\.product-nav\{[\s\S]*?left:50%!important;[\s\S]*?translateX\(-50%\)!important/);
+  assert.match(productCss,/\.v3-flow-summary\{[\s\S]*?background:transparent!important/);
+  assert.match(productCss,/\.settings-index\{/);
+  assert.ok(fs.existsSync("assets/fonts/Manrope-Variable.ttf"));
+  assert.ok(fs.existsSync("assets/arise-flow-organic-v3.webp"));
+});

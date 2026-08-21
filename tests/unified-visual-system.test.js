@@ -10,7 +10,7 @@ test("all five product destinations fit the canonical bottom navigation",()=>{
   assert.match(v3Css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/);
   assert.doesNotMatch(v3Css,/data-page="home"\]::before/);
   assert.match(productCss,/\.product-nav\s*\.product-nav-item::before\{\s*content:none!important/);
-  assert.match(productCss,/left:8px!important;\s*right:8px!important;[\s\S]*?width:auto!important;\s*transform:none!important/);
+  assert.match(productCss,/\.product-nav\{\s*left:50%!important;\s*right:auto!important;[\s\S]*?translateX\(-50%\)!important/);
 });
 
 test("canonical visual system covers every primary screen family",()=>{
@@ -24,7 +24,7 @@ test("canonical visual system covers every primary screen family",()=>{
     ".arise-settings",
     ".login-card"
   ])assert.ok(productCss.includes(selector),`${selector} is missing from the unified product layer`);
-  assert.match(productCss,/\.arise-v3-income-value,[\s\S]*?\.analytics-value,[\s\S]*?font-family:Inter/);
+  assert.match(productCss,/\.arise-v3-income-value,[\s\S]*?\.analytics-value,[\s\S]*?font-family:var\(--arise-font\)!important/);
 });
 
 test("shared masthead exposes ARISE finance, month and settings identity",()=>{

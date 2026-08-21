@@ -4,8 +4,9 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 
 function control(value='',checked=false){return {value:String(value),checked,closest(){return {style:{}};},addEventListener(){}};}
-function editor({type='percentage',percent=10,fixed=0,priority=3,limit='',enabled=true}={}){
+function editor({name='Семья',type='percentage',percent=10,fixed=0,priority=3,limit='',enabled=true}={}){
   const controls={
+    '.category-name':control(name),
     '.category-type':control(type),
     '.category-percent':control(percent),
     '.category-fixed':control(fixed),
@@ -44,11 +45,20 @@ test('disabled category explicitly preserves existing history',()=>{
   assert.match(info.text,/Уже сохранённые операции не меняются/);
 });
 
+test('collapsed category summary keeps the active rule understandable',()=>{
+  const summary=load().categorySummary(editor({name:'Обязательные',type:'fixed',fixed:60000,limit:60000}));
+  assert.equal(summary.name,'Обязательные');
+  assert.match(summary.meta,/60\s?000|60 000/);
+  assert.match(summary.meta,/лимит/);
+  assert.equal(summary.active,true);
+});
+
 test('category consequences live in canonical product UI and retired layer stays absent',()=>{
   const index=fs.readFileSync('index.html','utf8');
   const product=fs.readFileSync('product-ui.js','utf8');
   assert.equal(fs.existsSync('category-settings-consequences.js'),false);
   assert.equal(index.includes('./category-settings-consequences.js'),false);
   assert.equal(product.includes('ARISE_CATEGORY_SETTINGS_CONSEQUENCES'),true);
+  assert.equal(product.includes('category-editor-shell'),true);
   assert.ok(index.indexOf('./product-ui.js')>index.indexOf('./arise-v3.js'));
 });
