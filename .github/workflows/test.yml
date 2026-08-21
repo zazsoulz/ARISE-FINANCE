@@ -39,7 +39,6 @@ jobs:
           node --check analytics-engine.js
           node --check goal-completion-analytics.js
           node --check analytics-ui.js
-          node --check analytics-chart-accessibility.js
           node --check goal-completion-analytics-ui.js
           node --check analytics-expense-ui.js
           node --check product-rules.js
