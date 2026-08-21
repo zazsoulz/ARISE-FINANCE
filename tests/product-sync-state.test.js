@@ -5,7 +5,7 @@ const vm=require('node:vm');
 
 const source=fs.readFileSync('product-ui.js','utf8');
 
-function boot({online=true,lastResult=null,pushAll=null}={}){
+function boot({online=true,lastResult=null,pushAll=null,showConflicts=null}={}){
   const listeners={};
   const context={
     console,
@@ -16,6 +16,7 @@ function boot({online=true,lastResult=null,pushAll=null}={}){
       pushAll:pushAll||async()=>({status:'synced'})
     }
   };
+  if(showConflicts)context.ARISE_SYNC_CONFLICT_UI={showConflicts};
   context.globalThis=context;
   vm.createContext(context);
   new vm.Script(source,{filename:'product-ui.js'}).runInContext(context);
@@ -44,10 +45,36 @@ test('retry sync calls canonical pushAll when online',async()=>{
   assert.equal(calls,1);
 });
 
+test('conflict state opens the canonical conflict resolver instead of retrying stale writes',async()=>{
+  let pushes=0;
+  let opens=0;
+  const {context}=boot({
+    lastResult:{status:'conflict'},
+    pushAll:async()=>{pushes++;},
+    showConflicts:()=>{opens++;}
+  });
+  assert.equal(await context.ARISE_PRODUCT_UI.retrySync(),false);
+  assert.equal(opens,1);
+  assert.equal(pushes,0);
+});
+
+test('global delegated click handler wires every rendered sync control',()=>{
+  let prevented=0;
+  const {listeners}=boot();
+  assert.equal(typeof listeners.click,'function');
+  const button={};
+  listeners.click({
+    target:{closest:selector=>selector==='.product-sync'?button:null},
+    preventDefault:()=>{prevented++;}
+  });
+  assert.equal(prevented,1);
+});
+
 test('topbar sync control is a real accessible button with retry semantics',()=>{
   assert.match(source,/button type=\"button\" class=\"product-sync/);
   assert.match(source,/aria-label=/);
   assert.match(source,/aria-live/);
   assert.match(source,/Повторить синхронизацию/);
   assert.match(source,/Локальные изменения сохранены/);
+  assert.match(source,/showConflicts/);
 });
