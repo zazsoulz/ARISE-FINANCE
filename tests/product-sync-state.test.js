@@ -13,7 +13,7 @@ function boot({online=true,lastResult=null,pushAll=null,showConflicts=null}={}){
     addEventListener:(name,fn)=>{listeners[name]=fn;},
     ARISE_SYNC:{
       lastResult:()=>lastResult,
-      pushAll:pushAll||async()=>({status:'synced'})
+      pushAll:pushAll||(async()=>({status:'synced'}))
     }
   };
   if(showConflicts)context.ARISE_SYNC_CONFLICT_UI={showConflicts};
