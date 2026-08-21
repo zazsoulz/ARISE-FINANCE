@@ -27,16 +27,18 @@ function uiRuntime(){
   const rules={first:{destination:'reserve',monthlyAmount:12000}};
   const core={
     setGoalFutureRule(){},clearGoalFutureRule(){},
-    goalFutureRule:(p,goal)=>rules[goal.id]||null
+    goalFutureRule:(p,goal)=>rules[goal.id]||null,
+    goalBalance:()=>0,
+    goalRemaining:()=>0
   };
   const ctx={
     console,globalThis:null,window:null,document:dom.window.document,ARISE_FINANCE_CORE:core,
-    activeProfile:()=>profile,money:value=>`${value} ₽`,escapeHTML:value=>String(value??''),
+    activeProfile:()=>profile,money:value=>`${value} ₽`,escapeHTML:value=>String(value??''),formatDate:value=>String(value??''),today:()=>"2026-08-21",uid:()=>"id",
     renderGoals:()=>{dom.window.document.getElementById('page').innerHTML='<section class="v3-section" data-completed-goals><div class="v3-section-title"><span>Достигнутые</span></div><div class="v3-rule" data-completed-goal-id="trip"><div><strong>Путешествие</strong></div><b>180000 ₽</b></div><div class="v3-rule" data-completed-goal-id="first"><div><strong>Первый взнос</strong></div><b>900000 ₽</b></div></section>';},
-    openModal:()=>{},closeModal:()=>{},saveState:()=>{},toast:()=>{},render:()=>{}
+    openModal:()=>{},closeModal:()=>{},saveState:()=>{},toast:()=>{},render:()=>{},historyTransaction:()=>''
   };
   ctx.globalThis=ctx;ctx.window=ctx;vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync('goal-future-reroute-ui.js','utf8'),ctx,{filename:'goal-future-reroute-ui.js'});
+  vm.runInContext(fs.readFileSync('goal-lifecycle-ui.js','utf8'),ctx,{filename:'goal-lifecycle-ui.js'});
   return {ctx,dom};
 }
 
@@ -123,17 +125,20 @@ test('income transaction persists reroute provenance inside existing funding bre
   assert.equal(tx.fundingBreakdown.goalReroutes[0].fromGoalRemoteId,'remote-done');
 });
 
-test('loader keeps future reroute core and UI in canonical order',()=>{
+test('loader keeps future reroute core before lifecycle UI and retires standalone reroute UI',()=>{
   const index=fs.readFileSync('index.html','utf8');
   const lifecycleCore=index.indexOf('./goal-lifecycle-core.js');
   const rerouteCore=index.indexOf('./goal-future-reroute-core.js');
   const expense=index.indexOf('./expense-reconciliation.js');
   const lifecycleUi=index.indexOf('./goal-lifecycle-ui.js');
-  const rerouteUi=index.indexOf('./goal-future-reroute-ui.js');
   const modal=index.indexOf('./modal-accessibility.js');
   assert.ok(lifecycleCore>=0&&rerouteCore>lifecycleCore&&expense>rerouteCore);
-  assert.ok(lifecycleUi>=0&&rerouteUi>lifecycleUi&&modal>rerouteUi);
-  assert.doesNotThrow(()=>new Function(fs.readFileSync('goal-future-reroute-ui.js','utf8')));
+  assert.ok(lifecycleUi>=0&&modal>lifecycleUi);
+  assert.equal(index.includes('./goal-future-reroute-ui.js'),false);
+  assert.equal(fs.existsSync('goal-future-reroute-ui.js'),false);
+  const lifecycleSource=fs.readFileSync('goal-lifecycle-ui.js','utf8');
+  assert.doesNotThrow(()=>new Function(lifecycleSource));
+  assert.match(lifecycleSource,/ARISE_GOAL_FUTURE_REROUTE_UI/);
 });
 
 test('completed goals show explicit future-flow state and bind actions by stable goal id',()=>{
