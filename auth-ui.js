@@ -98,10 +98,14 @@
     syncMode();
   }
 
+  function authVisual(){
+    return `<aside class="login-visual" aria-hidden="true"><div class="login-visual-copy"><span>ФИНАНСОВЫЙ ПОТОК</span><strong>Деньги становятся<br>понятным маршрутом.</strong><p>От поступления — к обязательному, резерву и целям.</p></div><svg class="login-flow" viewBox="0 0 560 560" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="loginFlowGradient" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff8e8" stop-opacity=".95"/><stop offset=".5" stop-color="#d8c08b" stop-opacity=".68"/><stop offset="1" stop-color="#96b8bb" stop-opacity=".18"/></linearGradient><radialGradient id="loginFlowPool"><stop stop-color="#d7b56e" stop-opacity=".15"/><stop offset="1" stop-color="#d7b56e" stop-opacity="0"/></radialGradient><filter id="loginFlowGlow" x="-200%" y="-100%" width="500%" height="300%"><feGaussianBlur stdDeviation="4"/></filter><filter id="loginParticleGlow" x="-500%" y="-500%" width="1000%" height="1000%"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="280" cy="492" rx="210" ry="55" fill="url(#loginFlowPool)"/><g class="login-flow-aura" filter="url(#loginFlowGlow)"><path d="M280 42 C245 152 320 240 267 354 C244 405 258 453 280 484"/><path d="M280 42 C317 151 244 239 296 354 C319 405 302 454 280 484"/><path d="M278 176 C215 183 171 205 123 238"/><path d="M282 252 C345 262 390 285 438 316"/></g><path id="loginFlowTrunk" class="login-flow-trunk" d="M280 42 C245 152 320 240 267 354 C244 405 258 453 280 484"/><path class="login-flow-trunk secondary" d="M280 42 C317 151 244 239 296 354 C319 405 302 454 280 484"/><path id="loginFlowLeft" class="login-flow-branch" d="M278 176 C215 183 171 205 123 238"/><path id="loginFlowRight" class="login-flow-branch cool" d="M282 252 C345 262 390 285 438 316"/><g class="login-flow-particles" filter="url(#loginParticleGlow)"><circle r="2.3"><animateMotion dur="7s" begin="-1.3s" repeatCount="indefinite"><mpath href="#loginFlowTrunk"/></animateMotion></circle><circle r="1.2"><animateMotion dur="9.2s" begin="-6.1s" repeatCount="indefinite"><mpath href="#loginFlowTrunk"/></animateMotion></circle><circle r="1.7"><animateMotion dur="5.1s" begin="-2.8s" repeatCount="indefinite"><mpath href="#loginFlowLeft"/></animateMotion></circle><circle class="cool" r="1.8"><animateMotion dur="5.4s" begin="-.9s" repeatCount="indefinite"><mpath href="#loginFlowRight"/></animateMotion></circle></g><g class="login-flow-rings"><ellipse cx="280" cy="488" rx="82" ry="18"/><ellipse cx="280" cy="490" rx="145" ry="34"/><ellipse cx="280" cy="493" rx="205" ry="50"/></g><circle class="login-flow-source" cx="280" cy="42" r="5"/><circle class="login-flow-destination" cx="123" cy="238" r="4"/><circle class="login-flow-destination cool" cx="438" cy="316" r="4"/></svg></aside>`;
+  }
+
   root.renderAuth=function(){
     const container=document.getElementById("root");
     container.innerHTML=`
-      <div class="login"><section class="login-card">
+      <div class="login"><div class="login-shell">${authVisual()}<section class="login-card">
         <div class="login-logo">ARISE</div>
         <div class="kicker" style="margin-top:22px">АККАУНТ</div>
         <h1 class="title" id="authTitle" style="font-size:30px">Войти в ARISE</h1>
@@ -117,9 +121,9 @@
           <button class="btn" id="authToggle" type="button">Нет аккаунта? Создать</button>
           <button class="btn" id="authReset" type="button">Забыли пароль?</button>
         </div>
-      </section></div>`;
+      </section></div></div>`;
     bindAuth();
   };
 
-  root.ARISE_AUTH_UI={finishAuthenticatedSession,humanAuthError};
+  root.ARISE_AUTH_UI={finishAuthenticatedSession,humanAuthError,authVisual};
 })(typeof globalThis!=="undefined"?globalThis:window);

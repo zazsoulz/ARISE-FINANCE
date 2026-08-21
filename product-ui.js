@@ -12,7 +12,12 @@
     analytics:'<path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
     minus:'<path d="M5 12h14"/>',
-    settings:'<circle cx="12" cy="12" r="3.2"/>'
+    settings:'<circle cx="12" cy="12" r="3.2"/>',
+    profile:'<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.8-4 3-6 6.5-6s5.7 2 6.5 6"/>',
+    categories:'<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
+    reserve:'<path d="M12 3.5 19 6v5.4c0 4.4-2.7 7.5-7 9.1-4.3-1.6-7-4.7-7-9.1V6z"/>',
+    profiles:'<circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3.5 20c.6-3.8 2.5-5.7 5.5-5.7s4.9 1.9 5.5 5.7M14.2 15.1c3.6-.6 5.7 1 6.3 4.9"/>',
+    data:'<ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"/>'
   };
 
   function icon(name,size=18){return `<svg class="product-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;}
@@ -218,6 +223,30 @@
     if(fixedField) fixedField.style.display=type==="fixed"?"":"none";
   }
 
+  function decorateSettings(page){
+    if(!page)return;
+    const icon=root.ARISE_PRODUCT_UI&&root.ARISE_PRODUCT_UI.icon;
+    const sections=[
+      ["#canonicalAccountName","profile","account"],
+      ["#settingsProfileName","profile","profile"],
+      ["#categoryEditors","categories","categories"],
+      ["#reservePercent","reserve","reserve"],
+      ["#newProfile","profiles","profiles"],
+      ["#exportData","data","data"]
+    ];
+    const seen=new Set();
+    sections.forEach(([selector,glyph,tone],index)=>{
+      const card=page.querySelector(selector)?.closest(".card");
+      if(!card||seen.has(card))return;
+      seen.add(card);
+      card.classList.add("settings-card",`settings-${tone}`);
+      card.style.setProperty("--settings-i",String(index));
+      if(!card.querySelector(".settings-card-mark")){
+        card.insertAdjacentHTML("afterbegin",`<span class="settings-card-mark" aria-hidden="true">${typeof icon==="function"?icon(glyph,18):""}</span>`);
+      }
+    });
+  }
+
   function bind(scope=document){
     scope.querySelectorAll("[data-category-editor]").forEach(editor=>{
       if(editor.dataset.consequenceBound==="1"){
@@ -247,11 +276,12 @@
         }
       }
       bind(document);
+      decorateSettings(page);
       return result;
     };
   }
 
-  root.ARISE_CATEGORY_SETTINGS_CONSEQUENCES={describe,bind};
+  root.ARISE_CATEGORY_SETTINGS_CONSEQUENCES={describe,bind,decorateSettings};
 })(typeof globalThis!=="undefined"?globalThis:window);
 
 (function(root){
