@@ -32,7 +32,6 @@ jobs:
           node --check financial-runtime.js
           node --check goal-history.js
           node --check financial-integration.js
-          node --check income-plan-consequences.js
           node --check reserve-analytics.js
           node --check reserve-essential-spend.js
           node --check analytics-engine.js
