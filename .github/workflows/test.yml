@@ -74,5 +74,6 @@ jobs:
           node --check onboarding.js
           node --check runtime-integrity.js
           node --check financial-bootstrap.js
+          node --check scripts/build-standalone-preview.js
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
