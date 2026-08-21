@@ -85,7 +85,8 @@
     const profile=typeof activeProfile==='function'?activeProfile():null;
     const letter=(account.name||'П').trim().slice(0,1).toUpperCase();
     const sync=syncState();
-    return `<header class="topbar product-topbar"><div class="product-brand"><div class="logo">ARISE <span>FINANCE</span></div><div class="product-profile-name">${escapeHTML(profile&&profile.name||'Финансовый профиль')}</div></div><div class="user"><button type="button" class="product-sync ${sync.kind}" title="${escapeHTML(sync.action||sync.label)}" aria-label="${escapeHTML(sync.action||sync.label)}" ${sync.kind==='syncing'?'disabled':''}><i></i><span>${escapeHTML(sync.label)}</span></button><button class="avatar product-avatar" data-page="settings" aria-label="Настройки профиля">${account.avatar?`<img src="${escapeHTML(account.avatar)}" alt="">`:escapeHTML(letter)}</button></div></header>`;
+    const month=typeof formatMonth==='function'&&typeof activeMonth!=='undefined'?formatMonth(activeMonth):'';
+    return `<header class="topbar product-topbar"><div class="product-brand"><div class="logo product-wordmark"><strong>ARISE</strong><span>finance</span></div><div class="product-profile-name">${escapeHTML(profile&&profile.name||'Финансовый профиль')}</div></div><div class="user product-topbar-context">${month?`<div class="product-month">${escapeHTML(month)}</div>`:''}<button type="button" class="product-sync ${sync.kind}" title="${escapeHTML(sync.action||sync.label)}" aria-label="${escapeHTML(sync.action||sync.label)}" ${sync.kind==='syncing'?'disabled':''}><i></i><span>${escapeHTML(sync.label)}</span></button><button class="avatar product-avatar" data-page="settings" aria-label="Настройки профиля">${account.avatar?`<img src="${escapeHTML(account.avatar)}" alt="">`:escapeHTML(letter)}</button></div></header>`;
   };
 
   function runQuick(action){if(modalIsOpen())return false;action();return true;}
@@ -238,6 +239,13 @@
   if(typeof oldRenderSettings==="function"){
     root.renderSettings=function(){
       const result=oldRenderSettings.apply(this,arguments);
+      const page=document.getElementById("page");
+      if(page){
+        page.classList.add("arise-settings");
+        if(!page.querySelector(".arise-settings-head")){
+          page.insertAdjacentHTML("afterbegin",'<div class="v3-page-head arise-settings-head"><div><div class="v3-eyebrow">Профиль и приложение</div><h1>Настройки</h1><p>Личные данные, правила и синхронизация</p></div></div>');
+        }
+      }
       bind(document);
       return result;
     };
