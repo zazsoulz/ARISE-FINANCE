@@ -15,15 +15,21 @@ function boot(){
   }};
   ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
   vm.runInContext(fs.readFileSync('analytics-ui.js','utf8'),ctx,{filename:'analytics-ui.js'});
-  vm.runInContext(fs.readFileSync('analytics-expense-ui.js','utf8'),ctx,{filename:'analytics-expense-ui.js'});
   return {ctx,dom};
 }
 
-test('analytics augmentation renders expense composition and lifetime cards',()=>{
+test('consolidated analytics UI renders expense composition and lifetime cards',()=>{
   const {ctx,dom}=boot();ctx.renderAnalytics();
   assert.ok(dom.window.document.querySelector('[data-analytics-expense-composition]'));
   assert.ok(dom.window.document.querySelector('[data-analytics-lifetime]'));
   assert.match(dom.window.document.getElementById('page').textContent,/На что ушли деньги/);
   assert.match(dom.window.document.getElementById('page').textContent,/Средний финансовый месяц/);
   assert.match(dom.window.document.getElementById('page').textContent,/Жизнь/);
+  assert.ok(ctx.ARISE_ANALYTICS_EXPENSE_UI,'expense analytics helpers must remain exported from analytics-ui.js');
+});
+
+test('retired expense analytics override is absent from runtime',()=>{
+  const index=fs.readFileSync('index.html','utf8');
+  assert.equal(fs.existsSync('analytics-expense-ui.js'),false);
+  assert.equal(index.includes('./analytics-expense-ui.js'),false);
 });
