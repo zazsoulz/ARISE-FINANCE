@@ -49,6 +49,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"./expense-reconciliation-ui.js\">"+scriptClose+
       scriptOpen+" src=\"./history-inspector.js\">"+scriptClose+
       scriptOpen+" src=\"./analytics-ui.js\">"+scriptClose+
+      scriptOpen+" src=\"./analytics-chart-accessibility.js\">"+scriptClose+
       scriptOpen+" src=\"./analytics-reserve-runway.js\">"+scriptClose+
       scriptOpen+" src=\"./goal-completion-analytics-ui.js\">"+scriptClose+
       scriptOpen+" src=\"./analytics-expense-ui.js\">"+scriptClose+
@@ -85,7 +86,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
       scriptOpen+" src=\"./modal-accessibility.js\">"+scriptClose+
       scriptOpen+" src=\"./runtime-integrity.js\">"+scriptClose+
       scriptOpen+" src=\"./financial-bootstrap.js\">"+scriptClose;
-    const bootHide='<style id="arise-boot-hide">html{visibility:hidden}</style>',themeLinks='<link rel="stylesheet" href="./arise-v3.css"><link rel="stylesheet" href="./arise-v3-state.css"><link rel="stylesheet" href="./analytics-ui.css"><link rel="stylesheet" href="./history-inspector.css"><link rel="stylesheet" href="./product-ui.css">';
+    const bootHide='<style id="arise-boot-hide">html{visibility:hidden}</style>',themeLinks='<link rel="stylesheet" href="./arise-v3.css"><link rel="stylesheet" href="./arise-v3-state.css"><link rel="stylesheet" href="./analytics-ui.css"><link rel="stylesheet" href="./analytics-chart-accessibility.css"><link rel="stylesheet" href="./history-inspector.css"><link rel="stylesheet" href="./product-ui.css">';
     if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,themeLinks+bootHide+"</head>");else html=themeLinks+bootHide+html;
     if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,runtime+"</body>");else html+=runtime;
     document.open();document.write(html);document.close();
