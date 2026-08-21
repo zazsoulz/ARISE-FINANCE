@@ -20,16 +20,19 @@ test('rate freshness status distinguishes fresh stale and unavailable books',()=
   });
 });
 
-test('production loader wires stale-rate disclosure immediately after currency runtime',()=>{
+test('production loader uses the consolidated currency display layer after currency runtime',()=>{
   const index=fs.readFileSync('index.html','utf8');
   const runtime=index.indexOf('./currency-runtime.js');
-  const disclosure=index.indexOf('./currency-freshness-ui.js');
+  const display=index.indexOf('./currency-display.js');
   assert.ok(runtime>=0);
-  assert.ok(disclosure>runtime);
+  assert.ok(display>runtime);
+  assert.equal(index.includes('./currency-freshness-ui.js'),false);
+  assert.equal(fs.existsSync('currency-freshness-ui.js'),false);
 });
 
-test('stale-rate UI exposes source age snapshot warning and explicit refresh action',()=>{
-  const source=fs.readFileSync('currency-freshness-ui.js','utf8');
+test('consolidated currency UI exposes source age snapshot warning and explicit refresh action',()=>{
+  const source=fs.readFileSync('currency-display.js','utf8');
+  assert.match(source,/ARISE_FX_FRESHNESS_UI/);
   assert.match(source,/arise-fx-stale/);
   assert.match(source,/Сумма будет сохранена с этим FX snapshot/);
   assert.match(source,/data-refresh-stale-fx/);
@@ -37,7 +40,7 @@ test('stale-rate UI exposes source age snapshot warning and explicit refresh act
 });
 
 test('backdated foreign-currency operations disclose the snapshot policy for income and expense flows',()=>{
-  const source=fs.readFileSync('currency-freshness-ui.js','utf8');
+  const source=fs.readFileSync('currency-display.js','utf8');
   assert.match(source,/arise-fx-backdated/);
   assert.match(source,/Операция записывается задним числом/);
   assert.match(source,/Исторический курс за выбранную дату автоматически не подставляется/);
