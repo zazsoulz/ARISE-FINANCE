@@ -16,7 +16,10 @@ function boot(){
       monthly:(_p,key)=>key==='2026-08'?{income:150000,expenses:50000,freeEnd:80000,uncontrolled:10000,incomeCount:2}:{income:100000,expenses:40000,freeEnd:50000,uncontrolled:0,incomeCount:1},
       compare:()=>({income:{difference:50000,percent:50},expenses:{difference:10000,percent:25},free:{difference:30000,percent:60},uncontrolled:{difference:10000,percent:null}}),
       series:()=>[{month:'2026-07',income:100000,expenses:40000},{month:'2026-08',income:150000,expenses:50000}],
-      incomeSources:(_p,{month})=>month==='2026-08'?[{name:'Работа',value:120000,share:.8},{name:'Фриланс',value:30000,share:.2}]:[{name:'Работа',value:100000,share:1}],goals:()=>[]
+      incomeSources:(_p,{month})=>month==='2026-08'?[{name:'Работа',value:120000,share:.8},{name:'Фриланс',value:30000,share:.2}]:[{name:'Работа',value:100000,share:1}],
+      goals:()=>[],
+      expenseComposition:()=>[{name:'Жизнь',value:35000,share:.7},{name:'Кафе',value:15000,share:.3}],
+      lifetime:()=>({months:2,averageMonthlyIncome:125000,averageMonthlyExpenses:45000,maxIncome:150000,incomeTransactions:3})
     }
   };
   ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('analytics-ui.js','utf8'),ctx,{filename:'analytics-ui.js'});return {ctx,dom};
@@ -28,6 +31,8 @@ test('analytics screen renders canonical visual blocks in browser runtime',()=>{
   assert.ok(dom.window.document.querySelector('.analytics-pulse'));
   assert.ok(dom.window.document.querySelector('.analytics-source-row'));
   assert.ok(dom.window.document.querySelector('.analytics-reserve-orbit'));
+  assert.ok(dom.window.document.querySelector('[data-analytics-expense-composition]'));
+  assert.ok(dom.window.document.querySelector('[data-analytics-lifetime]'));
   assert.match(dom.window.document.getElementById('page').textContent,/Расходы вне плана/);
 });
 
