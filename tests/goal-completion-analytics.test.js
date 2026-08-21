@@ -1,6 +1,9 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const analytics=require('../goal-completion-analytics.js');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const {JSDOM}=require('jsdom');
 
 function profile(){
   return {
@@ -47,11 +50,36 @@ test('completed-goal totals stay transaction-derived',()=>{
   assert.equal(result.totalContributed,160000);
 });
 
-test('production loader wires completed-goal analytics before its UI layer',()=>{
-  const fs=require('node:fs');
+test('production loader wires completed-goal analytics before the consolidated analytics UI',()=>{
   const index=fs.readFileSync('index.html','utf8');
   const engine=index.indexOf('./goal-completion-analytics.js');
-  const ui=index.indexOf('./goal-completion-analytics-ui.js');
+  const ui=index.indexOf('./analytics-ui.js');
   assert.ok(engine>=0);
   assert.ok(ui>engine);
+  assert.equal(fs.existsSync('goal-completion-analytics-ui.js'),false);
+  assert.equal(index.includes('./goal-completion-analytics-ui.js'),false);
+  assert.match(fs.readFileSync('analytics-ui.js','utf8'),/ARISE_GOAL_COMPLETION_ANALYTICS_UI/);
+});
+
+test('consolidated analytics UI renders completed-goal results',()=>{
+  const dom=new JSDOM('<!doctype html><main class="arise-analytics"><div class="analytics-grid"></div></main>');
+  const context={
+    console,document:dom.window.document,window:null,globalThis:null,
+    renderAnalytics:()=>{},activeProfile:()=>({}),
+    escapeHTML:value=>String(value??''),formatDate:value=>value,money:value=>`${value} ₽`,
+    ARISE_GOAL_COMPLETION_ANALYTICS:{summary:()=>({
+      total:1,averageActualMonths:4,ahead:1,behind:0,
+      goals:[{name:'Отпуск',completedAt:'2026-04-20',actualMonths:4,forecastDifference:-2,contributed:100000}]
+    })}
+  };
+  context.window=context;context.globalThis=context;vm.createContext(context);
+  vm.runInContext(fs.readFileSync('analytics-ui.js','utf8'),context,{filename:'analytics-ui.js'});
+  context.renderAnalytics();
+  const card=dom.window.document.querySelector('[data-completed-goal-analytics]');
+  assert.ok(card);
+  assert.match(card.textContent,/Фактический результат/);
+  assert.match(card.textContent,/Отпуск/);
+  assert.match(card.textContent,/2 мес. раньше прогноза/);
+  assert.ok(context.ARISE_GOAL_COMPLETION_ANALYTICS_UI);
+  dom.window.close();
 });
