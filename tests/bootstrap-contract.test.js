@@ -44,10 +44,10 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   const analytics=index.indexOf('./analytics-engine.js');
   const productRules=index.indexOf('./product-rules.js');
   const v3=index.indexOf('./arise-v3.js');
-  const reconciliationUi=index.indexOf('./expense-reconciliation-ui.js');
   const history=index.indexOf('./history-inspector.js');
   const analyticsUi=index.indexOf('./analytics-ui.js');
   const supabase=index.indexOf('./supabase-client.js');
+  const expenseEditUi=index.indexOf('./expense-edit-ui.js');
   const outbox=index.indexOf('./sync-outbox.js');
   const localStore=index.indexOf('./local-account-store.js');
   const syncEngine=index.indexOf('./sync-engine.js');
@@ -70,11 +70,11 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   assert.ok(analytics>reserveEssential,'analytics must follow reserve domain helpers');
   assert.ok(productRules>analytics);
   assert.ok(v3>productRules);
-  assert.ok(reconciliationUi>v3,'expense reconciliation UI must wrap the final expense/product behavior');
-  assert.ok(history>reconciliationUi,'history must see persisted reconciliation metadata');
+  assert.ok(history>v3,'history must wrap final base transaction presentation');
   assert.ok(analyticsUi>history);
-  assert.ok(supabase>v3);
-  assert.ok(outbox>supabase);
+  assert.ok(supabase>analyticsUi);
+  assert.ok(expenseEditUi>supabase,'consolidated expense reconciliation UI must load after currency/runtime dependencies and before sync layers');
+  assert.ok(outbox>expenseEditUi);
   assert.ok(localStore>outbox,'outbox must exist before local save hooks');
   assert.ok(syncEngine>localStore,'sync engine must see local account storage');
   assert.ok(syncConflictPolicy>syncEngine,'conflict policy must exist before pull resolution');
@@ -97,9 +97,10 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-reconciliation-ui.js','history-inspector.js','product-ui.js','product-ui.css','reserve-lifecycle-ui.js','sync-conflict-ui.js','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-edit-ui.js','history-inspector.js','product-ui.js','product-ui.css','reserve-lifecycle-ui.js','sync-conflict-ui.js','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
+  assert.equal(fs.existsSync('expense-reconciliation-ui.js'),false,'retired expense reconciliation UI should stay removed');
 });
 
 test('retired canonical UI override stays consolidated into product rules',()=>{

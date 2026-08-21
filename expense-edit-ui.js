@@ -7,14 +7,8 @@
   const safe=value=>Math.max(0,Math.round(Number(value)||0));
   const esc=value=>escapeHTML(String(value??""));
 
-  function expenseById(profile,id){
-    return (profile.transactions||[]).find(tx=>String(tx.id)===String(id)&&tx.type==="expense")||null;
-  }
-
-  function profileWithoutExpense(profile,transactionId){
-    return {...profile,transactions:(profile.transactions||[]).filter(tx=>String(tx.id)!==String(transactionId))};
-  }
-
+  function expenseById(profile,id){return (profile.transactions||[]).find(tx=>String(tx.id)===String(id)&&tx.type==="expense")||null;}
+  function profileWithoutExpense(profile,transactionId){return {...profile,transactions:(profile.transactions||[]).filter(tx=>String(tx.id)!==String(transactionId))};}
   function snapshot(profile,originalAmount,originalCurrency){
     const runtime=root.ARISE_CURRENCY_RUNTIME;
     if(runtime&&typeof runtime.planSnapshot==="function")return runtime.planSnapshot(profile,originalAmount,originalCurrency);
@@ -22,203 +16,57 @@
     if(String(originalCurrency||base)!==String(base))return {conversionPending:true,originalAmount:safe(originalAmount),originalCurrency:originalCurrency||base,baseCurrency:base};
     return {conversionPending:false,originalAmount:safe(originalAmount),originalCurrency:base,baseAmount:safe(originalAmount),baseCurrency:base,exchangeRateToBase:1,fxSource:"identity",fxFetchedAt:null};
   }
-
-  function editFunding(profile,tx,{amount,date,categoryId}){
-    return fundingApi.expenseFunding(profileWithoutExpense(profile,tx.id),{amount,date,categoryId});
-  }
-
+  function editFunding(profile,tx,{amount,date,categoryId}){return fundingApi.expenseFunding(profileWithoutExpense(profile,tx.id),{amount,date,categoryId});}
   function candidates(profile,tx,{amount,date,categoryId}){
-    const shadow=profileWithoutExpense(profile,tx.id);
-    const result=[];
-    const add=(id,name)=>{
-      const funding=fundingApi.expenseFunding(shadow,{amount,date,categoryId:id||null});
-      result.push({id:id||null,name,current:String(id||"")===String(categoryId||""),controlled:safe(funding.controlledAmount),uncontrolled:safe(funding.uncontrolledAmount)});
-    };
+    const shadow=profileWithoutExpense(profile,tx.id),result=[];
+    const add=(id,name)=>{const funding=fundingApi.expenseFunding(shadow,{amount,date,categoryId:id||null});result.push({id:id||null,name,current:String(id||"")===String(categoryId||""),controlled:safe(funding.controlledAmount),uncontrolled:safe(funding.uncontrolledAmount)});};
     add(null,"Нераспределено");
     for(const category of profile.categories||[])if(category&&category.enabled!==false)add(category.id,category.name||"Категория");
     return result.sort((a,b)=>Number(b.uncontrolled===0)-Number(a.uncontrolled===0)||b.controlled-a.controlled||a.name.localeCompare(b.name,"ru"));
   }
-
-  function formDraft(){
-    return {
-      originalAmount:safe(document.getElementById("editExpenseAmount")?.value),
-      originalCurrency:document.getElementById("editExpenseCurrency")?.value||"RUB",
-      date:document.getElementById("editExpenseDate")?.value||today(),
-      categoryId:document.getElementById("editExpenseCategory")?.value||null,
-      source:document.getElementById("editExpenseSource")?.value||"",
-      note:document.getElementById("editExpenseNote")?.value||""
-    };
-  }
-
+  function formDraft(){return {originalAmount:safe(document.getElementById("editExpenseAmount")?.value),originalCurrency:document.getElementById("editExpenseCurrency")?.value||"RUB",date:document.getElementById("editExpenseDate")?.value||today(),categoryId:document.getElementById("editExpenseCategory")?.value||null,source:document.getElementById("editExpenseSource")?.value||"",note:document.getElementById("editExpenseNote")?.value||""};}
   function renderEditPreview(profile,tx){
-    const preview=document.getElementById("editExpensePreview");
-    const save=document.getElementById("saveExpenseEdit");
-    if(!preview||!save)return;
-    const draft=formDraft();
-    if(draft.originalAmount<=0){preview.innerHTML="";save.disabled=true;return;}
-
+    const preview=document.getElementById("editExpensePreview"),save=document.getElementById("saveExpenseEdit");if(!preview||!save)return;
+    const draft=formDraft();if(draft.originalAmount<=0){preview.innerHTML="";save.disabled=true;return;}
     const snap=snapshot(profile,draft.originalAmount,draft.originalCurrency);
-    if(snap.conversionPending){
-      preview.innerHTML=`<div class="notice warning">Для изменения расхода нужен курс ${esc(snap.originalCurrency)} → ${esc(snap.baseCurrency)}. ARISE не будет пересчитывать операцию без подтверждённого курса.</div><div class="actions"><button type="button" class="btn small-btn" id="refreshExpenseEditFx">Обновить курс</button></div>`;
-      save.disabled=true;
-      const refresh=document.getElementById("refreshExpenseEditFx");
-      if(refresh)refresh.onclick=async()=>{
-        const runtime=root.ARISE_CURRENCY_RUNTIME;
-        if(!runtime||typeof runtime.refreshRates!=="function")return;
-        refresh.disabled=true;
-        try{await runtime.refreshRates(true);renderEditPreview(profile,tx);}catch(error){console.error("ARISE expense edit FX",error);toast("Не удалось обновить курс.");}finally{refresh.disabled=false;}
-      };
-      return;
-    }
-
-    const funding=editFunding(profile,tx,{amount:snap.baseAmount,date:draft.date,categoryId:draft.categoryId});
-    const uncontrolled=safe(funding.uncontrolledAmount);
-    const rows=candidates(profile,tx,{amount:snap.baseAmount,date:draft.date,categoryId:draft.categoryId});
-    const full=rows.filter(row=>!row.current&&row.uncontrolled===0).slice(0,3);
-    const partial=rows.filter(row=>!row.current&&row.uncontrolled>0&&row.controlled>0).slice(0,3);
-
-    if(uncontrolled>0){
-      preview.innerHTML=`<div class="notice warning"><strong>После изменения ${money(uncontrolled,snap.baseCurrency)} останутся неконтролируемыми.</strong><div class="tiny muted" style="margin-top:5px">Контролируемыми балансами покрывается ${money(funding.controlledAmount,snap.baseCurrency)}. Выбери другой источник или явно подтверди неконтролируемую часть.</div><label class="tiny" style="display:flex;gap:8px;align-items:flex-start;margin-top:10px"><input id="acceptExpenseEditUncontrolled" type="checkbox">Я подтверждаю ${money(uncontrolled,snap.baseCurrency)} как неконтролируемые средства.</label></div>${full.length?`<div class="notice" style="margin-top:10px"><strong>Можно объяснить расход полностью</strong><div class="actions" style="margin-top:9px">${full.map(row=>`<button type="button" class="btn small-btn" data-edit-expense-source="${esc(row.id||"")}">${esc(row.name)} · ${money(row.controlled,snap.baseCurrency)}</button>`).join("")}</div></div>`:partial.length?`<div class="notice" style="margin-top:10px"><strong>Более полное покрытие</strong><div class="actions" style="margin-top:9px">${partial.map(row=>`<button type="button" class="btn small-btn" data-edit-expense-source="${esc(row.id||"")}">${esc(row.name)} · покрывает ${money(row.controlled,snap.baseCurrency)}</button>`).join("")}</div></div>`:""}`;
-      save.disabled=true;
-      const accept=document.getElementById("acceptExpenseEditUncontrolled");
-      if(accept)accept.onchange=()=>{save.disabled=!accept.checked;};
-    }else{
-      preview.innerHTML=`<div class="notice">После изменения расход полностью объясняется контролируемыми балансами. Неконтролируемых средств нет.</div>`;
-      save.disabled=false;
-    }
-
-    preview.querySelectorAll("[data-edit-expense-source]").forEach(button=>{
-      button.onclick=()=>{
-        const select=document.getElementById("editExpenseCategory");
-        if(select)select.value=button.dataset.editExpenseSource||"";
-        renderEditPreview(profile,tx);
-      };
-    });
+    if(snap.conversionPending){preview.innerHTML=`<div class="notice warning">Для изменения расхода нужен курс ${esc(snap.originalCurrency)} → ${esc(snap.baseCurrency)}. ARISE не будет пересчитывать операцию без подтверждённого курса.</div><div class="actions"><button type="button" class="btn small-btn" id="refreshExpenseEditFx">Обновить курс</button></div>`;save.disabled=true;const refresh=document.getElementById("refreshExpenseEditFx");if(refresh)refresh.onclick=async()=>{const runtime=root.ARISE_CURRENCY_RUNTIME;if(!runtime||typeof runtime.refreshRates!=="function")return;refresh.disabled=true;try{await runtime.refreshRates(true);renderEditPreview(profile,tx);}catch(error){console.error("ARISE expense edit FX",error);toast("Не удалось обновить курс.");}finally{refresh.disabled=false;}};return;}
+    const funding=editFunding(profile,tx,{amount:snap.baseAmount,date:draft.date,categoryId:draft.categoryId}),uncontrolled=safe(funding.uncontrolledAmount),rows=candidates(profile,tx,{amount:snap.baseAmount,date:draft.date,categoryId:draft.categoryId}),full=rows.filter(row=>!row.current&&row.uncontrolled===0).slice(0,3),partial=rows.filter(row=>!row.current&&row.uncontrolled>0&&row.controlled>0).slice(0,3);
+    if(uncontrolled>0){preview.innerHTML=`<div class="notice warning"><strong>После изменения ${money(uncontrolled,snap.baseCurrency)} останутся неконтролируемыми.</strong><div class="tiny muted" style="margin-top:5px">Контролируемыми балансами покрывается ${money(funding.controlledAmount,snap.baseCurrency)}. Выбери другой источник или явно подтверди неконтролируемую часть.</div><label class="tiny" style="display:flex;gap:8px;align-items:flex-start;margin-top:10px"><input id="acceptExpenseEditUncontrolled" type="checkbox">Я подтверждаю ${money(uncontrolled,snap.baseCurrency)} как неконтролируемые средства.</label></div>${full.length?`<div class="notice" style="margin-top:10px"><strong>Можно объяснить расход полностью</strong><div class="actions" style="margin-top:9px">${full.map(row=>`<button type="button" class="btn small-btn" data-edit-expense-source="${esc(row.id||"")}">${esc(row.name)} · ${money(row.controlled,snap.baseCurrency)}</button>`).join("")}</div></div>`:partial.length?`<div class="notice" style="margin-top:10px"><strong>Более полное покрытие</strong><div class="actions" style="margin-top:9px">${partial.map(row=>`<button type="button" class="btn small-btn" data-edit-expense-source="${esc(row.id||"")}">${esc(row.name)} · покрывает ${money(row.controlled,snap.baseCurrency)}</button>`).join("")}</div></div>`:""}`;save.disabled=true;const accept=document.getElementById("acceptExpenseEditUncontrolled");if(accept)accept.onchange=()=>{save.disabled=!accept.checked;};}else{preview.innerHTML=`<div class="notice">После изменения расход полностью объясняется контролируемыми балансами. Неконтролируемых средств нет.</div>`;save.disabled=false;}
+    preview.querySelectorAll("[data-edit-expense-source]").forEach(button=>{button.onclick=()=>{const select=document.getElementById("editExpenseCategory");if(select)select.value=button.dataset.editExpenseSource||"";renderEditPreview(profile,tx);};});
   }
-
   function applyEdit(profile,tx){
-    const draft=formDraft();
-    if(draft.originalAmount<=0)throw new Error("Сумма расхода должна быть больше нуля.");
-    const snap=snapshot(profile,draft.originalAmount,draft.originalCurrency);
-    if(snap.conversionPending)throw new Error("Для изменения расхода нужен актуальный или сохранённый курс.");
-    const funding=editFunding(profile,tx,{amount:snap.baseAmount,date:draft.date,categoryId:draft.categoryId});
-    const uncontrolled=safe(funding.uncontrolledAmount);
-    const accepted=uncontrolled===0||document.getElementById("acceptExpenseEditUncontrolled")?.checked===true;
-    if(!accepted)throw new Error("Подтверди неконтролируемую часть расхода или выбери другой источник.");
-    const category=(profile.categories||[]).find(item=>String(item.id)===String(draft.categoryId));
-
-    Object.assign(tx,{
-      date:draft.date,
-      month:monthKey(draft.date),
-      amount:safe(snap.baseAmount),
-      currency:snap.baseCurrency,
-      originalAmount:safe(snap.originalAmount),
-      originalCurrency:snap.originalCurrency,
-      baseAmount:safe(snap.baseAmount),
-      baseCurrency:snap.baseCurrency,
-      exchangeRateToBase:snap.exchangeRateToBase,
-      fxSource:snap.fxSource||null,
-      fxFetchedAt:snap.fxFetchedAt||null,
-      conversionPending:false,
-      source:String(draft.source||"").trim(),
-      note:String(draft.note||"").trim(),
-      categoryId:draft.categoryId||null,
-      categoryName:draft.categoryId?(category&&category.name||tx.categoryName||"Без категории"):"Нераспределено",
-      fundingSource:funding.fundingSource,
-      fundingSourceId:funding.fundingSourceId,
-      controlledAmount:safe(funding.controlledAmount),
-      categoryControlledAmount:safe(funding.categoryControlledAmount),
-      unallocatedControlledAmount:safe(funding.unallocatedControlledAmount),
-      uncontrolledAmount:uncontrolled,
-      fundingBreakdown:{...(funding.fundingBreakdown||{})},
-      reconciliationStatus:uncontrolled>0?"accepted_uncontrolled":"resolved",
-      updatedAt:new Date().toISOString()
-    });
-
-    if(uncontrolled>0){
-      tx.fundingBreakdown.acceptedUncontrolled=uncontrolled;
-      tx.reconciliationAcceptedAt=new Date().toISOString();
-    }else{
-      delete tx.fundingBreakdown.acceptedUncontrolled;
-      delete tx.reconciliationAcceptedAt;
-    }
-    return tx;
+    const draft=formDraft();if(draft.originalAmount<=0)throw new Error("Сумма расхода должна быть больше нуля.");const snap=snapshot(profile,draft.originalAmount,draft.originalCurrency);if(snap.conversionPending)throw new Error("Для изменения расхода нужен актуальный или сохранённый курс.");const funding=editFunding(profile,tx,{amount:snap.baseAmount,date:draft.date,categoryId:draft.categoryId}),uncontrolled=safe(funding.uncontrolledAmount),accepted=uncontrolled===0||document.getElementById("acceptExpenseEditUncontrolled")?.checked===true;if(!accepted)throw new Error("Подтверди неконтролируемую часть расхода или выбери другой источник.");const category=(profile.categories||[]).find(item=>String(item.id)===String(draft.categoryId));
+    Object.assign(tx,{date:draft.date,month:monthKey(draft.date),amount:safe(snap.baseAmount),currency:snap.baseCurrency,originalAmount:safe(snap.originalAmount),originalCurrency:snap.originalCurrency,baseAmount:safe(snap.baseAmount),baseCurrency:snap.baseCurrency,exchangeRateToBase:snap.exchangeRateToBase,fxSource:snap.fxSource||null,fxFetchedAt:snap.fxFetchedAt||null,conversionPending:false,source:String(draft.source||"").trim(),note:String(draft.note||"").trim(),categoryId:draft.categoryId||null,categoryName:draft.categoryId?(category&&category.name||tx.categoryName||"Без категории"):"Нераспределено",fundingSource:funding.fundingSource,fundingSourceId:funding.fundingSourceId,controlledAmount:safe(funding.controlledAmount),categoryControlledAmount:safe(funding.categoryControlledAmount),unallocatedControlledAmount:safe(funding.unallocatedControlledAmount),uncontrolledAmount:uncontrolled,fundingBreakdown:{...(funding.fundingBreakdown||{})},reconciliationStatus:uncontrolled>0?"accepted_uncontrolled":"resolved",updatedAt:new Date().toISOString()});
+    if(uncontrolled>0){tx.fundingBreakdown.acceptedUncontrolled=uncontrolled;tx.reconciliationAcceptedAt=new Date().toISOString();}else{delete tx.fundingBreakdown.acceptedUncontrolled;delete tx.reconciliationAcceptedAt;}return tx;
   }
-
   function showExpenseEditModal(transactionId){
-    const profile=activeProfile();
-    const tx=expenseById(profile,transactionId);
-    if(!tx)return;
-    const originalAmount=tx.originalAmount!=null?tx.originalAmount:tx.amount;
-    const originalCurrency=tx.originalCurrency||tx.currency||profile.settings&&profile.settings.currency||"RUB";
-
-    openModal(`
-      <div class="kicker">РЕДАКТИРОВАНИЕ РАСХОДА</div>
-      <h2 class="title">Сверить расход заново</h2>
-      <div class="sub" style="margin-top:7px">ARISE временно возвращает исходный расход в доступные балансы и заново проверяет источник денег. Так редактирование не создаёт ложный перерасход.</div>
-      <div class="form" style="margin-top:18px">
-        <div class="field"><label>Сумма</label><input id="editExpenseAmount" type="number" min="1" value="${esc(originalAmount)}"></div>
-        <div class="field"><label>Валюта</label><select id="editExpenseCurrency">${["RUB","EUR","USD"].map(code=>`<option value="${code}" ${code===originalCurrency?"selected":""}>${code}</option>`).join("")}</select></div>
-        <div class="field"><label>Дата</label><input id="editExpenseDate" type="date" value="${esc(tx.date||today())}"></div>
-        <div class="field"><label>Источник денег</label><select id="editExpenseCategory"><option value="">Нераспределено</option>${(profile.categories||[]).filter(category=>category.enabled!==false||String(category.id)===String(tx.categoryId)).map(category=>`<option value="${esc(category.id)}" ${String(category.id)===String(tx.categoryId)?"selected":""}>${esc(category.name||"Категория")}</option>`).join("")}</select></div>
-        <div class="field"><label>Источник / описание</label><input id="editExpenseSource" value="${esc(tx.source||"")}"></div>
-        <div class="field"><label>Комментарий</label><input id="editExpenseNote" value="${esc(tx.note||"")}"></div>
-      </div>
-      <div id="editExpensePreview" style="margin-top:14px"></div>
-      <div class="actions"><button class="btn primary" id="saveExpenseEdit">Сохранить изменения</button><button class="btn" id="cancelExpenseEdit">Отмена</button></div>
-    `);
-
-    for(const id of ["editExpenseAmount","editExpenseCurrency","editExpenseDate","editExpenseCategory"]){
-      const element=document.getElementById(id);
-      if(element)element.addEventListener(id==="editExpenseAmount"?"input":"change",()=>renderEditPreview(profile,tx));
-    }
-    document.getElementById("cancelExpenseEdit").onclick=closeModal;
-    document.getElementById("saveExpenseEdit").onclick=()=>{
-      try{
-        applyEdit(profile,tx);
-        saveState();
-        closeModal();
-        activeMonth=monthKey(tx.date);
-        toast("Расход обновлён и заново сверён с балансами.");
-        render();
-      }catch(error){toast(error.message||"Не удалось изменить расход.");}
-    };
-    renderEditPreview(profile,tx);
+    const profile=activeProfile(),tx=expenseById(profile,transactionId);if(!tx)return;const originalAmount=tx.originalAmount!=null?tx.originalAmount:tx.amount,originalCurrency=tx.originalCurrency||tx.currency||profile.settings&&profile.settings.currency||"RUB";
+    openModal(`<div class="kicker">РЕДАКТИРОВАНИЕ РАСХОДА</div><h2 class="title">Сверить расход заново</h2><div class="sub" style="margin-top:7px">ARISE временно возвращает исходный расход в доступные балансы и заново проверяет источник денег. Так редактирование не создаёт ложный перерасход.</div><div class="form" style="margin-top:18px"><div class="field"><label>Сумма</label><input id="editExpenseAmount" type="number" min="1" value="${esc(originalAmount)}"></div><div class="field"><label>Валюта</label><select id="editExpenseCurrency">${["RUB","EUR","USD"].map(code=>`<option value="${code}" ${code===originalCurrency?"selected":""}>${code}</option>`).join("")}</select></div><div class="field"><label>Дата</label><input id="editExpenseDate" type="date" value="${esc(tx.date||today())}"></div><div class="field"><label>Источник денег</label><select id="editExpenseCategory"><option value="">Нераспределено</option>${(profile.categories||[]).filter(category=>category.enabled!==false||String(category.id)===String(tx.categoryId)).map(category=>`<option value="${esc(category.id)}" ${String(category.id)===String(tx.categoryId)?"selected":""}>${esc(category.name||"Категория")}</option>`).join("")}</select></div><div class="field"><label>Источник / описание</label><input id="editExpenseSource" value="${esc(tx.source||"")}"></div><div class="field"><label>Комментарий</label><input id="editExpenseNote" value="${esc(tx.note||"")}"></div></div><div id="editExpensePreview" style="margin-top:14px"></div><div class="actions"><button class="btn primary" id="saveExpenseEdit">Сохранить изменения</button><button class="btn" id="cancelExpenseEdit">Отмена</button></div>`);
+    for(const id of ["editExpenseAmount","editExpenseCurrency","editExpenseDate","editExpenseCategory"]){const element=document.getElementById(id);if(element)element.addEventListener(id==="editExpenseAmount"?"input":"change",()=>renderEditPreview(profile,tx));}
+    document.getElementById("cancelExpenseEdit").onclick=closeModal;document.getElementById("saveExpenseEdit").onclick=()=>{try{applyEdit(profile,tx);saveState();closeModal();activeMonth=monthKey(tx.date);toast("Расход обновлён и заново сверён с балансами.");render();}catch(error){toast(error.message||"Не удалось изменить расход.");}};renderEditPreview(profile,tx);
   }
-
   root.ARISE_EXPENSE_EDIT={showExpenseEditModal,applyEdit,editFunding,candidates,profileWithoutExpense,snapshot};
 })(typeof globalThis!=="undefined"?globalThis:window);
 
 (function(root){
   "use strict";
-
-  function decorate(row){
-    if(!row||!root.ARISE_EXPENSE_EDIT||typeof root.ARISE_EXPENSE_EDIT.showExpenseEditModal!=="function")return;
-    const profile=activeProfile();
-    const tx=(profile.transactions||[]).find(item=>String(item.id)===String(row.dataset.historyTx));
-    if(!tx||tx.type!=="expense")return;
-    const actions=document.querySelector("#sheet .history-detail .actions");
-    if(!actions||actions.querySelector("[data-history-edit-expense]"))return;
-    const button=document.createElement("button");
-    button.type="button";
-    button.className="btn primary";
-    button.dataset.historyEditExpense=tx.id;
-    button.textContent="Редактировать расход";
-    button.onclick=()=>root.ARISE_EXPENSE_EDIT.showExpenseEditModal(tx.id);
-    actions.insertBefore(button,actions.firstChild);
-  }
-
-  if(typeof document!=="undefined"){
-    document.addEventListener("click",event=>{
-      const row=event.target&&event.target.closest&&event.target.closest("[data-history-tx]");
-      if(row)setTimeout(()=>decorate(row),0);
-    });
-    document.addEventListener("keydown",event=>{
-      if(event.key!=="Enter"&&event.key!==" ")return;
-      const row=event.target&&event.target.closest&&event.target.closest("[data-history-tx]");
-      if(row)setTimeout(()=>decorate(row),0);
-    });
-  }
-
+  function decorate(row){if(!row||!root.ARISE_EXPENSE_EDIT||typeof root.ARISE_EXPENSE_EDIT.showExpenseEditModal!=="function")return;const profile=activeProfile(),tx=(profile.transactions||[]).find(item=>String(item.id)===String(row.dataset.historyTx));if(!tx||tx.type!=="expense")return;const actions=document.querySelector("#sheet .history-detail .actions");if(!actions||actions.querySelector("[data-history-edit-expense]"))return;const button=document.createElement("button");button.type="button";button.className="btn primary";button.dataset.historyEditExpense=tx.id;button.textContent="Редактировать расход";button.onclick=()=>root.ARISE_EXPENSE_EDIT.showExpenseEditModal(tx.id);actions.insertBefore(button,actions.firstChild);}
+  if(typeof document!=="undefined"){document.addEventListener("click",event=>{const row=event.target&&event.target.closest&&event.target.closest("[data-history-tx]");if(row)setTimeout(()=>decorate(row),0);});document.addEventListener("keydown",event=>{if(event.key!=="Enter"&&event.key!==" ")return;const row=event.target&&event.target.closest&&event.target.closest("[data-history-tx]");if(row)setTimeout(()=>decorate(row),0);});}
   root.ARISE_HISTORY_EXPENSE_EDIT={decorate};
+})(typeof globalThis!=="undefined"?globalThis:window);
+
+(function(root){
+  "use strict";
+  const core=root.ARISE_FINANCE_CORE,fundingApi=root.ARISE_EXPENSE_FUNDING;if(!core||!fundingApi||typeof fundingApi.expenseFunding!=="function")return;
+  const previousShowExpenseModal=root.showExpenseModal,previousCreateExpenseTransaction=root.createExpenseTransaction,previousHistoryTransaction=root.historyTransaction;
+  const safe=value=>Math.max(0,Math.round(Number(value)||0));
+  function readDraft(){const amount=safe(document.getElementById("expenseAmount")?.value),date=document.getElementById("expenseDate")?.value||today(),categoryId=document.getElementById("expenseCategory")?.value||null;return {amount,date,categoryId};}
+  function sourceCandidates(profile,{amount,date,categoryId}){if(amount<=0)return [];const rows=[];const add=(id,name)=>{const funding=fundingApi.expenseFunding(profile,{amount,date,categoryId:id});rows.push({id:id||null,name,current:String(id||"")===String(categoryId||""),controlled:safe(funding.controlledAmount),uncontrolled:safe(funding.uncontrolledAmount),category:safe(funding.categoryControlledAmount),unallocated:safe(funding.unallocatedControlledAmount)});};add(null,"Нераспределено");for(const category of profile.categories||[]){if(category&&category.enabled!==false)add(category.id,category.name||"Категория");}return rows.sort((a,b)=>Number(b.uncontrolled===0)-Number(a.uncontrolled===0)||b.controlled-a.controlled||Number(a.current)-Number(b.current)||a.name.localeCompare(b.name,"ru"));}
+  function coverageText(row){const parts=[];if(row.category>0)parts.push(`из категории ${money(row.category)}`);if(row.unallocated>0)parts.push(`из нераспределённого ${money(row.unallocated)}`);if(!parts.length&&row.controlled>0)parts.push(`подтверждено ${money(row.controlled)}`);return parts.join(" + ");}
+  function decorateReconciliation(){const preview=document.getElementById("expensePreview"),select=document.getElementById("expenseCategory");if(!preview||!select)return;preview.querySelector("#expenseSourceOptions")?.remove();const profile=activeProfile(),draft=readDraft();if(draft.amount<=0)return;const current=fundingApi.expenseFunding(profile,draft);if(safe(current.uncontrolledAmount)<=0)return;const candidates=sourceCandidates(profile,draft),alternatives=candidates.filter(row=>!row.current),full=alternatives.filter(row=>row.uncontrolled===0),partial=alternatives.filter(row=>row.uncontrolled>0&&row.controlled>0).slice(0,3),panel=document.createElement("div");panel.id="expenseSourceOptions";panel.className="notice";panel.style.marginTop="10px";if(full.length){panel.innerHTML=`<strong>Можно объяснить расход полностью</strong><div class="tiny muted" style="margin-top:5px">Выбери подтверждённый источник — ARISE пересчитает операцию до сохранения.</div><div class="actions" style="margin-top:10px">${full.map(row=>`<button type="button" class="btn small-btn" data-expense-source-option="${escapeHTML(row.id||"")}"><span>${escapeHTML(row.name)}</span><span class="tiny muted">${escapeHTML(coverageText(row))}</span></button>`).join("")}</div>`;}else{panel.innerHTML=`<strong>Полного подтверждённого источника нет</strong><div class="tiny muted" style="margin-top:5px">Можно выбрать источник с максимальным покрытием, изменить сумму или явно принять оставшуюся часть как неконтролируемые средства.</div>${partial.length?`<div class="actions" style="margin-top:10px">${partial.map(row=>`<button type="button" class="btn small-btn" data-expense-source-option="${escapeHTML(row.id||"")}"><span>${escapeHTML(row.name)}</span><span class="tiny muted">покрывает ${money(row.controlled)} · не объяснено ${money(row.uncontrolled)}</span></button>`).join("")}</div>`:""}`;}preview.appendChild(panel);panel.querySelectorAll("[data-expense-source-option]").forEach(button=>{button.onclick=()=>{select.value=button.dataset.expenseSourceOption||"";const EventCtor=select.ownerDocument&&select.ownerDocument.defaultView&&select.ownerDocument.defaultView.Event;if(EventCtor)select.dispatchEvent(new EventCtor("change",{bubbles:true}));else if(typeof select.onchange==="function")select.onchange({target:select});};});}
+  function wrapDraftHandler(element,eventName){if(!element)return;const property=`on${eventName}`,previous=element[property];element[property]=event=>{if(typeof previous==="function")previous.call(element,event);decorateReconciliation();};}
+  if(typeof previousShowExpenseModal==="function"){root.showExpenseModal=function(){previousShowExpenseModal();wrapDraftHandler(document.getElementById("expenseAmount"),"input");wrapDraftHandler(document.getElementById("expenseCategory"),"change");wrapDraftHandler(document.getElementById("expenseDate"),"change");decorateReconciliation();};}
+  if(typeof previousCreateExpenseTransaction==="function"){root.createExpenseTransaction=function(profile,data){const tx=previousCreateExpenseTransaction(profile,data),uncontrolled=safe(tx&&tx.uncontrolledAmount);tx.fundingBreakdown={...(tx.fundingBreakdown||{})};if(uncontrolled>0){const accepted=typeof document!=="undefined"&&document.getElementById("acceptUncontrolledExpense")?.checked===true;tx.reconciliationStatus=accepted?"accepted_uncontrolled":"unresolved";if(accepted){tx.fundingBreakdown.acceptedUncontrolled=uncontrolled;tx.reconciliationAcceptedAt=new Date().toISOString();}}else{tx.reconciliationStatus="resolved";}return tx;};}
+  root.historyTransaction=function(tx){const html=typeof previousHistoryTransaction==="function"?previousHistoryTransaction(tx):"";if(!tx||tx.type!=="expense"||tx.reconciliationStatus!=="accepted_uncontrolled")return html;const accepted=safe(tx.fundingBreakdown&&tx.fundingBreakdown.acceptedUncontrolled||tx.uncontrolledAmount);if(!accepted)return html;return html.replace(/(<\/div>\s*<\/div>\s*)$/,`<div class="tiny muted" style="margin-top:4px">Неконтролируемая часть ${money(accepted,tx.currency)} принята явно.</div>$1`);};
+  root.ARISE_EXPENSE_RECONCILIATION_UI={sourceCandidates,decorateReconciliation,readDraft};
 })(typeof globalThis!=="undefined"?globalThis:window);
