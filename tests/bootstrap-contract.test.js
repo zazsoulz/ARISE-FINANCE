@@ -102,6 +102,14 @@ test('runtime files exist',()=>{
   }
 });
 
+test('retired canonical UI override stays consolidated into product rules',()=>{
+  assert.equal(fs.existsSync('canonical-ui-overrides.js'),false);
+  assert.equal(index.includes('./canonical-ui-overrides.js'),false);
+  const productRules=fs.readFileSync('product-rules.js','utf8');
+  assert.equal(productRules.includes('ARISE предлагает распределение по твоим правилам.'),true);
+  assert.equal(productRules.includes('Неконтролируемые:'),true);
+});
+
 test('effective shell contains no legacy financial engine or eager initialization',()=>{
   const effective=stripLegacyFinancialRuntime(shell);
   assert.equal(effective.includes('function calculateIncomePlan('),false);
