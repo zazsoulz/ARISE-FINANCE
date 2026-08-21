@@ -3,9 +3,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
-function boot({configured=0,essentialCategoryIds=['rent']}={}){
+function boot({configured=0,essentialCategoryIds=['rent'],reserveBalance=150000,targetBalance=300000}={}){
   const profile={
-    settings:{currency:'RUB',reserve:{monthlyEssentialSpend:configured,targetBalance:300000,essentialCategoryIds}},
+    settings:{currency:'RUB',reserve:{monthlyEssentialSpend:configured,targetBalance,essentialCategoryIds}},
     categories:[{id:'rent',name:'Жильё'},{id:'fun',name:'Развлечения'}],
     transactions:[
       {id:'e1',type:'expense',month:'2026-06',amount:40000,categoryId:'rent'},
@@ -17,7 +17,7 @@ function boot({configured=0,essentialCategoryIds=['rent']}={}){
   };
   const months=['2026-06','2026-07','2026-08'];
   const core={
-    reserveBalance:()=>150000,
+    reserveBalance:()=>reserveBalance,
     availableFree:()=>25000,
     createReserveDeposit(){},createReserveWithdrawal(){},monthKey:value=>String(value).slice(0,7)
   };
@@ -25,7 +25,10 @@ function boot({configured=0,essentialCategoryIds=['rent']}={}){
     reserveRunway({reserveBalance,monthlyEssentialSpend}){
       return monthlyEssentialSpend>0?{status:'ok',reserveBalance,monthlyEssentialSpend,months:reserveBalance/monthlyEssentialSpend}:{status:'insufficient_data',reserveBalance,monthlyEssentialSpend,months:null};
     },
-    reserveProgress({reserveBalance,targetBalance}){return {status:'ok',percent:targetBalance?reserveBalance/targetBalance*100:0};}
+    reserveProgress({reserveBalance,targetBalance}){
+      if(!targetBalance)return {status:'no_target',percent:null,remaining:null,complete:false,surplus:0};
+      return {status:'ok',percent:Math.min(100,reserveBalance/targetBalance*100),remaining:Math.max(0,targetBalance-reserveBalance),complete:reserveBalance>=targetBalance,surplus:Math.max(0,reserveBalance-targetBalance)};
+    }
   };
   const ctx={
     console,globalThis:null,window:null,ARISE_FINANCE_CORE:core,ARISE_RESERVE_ANALYTICS:analytics,
@@ -73,4 +76,21 @@ test('reserve section explains user-controlled essential expense model',()=>{
   assert.match(html,/Категории обязательных расходов/);
   assert.match(html,/ARISE не считает все расходы обязательными автоматически/);
   assert.match(html,/reserve-essential-category/);
+});
+
+test('reserve section separates target completion and surplus without changing user rules',()=>{
+  const {ctx}=boot({reserveBalance:350000,targetBalance:300000});
+  const html=ctx.ARISE_RESERVE_LIFECYCLE.reserveSection(ctx.activeProfile());
+  assert.match(html,/data-reserve-target-state="complete"/);
+  assert.match(html,/Цель подушки достигнута/);
+  assert.match(html,/Сверх цели: 50000 ₽/);
+  assert.match(html,/не меняет правило пополнения без твоего решения/);
+  assert.match(html,/id="reserveDepositAction">Пополнить резерв/);
+});
+
+test('reserve section shows the remaining amount while the target is still forming',()=>{
+  const {ctx}=boot({reserveBalance:150000,targetBalance:300000});
+  const html=ctx.ARISE_RESERVE_LIFECYCLE.reserveSection(ctx.activeProfile());
+  assert.match(html,/data-reserve-target-state="building"/);
+  assert.match(html,/До цели: 150000 ₽/);
 });
