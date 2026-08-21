@@ -26,7 +26,7 @@ function boot(){
     saveState:()=>{saved++;},render:()=>{rendered++;},toast:()=>{},closeModal:()=>dom.window.document.getElementById('modal').classList.remove('open'),
     openModal:html=>{dom.window.document.getElementById('sheet').innerHTML=html;dom.window.document.getElementById('modal').classList.add('open');},
     showGoalModal:id=>{dom.window.document.getElementById('sheet').innerHTML='<div class="field"><label>Уже накоплено</label><input id="goalCurrent" value="99999"></div><div class="actions"><button id="saveGoal">Сохранить</button></div>';},
-    renderGoals:()=>{dom.window.document.getElementById('page').innerHTML='<div class="v3-page-head"><h1></h1><p></p></div><section class="v3-goal-list"><article data-goal-id="g1"></article><article data-goal-id="g2"></article></section>';},
+    renderGoals:()=>{const completed=profile.goals.filter(goal=>goal.status==='completed').slice().reverse();dom.window.document.getElementById('page').innerHTML=`<div class="v3-page-head"><h1></h1><p></p></div><section class="v3-goal-list"><article data-goal-id="g1"></article><article data-goal-id="g2"></article></section>${completed.length?`<section class="v3-section" data-completed-goals><div>Достигнутые</div>${completed.map(goal=>`<div class="v3-rule" data-completed-goal-id="${goal.id}"><div><strong>${goal.name}</strong></div></div>`).join('')}</section>`:''}`;},
     historyTransaction:()=>''
   };
   ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('goal-lifecycle-ui.js','utf8'),ctx,{filename:'goal-lifecycle-ui.js'});
@@ -58,4 +58,17 @@ test('closing funded goal requires an explicit destination and preserves goal hi
   assert.equal(profile.transactions[0].type,'goal_withdrawal');
   assert.equal(profile.transactions[0].amount,10000);
   assert.deepEqual(counts(),{saved:1,rendered:1});
+});
+
+test('completed-goal close actions bind by stable goal id instead of row order',()=>{
+  const {ctx,dom,profile}=boot();
+  profile.goals.forEach(goal=>{goal.status='completed';});
+  ctx.renderGoals();
+  const row=dom.window.document.querySelector('[data-completed-goal-id="g1"]');
+  const button=row.querySelector('[data-close-completed-goal]');
+  assert.equal(button.dataset.closeCompletedGoal,'g1');
+  assert.equal(button.textContent,'Закрыть цель');
+  button.click();
+  assert.match(dom.window.document.getElementById('sheet').textContent,/Отпуск/);
+  dom.window.close();
 });

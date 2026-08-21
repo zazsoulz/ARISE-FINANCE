@@ -64,6 +64,9 @@
     const runway=runwayModel(profile);
     const monthly=runway.monthlyEssentialSpend||0;
     const months=runway.status==="ok"?runway.months:null;
+    const complete=target>0&&(progress.complete===true||balance>=target);
+    const remaining=target>0?safe(progress.remaining??Math.max(0,target-balance)):0;
+    const surplus=complete?safe(progress.surplus??Math.max(0,balance-target)):0;
     const selected=selectedEssentialCategoryIds(profile);
     const reserveTx=(profile.transactions||[]).filter(tx=>tx.type==="reserve_deposit"||tx.type==="reserve_withdrawal").slice().reverse().slice(0,6);
     const explanation=runway.source==="configured"
@@ -74,12 +77,18 @@
           ?"По выбранным обязательным категориям пока недостаточно истории. Можно задать месячную сумму вручную."
           :"Выбери категории, которые действительно считаешь обязательными, или задай месячную сумму вручную. ARISE не считает все расходы обязательными автоматически.";
 
+    const targetState=target>0?`<div class="reserve-target-state ${complete?"is-complete":"is-building"}" data-reserve-target-state="${complete?"complete":"building"}" role="status">
+      <div><span>${complete?"Цель подушки достигнута":"Подушка формируется"}</span><strong>${complete?(surplus>0?`Сверх цели: ${money(surplus)}`:`Целевой баланс: ${money(target)}`):`До цели: ${money(remaining)}`}</strong></div>
+      <p>${complete?"Цель — ориентир, а не автоматическая остановка. ARISE не меняет правило пополнения без твоего решения.":"Пополнения и выводы остаются отдельными операциями, а баланс считается только по истории."}</p>
+    </div>`:"";
+
     return `<section class="card" id="reserveLifecycle" style="margin-top:16px">
       <div class="kicker">ФИНАНСОВАЯ ПОДУШКА</div>
       <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:8px">
         <div><div class="big-value">${money(balance)}</div><div class="sub" style="margin-top:6px">${target>0?`${Math.round(progress.percent||0)}% от цели ${money(target)}`:"Цель подушки пока не указана"}</div></div>
         <div style="text-align:right"><strong>${months===null?"—":`${months.toFixed(months<10?1:0)} мес.`}</strong><div class="tiny muted" style="margin-top:4px">${monthly?`при обязательных расходах ${money(monthly)}/мес.`:"нужен ориентир обязательных расходов"}</div></div>
       </div>
+      ${targetState}
       <div class="notice" style="margin-top:14px">${explanation}</div>
       <div class="actions" style="margin-top:14px"><button class="btn primary" id="reserveDepositAction">Пополнить резерв</button><button class="btn" id="reserveWithdrawAction" ${balance<=0?"disabled":""}>Вывести из резерва</button></div>
       <div class="form" style="margin-top:16px">

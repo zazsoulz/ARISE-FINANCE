@@ -2,6 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
+const {JSDOM}=require('jsdom');
 
 function runtime(){
   const context=vm.createContext({console,globalThis:null,window:null,module:undefined});
@@ -13,6 +14,31 @@ function runtime(){
 }
 
 function baseProfile(){return {settings:{currency:'RUB',reserve:{enabled:false}},categories:[],goals:[],transactions:[]};}
+
+function uiRuntime(){
+  const dom=new JSDOM('<!doctype html><div id="page"></div><div id="sheet"></div>');
+  const profile={
+    settings:{currency:'RUB',reserve:{enabled:true}},categories:[],transactions:[],
+    goals:[
+      {id:'first',name:'Первый взнос',target:900000,status:'completed'},
+      {id:'trip',name:'Путешествие',target:180000,status:'completed'}
+    ]
+  };
+  const rules={first:{destination:'reserve',monthlyAmount:12000}};
+  const core={
+    setGoalFutureRule(){},clearGoalFutureRule(){},
+    goalFutureRule:(p,goal)=>rules[goal.id]||null
+  };
+  const ctx={
+    console,globalThis:null,window:null,document:dom.window.document,ARISE_FINANCE_CORE:core,
+    activeProfile:()=>profile,money:value=>`${value} ₽`,escapeHTML:value=>String(value??''),
+    renderGoals:()=>{dom.window.document.getElementById('page').innerHTML='<section class="v3-section" data-completed-goals><div class="v3-section-title"><span>Достигнутые</span></div><div class="v3-rule" data-completed-goal-id="trip"><div><strong>Путешествие</strong></div><b>180000 ₽</b></div><div class="v3-rule" data-completed-goal-id="first"><div><strong>Первый взнос</strong></div><b>900000 ₽</b></div></section>';},
+    openModal:()=>{},closeModal:()=>{},saveState:()=>{},toast:()=>{},render:()=>{}
+  };
+  ctx.globalThis=ctx;ctx.window=ctx;vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync('goal-future-reroute-ui.js','utf8'),ctx,{filename:'goal-future-reroute-ui.js'});
+  return {ctx,dom};
+}
 
 test('completed goal future money keeps its priority and is not consumed by lower priority rules',()=>{
   const core=runtime();
@@ -108,4 +134,21 @@ test('loader keeps future reroute core and UI in canonical order',()=>{
   assert.ok(lifecycleCore>=0&&rerouteCore>lifecycleCore&&expense>rerouteCore);
   assert.ok(lifecycleUi>=0&&rerouteUi>lifecycleUi&&modal>rerouteUi);
   assert.doesNotThrow(()=>new Function(fs.readFileSync('goal-future-reroute-ui.js','utf8')));
+});
+
+test('completed goals show explicit future-flow state and bind actions by stable goal id',()=>{
+  const {ctx,dom}=uiRuntime();
+  ctx.renderGoals();
+  const configured=dom.window.document.querySelector('[data-completed-goal-id="first"]');
+  const pending=dom.window.document.querySelector('[data-completed-goal-id="trip"]');
+  assert.equal(configured.querySelector('[data-goal-future-state]').dataset.goalFutureState,'configured');
+  assert.match(configured.textContent,/Следующий поток/);
+  assert.match(configured.textContent,/12000 ₽ \/ мес\. → в резерв/);
+  assert.equal(configured.querySelector('[data-goal-future-reroute]').textContent,'Изменить маршрут');
+  assert.equal(configured.querySelector('[data-goal-future-reroute]').dataset.goalFutureReroute,'first');
+  assert.equal(pending.querySelector('[data-goal-future-state]').dataset.goalFutureState,'pending');
+  assert.match(pending.textContent,/Прежний ежемесячный взнос не закреплён/);
+  assert.equal(pending.querySelector('[data-goal-future-reroute]').textContent,'Настроить следующий поток');
+  assert.match(dom.window.document.querySelector('.goal-future-pending').textContent,/не резервирует прежний ежемесячный взнос/);
+  dom.window.close();
 });

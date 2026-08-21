@@ -154,11 +154,16 @@
       });
 
       const completed=(profile.goals||[]).filter(goal=>goal.status==="completed");
-      const completedSection=[...page.querySelectorAll(".v3-section")].find(section=>/Достигнутые/i.test(section.textContent||""));
+      const completedSection=page.querySelector("[data-completed-goals]")||[...page.querySelectorAll(".v3-section")].find(section=>/Достигнутые/i.test(section.textContent||""));
       if(completedSection){
-        completedSection.querySelectorAll(".v3-rule").forEach((row,index)=>{
-          const goal=completed[index];if(!goal)return;
-          const button=document.createElement("button");button.type="button";button.className="btn small-btn";button.textContent="Закрыть";button.onclick=()=>showGoalCloseModal(goal.id);row.appendChild(button);
+        const rows=[...completedSection.querySelectorAll(".v3-rule")];
+        completed.forEach((goal,index)=>{
+          const row=rows.find(item=>String(item.dataset.completedGoalId||"")===String(goal.id))||rows[index];
+          if(!row)return;
+          row.classList.add("goal-completed-row");
+          let actions=row.querySelector(".goal-completed-actions");
+          if(!actions){actions=document.createElement("div");actions.className="goal-completed-actions";row.appendChild(actions);}
+          const button=document.createElement("button");button.type="button";button.className="btn small-btn goal-completed-close";button.dataset.closeCompletedGoal=goal.id;button.textContent="Закрыть цель";button.setAttribute("aria-label",`Закрыть цель «${goal.name||"Цель"}»`);button.onclick=()=>showGoalCloseModal(goal.id);actions.appendChild(button);
         });
       }
 

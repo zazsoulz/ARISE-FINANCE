@@ -40,6 +40,25 @@
     return rows;
   }
 
+  function futureRulePresentation(profile,goal){
+    const rule=core.goalFutureRule(profile,goal);
+    if(!rule){
+      return {
+        configured:false,
+        state:"pending",
+        label:"Следующий поток не настроен",
+        detail:"Прежний ежемесячный взнос не закреплён за новым назначением."
+      };
+    }
+    return {
+      configured:true,
+      state:"configured",
+      label:"Следующий поток",
+      detail:`${money(rule.monthlyAmount)} / мес. → ${destinationLabel(profile,rule.destination)}`,
+      rule
+    };
+  }
+
   function showFutureRerouteModal(goalId){
     const profile=activeProfile();
     const goal=goalById(profile,goalId);
@@ -84,30 +103,37 @@
       const page=document.getElementById("page");
       if(!page)return;
       const completed=(profile.goals||[]).filter(goal=>goal.status==="completed");
-      const section=[...page.querySelectorAll(".v3-section")].find(item=>/Достигнутые/i.test(item.textContent||""));
+      const section=page.querySelector("[data-completed-goals]")||[...page.querySelectorAll(".v3-section")].find(item=>/Достигнутые/i.test(item.textContent||""));
       if(!section)return;
       const rows=[...section.querySelectorAll(".v3-rule")];
       completed.forEach((goal,index)=>{
-        const row=rows[index];if(!row)return;
-        const rule=core.goalFutureRule(profile,goal);
+        const row=rows.find(item=>String(item.dataset.completedGoalId||"")===String(goal.id))||rows[index];if(!row)return;
+        const presentation=futureRulePresentation(profile,goal);
+        row.classList.add("goal-completed-row");
         const info=document.createElement("div");
-        info.className="goal-future-rule-summary tiny muted";
-        info.textContent=rule?`${money(rule.monthlyAmount)} / мес. → ${destinationLabel(profile,rule.destination)}`:"Будущие деньги ещё не настроены";
+        info.className=`goal-future-flow is-${presentation.state}`;
+        info.dataset.goalFutureState=presentation.state;
+        const label=document.createElement("span");label.className="goal-future-flow-label";label.textContent=presentation.label;
+        const detail=document.createElement("strong");detail.className="goal-future-flow-detail";detail.textContent=presentation.detail;
+        info.append(label,detail);
         const left=row.querySelector("div")||row;left.appendChild(info);
+        let actions=row.querySelector(".goal-completed-actions");
+        if(!actions){actions=document.createElement("div");actions.className="goal-completed-actions";row.appendChild(actions);}
         const button=document.createElement("button");
         button.type="button";button.className="btn small-btn";button.dataset.goalFutureReroute=goal.id;
-        button.textContent=rule?"Изменить поток":"Будущие деньги";
+        button.textContent=presentation.configured?"Изменить маршрут":"Настроить следующий поток";
+        button.setAttribute("aria-label",`${presentation.configured?"Изменить маршрут":"Настроить следующий поток"} цели «${goal.name||"Цель"}»`);
         button.onclick=()=>showFutureRerouteModal(goal.id);
-        row.appendChild(button);
+        actions.prepend(button);
       });
       const pending=completed.filter(goal=>!core.goalFutureRule(profile,goal));
       if(pending.length){
         const notice=document.createElement("div");notice.className="notice goal-future-pending";
-        notice.textContent=`${pending.length===1?"У завершённой цели":"У завершённых целей"} не настроено направление будущих денег.`;
+        notice.textContent=`${pending.length===1?"У одной достигнутой цели":"У нескольких достигнутых целей"} следующий поток не настроен. Без отдельного правила ARISE не резервирует прежний ежемесячный взнос для нового назначения.`;
         section.insertBefore(notice,section.children[1]||null);
       }
     };
   }
 
-  root.ARISE_GOAL_FUTURE_REROUTE_UI={showFutureRerouteModal,destinationLabel,eligibleDestinations};
+  root.ARISE_GOAL_FUTURE_REROUTE_UI={showFutureRerouteModal,destinationLabel,eligibleDestinations,futureRulePresentation};
 })(typeof globalThis!=="undefined"?globalThis:window);
