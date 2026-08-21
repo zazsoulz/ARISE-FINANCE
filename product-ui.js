@@ -18,21 +18,61 @@
   function icon(name,size=18){return `<svg class="product-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;}
 
   function syncState(){
-    if(typeof navigator!=="undefined"&&navigator.onLine===false)return {kind:'offline',label:'Офлайн'};
+    if(typeof navigator!=="undefined"&&navigator.onLine===false)return {kind:'offline',label:'Офлайн',action:'Проверить сеть'};
     const sync=root.ARISE_SYNC&&root.ARISE_SYNC.lastResult?root.ARISE_SYNC.lastResult():null;
-    if(sync&&sync.status==='error')return {kind:'error',label:'Ошибка синхронизации'};
-    if(sync&&sync.status==='busy')return {kind:'syncing',label:'Синхронизация'};
-    if(sync&&sync.status==='synced')return {kind:'online',label:'Синхронизировано'};
-    return {kind:'online',label:'Онлайн'};
+    if(sync&&sync.status==='conflict')return {kind:'conflict',label:'Нужен выбор',action:'Открыть конфликты'};
+    if(sync&&sync.status==='error')return {kind:'error',label:'Ошибка синхронизации',action:'Повторить синхронизацию'};
+    if(sync&&sync.status==='busy')return {kind:'syncing',label:'Синхронизация',action:'Синхронизация выполняется'};
+    if(sync&&sync.status==='signed_out')return {kind:'local',label:'Только на устройстве',action:'Войдите, чтобы синхронизировать'};
+    if(sync&&sync.status==='synced')return {kind:'online',label:'Синхронизировано',action:'Синхронизировать сейчас'};
+    return {kind:'online',label:'Онлайн',action:'Синхронизировать сейчас'};
   }
-  function updateSyncIndicator(){
-    const el=typeof document!=="undefined"&&document.querySelector('.product-sync');
+
+  function applySyncIndicator(el,next=syncState()){
     if(!el)return;
-    const next=syncState();
     el.className=`product-sync ${next.kind}`;
-    el.title=next.label;
+    el.title=next.action||next.label;
+    el.setAttribute('aria-label',next.action||next.label);
+    el.setAttribute('aria-live','polite');
+    el.disabled=next.kind==='syncing';
     const label=el.querySelector('span');if(label)label.textContent=next.label;
   }
+
+  function updateSyncIndicator(){
+    const el=typeof document!=="undefined"&&document.querySelector('.product-sync');
+    applySyncIndicator(el);
+  }
+
+  async function retrySync(){
+    const next=syncState();
+    if(next.kind==='syncing')return false;
+    if(next.kind==='offline'){
+      if(typeof toast==='function')toast('Нет сети. Изменения сохранены на устройстве и синхронизируются после подключения.');
+      return false;
+    }
+    if(next.kind==='local'){
+      if(typeof toast==='function')toast('Войди в аккаунт, чтобы синхронизировать данные между устройствами.');
+      return false;
+    }
+    if(next.kind==='conflict'){
+      const conflictUI=root.ARISE_SYNC_CONFLICT_UI;
+      if(conflictUI&&typeof conflictUI.showConflicts==='function')conflictUI.showConflicts();
+      else if(typeof toast==='function')toast('Есть конфликт изменений. Открой конфликт синхронизации и выбери версию данных.');
+      return false;
+    }
+    const sync=root.ARISE_SYNC;
+    if(!sync||typeof sync.pushAll!=="function")return false;
+    try{
+      await sync.pushAll();
+      updateSyncIndicator();
+      return true;
+    }catch(error){
+      updateSyncIndicator();
+      if(typeof toast==='function')toast('Не удалось синхронизировать. Локальные изменения сохранены — можно повторить позже.');
+      return false;
+    }
+  }
+
   function modalIsOpen(){const modal=typeof document!=="undefined"&&document.getElementById('modal');return !!(modal&&modal.classList.contains('open'));}
 
   root.renderNav=function(){
@@ -45,7 +85,7 @@
     const profile=typeof activeProfile==='function'?activeProfile():null;
     const letter=(account.name||'П').trim().slice(0,1).toUpperCase();
     const sync=syncState();
-    return `<header class="topbar product-topbar"><div class="product-brand"><div class="logo">ARISE <span>FINANCE</span></div><div class="product-profile-name">${escapeHTML(profile&&profile.name||'Финансовый профиль')}</div></div><div class="user"><div class="product-sync ${sync.kind}" title="${escapeHTML(sync.label)}"><i></i><span>${escapeHTML(sync.label)}</span></div><button class="avatar product-avatar" data-page="settings" aria-label="Настройки профиля">${account.avatar?`<img src="${escapeHTML(account.avatar)}" alt="">`:escapeHTML(letter)}</button></div></header>`;
+    return `<header class="topbar product-topbar"><div class="product-brand"><div class="logo">ARISE <span>FINANCE</span></div><div class="product-profile-name">${escapeHTML(profile&&profile.name||'Финансовый профиль')}</div></div><div class="user"><button type="button" class="product-sync ${sync.kind}" title="${escapeHTML(sync.action||sync.label)}" aria-label="${escapeHTML(sync.action||sync.label)}" ${sync.kind==='syncing'?'disabled':''}><i></i><span>${escapeHTML(sync.label)}</span></button><button class="avatar product-avatar" data-page="settings" aria-label="Настройки профиля">${account.avatar?`<img src="${escapeHTML(account.avatar)}" alt="">`:escapeHTML(letter)}</button></div></header>`;
   };
 
   function runQuick(action){if(modalIsOpen())return false;action();return true;}
@@ -81,7 +121,13 @@
     root.addEventListener('online',updateSyncIndicator);
     root.addEventListener('offline',updateSyncIndicator);
     root.addEventListener('arise:sync',updateSyncIndicator);
+    root.addEventListener('click',event=>{
+      const button=event.target&&event.target.closest?event.target.closest('.product-sync'):null;
+      if(!button)return;
+      event.preventDefault();
+      retrySync();
+    });
   }
 
-  root.ARISE_PRODUCT_UI={icon,syncState,updateSyncIndicator,modalIsOpen,runQuick,bindQuickActions};
+  root.ARISE_PRODUCT_UI={icon,syncState,applySyncIndicator,updateSyncIndicator,retrySync,modalIsOpen,runQuick,bindQuickActions};
 })(typeof globalThis!=="undefined"?globalThis:window);
