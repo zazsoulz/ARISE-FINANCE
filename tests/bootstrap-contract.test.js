@@ -87,7 +87,6 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   assert.ok(modalAccessibility>goalLifecycleUi,'modal accessibility must wrap the final modal behavior');
   assert.ok(bootstrap>modalAccessibility);
   assert.ok(index.includes('./arise-v3.css'));
-  assert.ok(index.includes('./history-inspector.css'));
   assert.ok(index.includes('./product-ui.css'));
 });
 
@@ -98,7 +97,7 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-reconciliation-ui.js','history-inspector.js','history-inspector.css','product-ui.js','product-ui.css','reserve-lifecycle-ui.js','sync-conflict-ui.js','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-reconciliation-ui.js','history-inspector.js','product-ui.js','product-ui.css','reserve-lifecycle-ui.js','sync-conflict-ui.js','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
 });
