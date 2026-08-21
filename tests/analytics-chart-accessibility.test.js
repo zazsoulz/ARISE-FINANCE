@@ -3,6 +3,13 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 
+const analyticsUi=fs.readFileSync('analytics-ui.js','utf8');
+
+test('analytics chart accessibility stays inside the canonical analytics UI layer',()=>{
+  assert.equal(fs.existsSync('analytics-chart-accessibility.js'),false,'retired analytics chart override must stay removed');
+  assert.match(analyticsUi,/ARISE_ANALYTICS_CHART_ACCESSIBILITY/);
+});
+
 test('analytics chart exposes keyboard-accessible monthly source data',()=>{
   const dom=new JSDOM('<div id="page"><section class="analytics-card"><div class="analytics-pulse"></div></section></div>',{runScripts:'outside-only'});
   const {window}=dom;
@@ -17,7 +24,7 @@ test('analytics chart exposes keyboard-accessible monthly source data',()=>{
   window.formatMonth=value=>value;
   window.money=value=>`${value} ₽`;
   window.renderAnalytics=()=>{};
-  window.eval(fs.readFileSync('analytics-chart-accessibility.js','utf8'));
+  window.eval(analyticsUi);
   window.ARISE_ANALYTICS_CHART_ACCESSIBILITY.enhanceAnalyticsChart();
 
   const details=window.document.querySelector('.analytics-chart-details');
