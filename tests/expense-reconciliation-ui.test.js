@@ -6,120 +6,20 @@ const {JSDOM}=require('jsdom');
 
 function boot({richBalance=30000,partialBalance=5000}={}){
   const dom=new JSDOM('<!doctype html><div id="sheet"></div>');
-  const profile={
-    settings:{currency:'RUB'},
-    categories:[
-      {id:'rich',name:'Крупные покупки',enabled:true,balance:richBalance},
-      {id:'partial',name:'Повседневное',enabled:true,balance:partialBalance}
-    ],transactions:[]
-  };
+  const profile={settings:{currency:'RUB'},categories:[{id:'rich',name:'Крупные покупки',enabled:true,balance:richBalance},{id:'partial',name:'Повседневное',enabled:true,balance:partialBalance}],transactions:[]};
   const unallocated=20000;
-  const fundingApi={
-    expenseFunding(p,{amount,categoryId}){
-      const total=Math.max(0,Math.round(Number(amount)||0));
-      const category=categoryId?p.categories.find(c=>String(c.id)===String(categoryId)):null;
-      const categoryAmount=category?Math.min(total,category.balance):0;
-      const unallocatedAmount=Math.min(total-categoryAmount,unallocated);
-      const uncontrolledAmount=Math.max(0,total-categoryAmount-unallocatedAmount);
-      return {
-        controlledAmount:categoryAmount+unallocatedAmount,
-        categoryControlledAmount:categoryAmount,
-        unallocatedControlledAmount:unallocatedAmount,
-        uncontrolledAmount,
-        fundingBreakdown:{category:categoryAmount,unallocated:unallocatedAmount,uncontrolled:uncontrolledAmount}
-      };
-    }
-  };
-
+  const fundingApi={expenseFunding(p,{amount,categoryId}){const total=Math.max(0,Math.round(Number(amount)||0));const category=categoryId?p.categories.find(c=>String(c.id)===String(categoryId)):null;const categoryAmount=category?Math.min(total,category.balance):0;const unallocatedAmount=Math.min(total-categoryAmount,unallocated);const uncontrolledAmount=Math.max(0,total-categoryAmount-unallocatedAmount);return {controlledAmount:categoryAmount+unallocatedAmount,categoryControlledAmount:categoryAmount,unallocatedControlledAmount:unallocatedAmount,uncontrolledAmount,fundingBreakdown:{category:categoryAmount,unallocated:unallocatedAmount,uncontrolled:uncontrolledAmount}};}};
   let lastSaved=null;
-  function renderBase(){
-    const amount=Math.max(0,Number(dom.window.document.getElementById('expenseAmount')?.value)||0);
-    const categoryId=dom.window.document.getElementById('expenseCategory')?.value||null;
-    const preview=dom.window.document.getElementById('expensePreview');
-    const save=dom.window.document.getElementById('saveExpense');
-    if(!preview||!save)return;
-    const funding=fundingApi.expenseFunding(profile,{amount,categoryId});
-    if(amount<=0){preview.innerHTML='';save.disabled=false;return;}
-    if(funding.uncontrolledAmount>0){
-      preview.innerHTML=`<div class="notice warning">Не объяснено ${funding.uncontrolledAmount}<label><input id="acceptUncontrolledExpense" type="checkbox">Принять</label></div>`;
-      save.disabled=true;
-      const accept=dom.window.document.getElementById('acceptUncontrolledExpense');
-      accept.onchange=()=>{save.disabled=!accept.checked;};
-    }else{
-      preview.innerHTML='<div class="notice">Расход полностью покрывается.</div>';
-      save.disabled=false;
-    }
-  }
-
-  const ctx={
-    console,document:dom.window.document,window:null,globalThis:null,
-    ARISE_FINANCE_CORE:{monthStats:()=>({}),availableFree:()=>unallocated},
-    ARISE_EXPENSE_FUNDING:fundingApi,
-    activeProfile:()=>profile,today:()=> '2026-08-20',money:v=>`${v} ₽`,escapeHTML:v=>String(v??''),
-    historyTransaction:()=>'<div class="row"><div class="row-left"></div><div class="row-right"></div></div>',
-    createExpenseTransaction(p,data){
-      const funding=fundingApi.expenseFunding(p,{amount:data.amount,categoryId:data.categoryId||null});
-      const tx={id:'tx-1',type:'expense',amount:data.amount,currency:'RUB',uncontrolledAmount:funding.uncontrolledAmount,fundingBreakdown:{...funding.fundingBreakdown}};
-      lastSaved=tx;return tx;
-    },
-    showExpenseModal(){
-      dom.window.document.getElementById('sheet').innerHTML=`
-        <input id="expenseAmount" type="number">
-        <select id="expenseCategory"><option value="">Нераспределено</option><option value="rich">Крупные покупки</option><option value="partial">Повседневное</option></select>
-        <input id="expenseDate" type="date" value="2026-08-20">
-        <div id="expensePreview"></div><button id="saveExpense">Сохранить</button>`;
-      const amount=dom.window.document.getElementById('expenseAmount');
-      const category=dom.window.document.getElementById('expenseCategory');
-      const date=dom.window.document.getElementById('expenseDate');
-      amount.oninput=renderBase;category.onchange=renderBase;date.onchange=renderBase;renderBase();
-    }
-  };
-  ctx.window=ctx;ctx.globalThis=ctx;
-  vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync('expense-reconciliation-ui.js','utf8'),ctx,{filename:'expense-reconciliation-ui.js'});
-  return {ctx,dom,profile,lastSaved:()=>lastSaved};
+  function renderBase(){const amount=Math.max(0,Number(dom.window.document.getElementById('expenseAmount')?.value)||0);const categoryId=dom.window.document.getElementById('expenseCategory')?.value||null;const preview=dom.window.document.getElementById('expensePreview');const save=dom.window.document.getElementById('saveExpense');if(!preview||!save)return;const funding=fundingApi.expenseFunding(profile,{amount,categoryId});if(amount<=0){preview.innerHTML='';save.disabled=false;return;}if(funding.uncontrolledAmount>0){preview.innerHTML=`<div class="notice warning">Не объяснено ${funding.uncontrolledAmount}<label><input id="acceptUncontrolledExpense" type="checkbox">Принять</label></div>`;save.disabled=true;const accept=dom.window.document.getElementById('acceptUncontrolledExpense');accept.onchange=()=>{save.disabled=!accept.checked;};}else{preview.innerHTML='<div class="notice">Расход полностью покрывается.</div>';save.disabled=false;}}
+  const ctx={console,document:dom.window.document,window:null,globalThis:null,ARISE_FINANCE_CORE:{monthStats:()=>({}),availableFree:()=>unallocated},ARISE_EXPENSE_FUNDING:fundingApi,activeProfile:()=>profile,today:()=> '2026-08-20',money:v=>`${v} ₽`,escapeHTML:v=>String(v??''),historyTransaction:()=>'<div class="row"><div class="row-left"></div><div class="row-right"></div></div>',createExpenseTransaction(p,data){const funding=fundingApi.expenseFunding(p,{amount:data.amount,categoryId:data.categoryId||null});const tx={id:'tx-1',type:'expense',amount:data.amount,currency:'RUB',uncontrolledAmount:funding.uncontrolledAmount,fundingBreakdown:{...funding.fundingBreakdown}};lastSaved=tx;return tx;},showExpenseModal(){dom.window.document.getElementById('sheet').innerHTML=`<input id="expenseAmount" type="number"><select id="expenseCategory"><option value="">Нераспределено</option><option value="rich">Крупные покупки</option><option value="partial">Повседневное</option></select><input id="expenseDate" type="date" value="2026-08-20"><div id="expensePreview"></div><button id="saveExpense">Сохранить</button>`;const amount=dom.window.document.getElementById('expenseAmount');const category=dom.window.document.getElementById('expenseCategory');const date=dom.window.document.getElementById('expenseDate');amount.oninput=renderBase;category.onchange=renderBase;date.onchange=renderBase;renderBase();}};
+  ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('expense-edit-ui.js','utf8'),ctx,{filename:'expense-edit-ui.js'});return {ctx,dom,profile,lastSaved:()=>lastSaved};
 }
+function enterAmount(dom,value){const input=dom.window.document.getElementById('expenseAmount');input.value=String(value);input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));}
 
-function enterAmount(dom,value){
-  const input=dom.window.document.getElementById('expenseAmount');
-  input.value=String(value);
-  input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
-}
+test('reconciliation suggests a confirmed source and selecting it clears uncontrolled acceptance',()=>{const {ctx,dom}=boot();ctx.showExpenseModal();enterAmount(dom,30000);const document=dom.window.document;const candidate=document.querySelector('[data-expense-source-option="rich"]');assert.ok(candidate,'fully covering category should be offered');assert.match(document.getElementById('expenseSourceOptions').textContent,/объяснить расход полностью/i);assert.ok(document.getElementById('acceptUncontrolledExpense'));candidate.click();assert.equal(document.getElementById('expenseCategory').value,'rich');assert.equal(document.getElementById('acceptUncontrolledExpense'),null);assert.equal(document.getElementById('saveExpense').disabled,false);});
 
-test('reconciliation suggests a confirmed source and selecting it clears uncontrolled acceptance',()=>{
-  const {ctx,dom}=boot();
-  ctx.showExpenseModal();
-  enterAmount(dom,30000);
-  const document=dom.window.document;
-  const candidate=document.querySelector('[data-expense-source-option="rich"]');
-  assert.ok(candidate,'fully covering category should be offered');
-  assert.match(document.getElementById('expenseSourceOptions').textContent,/объяснить расход полностью/i);
-  assert.ok(document.getElementById('acceptUncontrolledExpense'));
-  candidate.click();
-  assert.equal(document.getElementById('expenseCategory').value,'rich');
-  assert.equal(document.getElementById('acceptUncontrolledExpense'),null);
-  assert.equal(document.getElementById('saveExpense').disabled,false);
-});
+test('reconciliation explicitly says when no confirmed source can fully cover the expense',()=>{const {ctx,dom}=boot({richBalance:5000,partialBalance:3000});ctx.showExpenseModal();enterAmount(dom,50000);const panel=dom.window.document.getElementById('expenseSourceOptions');assert.ok(panel);assert.match(panel.textContent,/Полного подтверждённого источника нет/i);assert.ok(dom.window.document.getElementById('acceptUncontrolledExpense'));});
 
-test('reconciliation explicitly says when no confirmed source can fully cover the expense',()=>{
-  const {ctx,dom}=boot({richBalance:5000,partialBalance:3000});
-  ctx.showExpenseModal();
-  enterAmount(dom,50000);
-  const panel=dom.window.document.getElementById('expenseSourceOptions');
-  assert.ok(panel);
-  assert.match(panel.textContent,/Полного подтверждённого источника нет/i);
-  assert.ok(dom.window.document.getElementById('acceptUncontrolledExpense'));
-});
+test('explicit uncontrolled acceptance is persisted in expense reconciliation metadata',()=>{const {ctx,dom,profile}=boot({richBalance:0,partialBalance:0});ctx.showExpenseModal();enterAmount(dom,30000);const accept=dom.window.document.getElementById('acceptUncontrolledExpense');assert.ok(accept);accept.checked=true;accept.dispatchEvent(new dom.window.Event('change',{bubbles:true}));const tx=ctx.createExpenseTransaction(profile,{amount:30000,categoryId:null});assert.equal(tx.uncontrolledAmount,10000);assert.equal(tx.reconciliationStatus,'accepted_uncontrolled');assert.equal(tx.fundingBreakdown.acceptedUncontrolled,10000);assert.match(tx.reconciliationAcceptedAt,/^\d{4}-\d{2}-\d{2}T/);});
 
-test('explicit uncontrolled acceptance is persisted in expense reconciliation metadata',()=>{
-  const {ctx,dom,profile}=boot({richBalance:0,partialBalance:0});
-  ctx.showExpenseModal();
-  enterAmount(dom,30000);
-  const accept=dom.window.document.getElementById('acceptUncontrolledExpense');
-  assert.ok(accept);accept.checked=true;accept.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
-  const tx=ctx.createExpenseTransaction(profile,{amount:30000,categoryId:null});
-  assert.equal(tx.uncontrolledAmount,10000);
-  assert.equal(tx.reconciliationStatus,'accepted_uncontrolled');
-  assert.equal(tx.fundingBreakdown.acceptedUncontrolled,10000);
-  assert.match(tx.reconciliationAcceptedAt,/^\d{4}-\d{2}-\d{2}T/);
-});
+test('reconciliation UI stays consolidated in expense editor runtime',()=>{assert.equal(fs.existsSync('expense-reconciliation-ui.js'),false);const source=fs.readFileSync('expense-edit-ui.js','utf8');assert.match(source,/ARISE_EXPENSE_RECONCILIATION_UI/);});
