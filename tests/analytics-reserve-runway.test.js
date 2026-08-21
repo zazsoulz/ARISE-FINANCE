@@ -3,12 +3,17 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
-const source=fs.readFileSync('analytics-reserve-runway.js','utf8');
+const source=fs.readFileSync('analytics-ui.js','utf8');
 
 function boot(){
   let receivedCategoryIds=[];
   const context={
     globalThis:null,
+    ARISE_ANALYTICS:{
+      months:()=>[],monthly:()=>({income:0,expenses:0,freeEnd:0,incomeCount:0,uncontrolled:0}),
+      series:()=>[],incomeSources:()=>[],goals:()=>[],expenseComposition:()=>[],lifetime:()=>({months:0,averageMonthlyIncome:0,averageMonthlyExpenses:0,maxIncome:0,incomeTransactions:0})
+    },
+    ARISE_GOAL_COMPLETION_ANALYTICS:{summary:()=>({total:0,goals:[]})},
     ARISE_FINANCE_CORE:{reserveBalance:()=>120000},
     ARISE_RESERVE_ANALYTICS:{
       reserveRunway:({reserveBalance,monthlyEssentialSpend})=>monthlyEssentialSpend>0
@@ -25,14 +30,14 @@ function boot(){
           :{status:'no_categories',monthlyAverage:0,includedTransactionCount:0};
       }
     },
-    renderAnalytics:()=>{},
-    activeProfile:()=>({settings:{reserve:{}}}),
-    document:{querySelectorAll:()=>[]},
-    money:value=>`${value}`
+    renderNav:()=>'',renderAnalytics:()=>{},
+    activeProfile:()=>({settings:{reserve:{}},goals:[]}),activeMonth:'2026-08',
+    document:{querySelectorAll:()=>[],getElementById:()=>null,querySelector:()=>null},
+    money:value=>`${value}`,formatMonth:value=>value,formatDate:value=>value,escapeHTML:value=>String(value??'')
   };
   context.globalThis=context;
   vm.createContext(context);
-  new vm.Script(source,{filename:'analytics-reserve-runway.js'}).runInContext(context);
+  new vm.Script(source,{filename:'analytics-ui.js'}).runInContext(context);
   return {context,getReceivedCategoryIds:()=>receivedCategoryIds};
 }
 
@@ -60,6 +65,10 @@ test('analytics reserve target reads the canonical targetBalance setting',()=>{
   assert.equal(context.ARISE_ANALYTICS_RESERVE_RUNWAY.reserveTarget({settings:{reserve:{targetBalance:300000}}}),300000);
 });
 
-test('module parses as standalone browser JavaScript',()=>{
+test('reserve runway UI is consolidated into analytics-ui runtime',()=>{
+  const index=fs.readFileSync('index.html','utf8');
+  assert.equal(fs.existsSync('analytics-reserve-runway.js'),false);
+  assert.equal(index.includes('./analytics-reserve-runway.js'),false);
+  assert.match(source,/ARISE_ANALYTICS_RESERVE_RUNWAY/);
   assert.doesNotThrow(()=>new Function(source));
 });
