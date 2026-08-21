@@ -16,10 +16,10 @@ function editor({type='percentage',percent=10,fixed=0,priority=3,limit='',enable
   return {querySelector(selector){return controls[selector]||null;}};
 }
 function load(){
-  const context={console,Intl,document:{querySelectorAll(){return [];},createElement(){return {};}}};
+  const context={console,Intl,document:{querySelectorAll(){return [];},querySelector(){return null;},getElementById(){return null;},createElement(){return {};}}};
   context.globalThis=context; context.window=context;
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync('category-settings-consequences.js','utf8'),context);
+  vm.runInContext(fs.readFileSync('product-ui.js','utf8'),context);
   return context.ARISE_CATEGORY_SETTINGS_CONSEQUENCES;
 }
 
@@ -44,7 +44,11 @@ test('disabled category explicitly preserves existing history',()=>{
   assert.match(info.text,/Уже сохранённые операции не меняются/);
 });
 
-test('module is loaded after the final distribution UI layer',()=>{
+test('category consequences live in canonical product UI and retired layer stays absent',()=>{
   const index=fs.readFileSync('index.html','utf8');
-  assert.ok(index.indexOf('./category-settings-consequences.js')>index.indexOf('./arise-v3.js'));
+  const product=fs.readFileSync('product-ui.js','utf8');
+  assert.equal(fs.existsSync('category-settings-consequences.js'),false);
+  assert.equal(index.includes('./category-settings-consequences.js'),false);
+  assert.equal(product.includes('ARISE_CATEGORY_SETTINGS_CONSEQUENCES'),true);
+  assert.ok(index.indexOf('./product-ui.js')>index.indexOf('./arise-v3.js'));
 });
