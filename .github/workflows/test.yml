@@ -44,7 +44,6 @@ jobs:
           node --check expense-reconciliation-ui.js
           node --check expense-edit-ui.js
           node --check history-inspector.js
-          node --check history-expense-edit-hook.js
           node --check settings-currency-guard.js
           node --check product-ui.js
           node --check reserve-lifecycle-ui.js
