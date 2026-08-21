@@ -1,13 +1,13 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `1ae866b6cc70d1e2b0019cbe53259e17a133d6a9` (2026-08-20).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `08678b450fe2a2e5f5e6d6f6ef08e33658ed76aa` (2026-08-21).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
 ## Executive summary
-ARISE is beyond foundational ledger/auth/sync work. `main` contains a ledger-backed financial core, account auth, isolated financial profiles, Supabase persistence, local-first mutation outboxes, conflict detection and explicit local-vs-server resolution UI, mixed-currency support, transaction-derived history/analytics, funded-goal lifecycle protection, completed-goal future-funds rerouting, explicit create/edit expense reconciliation, transaction-backed reserve lifecycle, consequence previews for manual income-plan edits, onboarding templates, completed-goal lifecycle analytics, stale-FX disclosure, explicit essential-expense reserve runway inputs, and the A1-V3 product shell.
+ARISE is beyond foundational ledger/auth/sync work. `main` contains a ledger-backed financial core, account auth, isolated financial profiles, Supabase persistence, local-first mutation outboxes, conflict detection and explicit local-vs-server resolution UI, mixed-currency support, transaction-derived history/analytics, funded-goal lifecycle protection, completed-goal future-funds rerouting, explicit create/edit expense reconciliation, transaction-backed reserve lifecycle, quantitative consequence previews for manual income-plan edits, onboarding templates, completed-goal lifecycle analytics, stale-FX disclosure, explicit essential-expense reserve runway inputs, historical/backdated FX policy disclosure, recoverable finance-profile archiving, reserve transaction drill-down, accessible analytics chart data, actionable global sync states, actionable bootstrap recovery and a production-equivalent standalone preview path.
 
-The previous lifecycle-correctness and compatibility-delete P0 backlog is closed. The highest-value remaining work is real beta-environment verification, operational Supabase hardening, compatibility-shell consolidation and final product polish. Vercel remains intentionally outside the active development loop; GitHub Actions, branch/PR review and standalone/local artifacts remain the verification path until stable beta.
+The lifecycle-correctness and compatibility-delete backlog is closed. The highest-value remaining work is now real beta-environment verification, operational Supabase hardening, compatibility-shell consolidation and final cross-screen product polish. Vercel remains intentionally outside the active development loop; GitHub Actions, branch/PR review and standalone/local artifacts remain the verification path until stable beta.
 
 ## Financial core
 - ✅ One effective financial calculation source of truth is used at runtime.
@@ -26,7 +26,8 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Category sync uses persistent mutation queues and conflict protection.
 - ✅ Legacy category tombstones are migrated one-way into the unified entity outbox; no direct compatibility delete write-path remains.
 - ✅ New-profile onboarding offers explicit starter templates instead of silently imposing one canonical budget.
-- 🟡 Category settings still need a final visual/usability pass and clearer consequence language around priority/limit changes.
+- ✅ Category settings explain practical consequences of rule/priority/limit changes instead of presenting controls without context.
+- 🟡 Category settings still deserve final real-device usability polish after shell consolidation.
 
 ## Reserve
 - ✅ Reserve is separate from categories and ledger-backed.
@@ -35,7 +36,8 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Reserve-to-goal funding preserves money conservation and transfer semantics through sync.
 - ✅ Reserve lifecycle UI exposes deposit/withdrawal/history-oriented actions without mutating a standalone balance counter.
 - ✅ Runway uses an explicit user-controlled model: manual monthly essential spend or explicitly selected essential categories; ARISE no longer silently treats all spending as essential.
-- 🟡 Reserve lifecycle analytics can still receive richer transaction drill-down and completion-state polish.
+- ✅ Reserve history supports transaction drill-down without creating a second balance source.
+- 🟡 Reserve completion-state presentation can still receive final visual polish.
 
 ## Goals
 - ✅ Goals participate in automatic allocation by priority/deadline/pace.
@@ -57,7 +59,8 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Goal/reserve/category allocation share the canonical engine.
 - ✅ FX conversion preserves original currency plus immutable base-equivalent metadata.
 - ✅ Manual plan edits surface consequence explanations instead of silently changing goal/reserve pace.
-- 🟡 Consequence previews can become more quantitative and personalized as beta UX is refined.
+- ✅ Reserve impact is quantified when a trustworthy target/progress calculation is available.
+- 🟡 Further personalization should only be added where the calculation remains deterministic and understandable.
 
 ## Expenses and reconciliation
 - ✅ Every expense is an individual stable-ID transaction.
@@ -84,8 +87,9 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Profile switching/local-vault isolation have regression coverage.
 - ✅ Base-currency changes are guarded after history exists.
 - ✅ New-profile onboarding supports explicit templates and a clean-start path.
+- ✅ Profiles containing financial history use recoverable archive-first deletion semantics; local data is not discarded if server archival cannot be confirmed.
+- ✅ Archived profiles can be restored and rehydrated from the server.
 - 🟡 Profile copy/template refinement still needs final UX polish.
-- 🟡 Destructive profile deletion needs final backup/recovery review before beta.
 
 ## Supabase persistence
 - ✅ Account data, finance profiles, categories, goals and transactions persist remotely.
@@ -110,6 +114,7 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Remote-delete vs local-edit conflict cases have a dedicated matrix.
 - ✅ Explicit local-vs-server conflict resolution UI exists and is locked into runtime loader order/tests.
 - ✅ A consolidated two-device regression matrix covers offline edit, concurrent edit, delete-vs-edit, ambiguous retry and both conflict-resolution choices.
+- ✅ Global sync status distinguishes offline/local-only/syncing/error/conflict/synced and exposes safe retry or conflict-resolution actions.
 - 🟡 A final real two-device matrix still needs to be run against the beta Supabase environment.
 
 ## Currency
@@ -118,7 +123,7 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Immutable FX snapshot/base-equivalent values support mixed-currency analytics.
 - ✅ Offline FX cache plus Supabase-backed rate persistence/source exist.
 - ✅ Stale cached-rate age/source is disclosed in UI without blocking offline-first work.
-- 🟡 Historical-rate policy for imports and newly entered backdated operations should be documented explicitly.
+- ✅ Historical/backdated FX behavior is explicitly documented and disclosed: ARISE freezes the rate available at save time unless a verified historical-rate provider is introduced later.
 
 ## History and analytics
 - ✅ Ledger operations remain the source of truth.
@@ -127,8 +132,9 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ History filters cover period/type/category/goal/source/currency/completed goals.
 - ✅ Transaction inspector exposes reconciliation/currency/allocation details.
 - ✅ Completed-goal lifecycle analytics are present and ledger-derived.
-- 🟡 Charts still need final touch inspection, accessibility and drill-down polish.
-- 🟡 Reserve lifecycle analytics deserve a dedicated transaction drill-down.
+- ✅ Reserve history has dedicated transaction drill-down.
+- ✅ Financial-pulse chart data has a keyboard-accessible semantic table fallback/drill-down.
+- 🟡 Charts still need final real-device touch inspection and interaction polish beyond the accessible data fallback.
 
 ## Visual system and interactions
 - ✅ A1-V3 dark premium visual language is integrated.
@@ -136,8 +142,11 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Quick income/expense actions and sync/offline status are visible.
 - ✅ Responsive/focus/touch/modal behavior has regression coverage.
 - ✅ Motion is restrained and respects reduced-motion preferences.
-- 🟡 Run a final dead-primary-action inventory after each cleanup because compatibility markup remains underneath override layers.
-- 🟡 Final icons, empty/loading/error states and chart interactions need one coherent beta polish pass.
+- ✅ Production primary actions have dedicated smoke coverage.
+- ✅ Bootstrap failure has an actionable recovery state, including a distinct offline explanation and retry action.
+- ✅ Global sync/error/conflict states are actionable instead of passive indicators.
+- 🟡 Empty/loading/error/retry behavior still needs a final screen-by-screen consistency pass.
+- 🟡 Final icon and touch-interaction polish remains before beta sign-off.
 
 ## Architecture
 - ✅ Financial, product, account/auth, sync, currency, analytics and UI responsibilities are separated into modules.
@@ -145,6 +154,7 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 - ✅ Runtime-integrity checks enforce the canonical financial core at startup.
 - ✅ GitHub Actions cover syntax, financial regressions, loader/bootstrap and headless UI contracts.
 - ✅ Browser runtime is fenced from direct legacy Supabase-table access.
+- ✅ Standalone preview is assembled from the canonical runtime manifest rather than a divergent hand-maintained loader.
 - 🟡 `app-shell.html` remains a large compatibility artifact and should eventually be physically simplified.
 - 🟡 CSS/JS override layers should be consolidated after behavior stabilizes.
 
@@ -153,20 +163,18 @@ The previous lifecycle-correctness and compatibility-delete P0 backlog is closed
 1. Run the real end-to-end two-device sync matrix against the beta Supabase environment, including offline edit, concurrent edit, delete-vs-edit, retry after ambiguous failure and explicit conflict resolution.
 2. Perform isolated migration replay plus backup/restore rehearsal against a disposable/beta environment; do not rewrite applied production migration history.
 3. Enable leaked-password protection in Supabase Auth and re-run the security/auth-recovery/RLS advisor checks before beta sign-off.
-4. Review destructive financial-profile deletion against backup/recovery guarantees before exposing it as a beta-safe action.
 
 ### P1 — product completeness
-1. Expand reserve lifecycle analytics with dedicated transaction drill-down.
-2. Refine onboarding/profile templates and category-setting consequence copy after real-device use.
-3. Document historical FX-rate policy for imports and newly entered backdated operations.
-4. Make manual allocation consequence previews more quantitative where the calculation is trustworthy and useful.
+1. Refine onboarding/profile templates after real-device use.
+2. Polish completed-goal closure/rerouting presentation and reserve completion-state presentation.
+3. Keep consequence previews quantitative only where the calculation is deterministic and useful; avoid decorative forecasts.
 
 ### P2 — beta polish
 1. Consolidate legacy shell/override layers and remove dead code/buttons.
-2. Upgrade chart interaction/accessibility/drill-down.
-3. Review loading/error/offline/retry states across every screen.
-4. Run standalone mobile/desktop browser verification.
-5. Perform a final dead-primary-action inventory and accessibility pass.
+2. Review empty/loading/error/offline/retry states screen by screen for consistent actions and copy.
+3. Finish real-device chart/touch interaction polish and final icon pass.
+4. Run standalone mobile/desktop browser verification using the canonical manifest-based preview artifact.
+5. Perform the final dead-primary-action inventory and accessibility pass after consolidation.
 
 ## Definition of beta-ready core
 Do not reintroduce Vercel as an active dependency until all of the following are true:
