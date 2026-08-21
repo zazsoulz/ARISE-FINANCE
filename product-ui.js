@@ -55,13 +55,13 @@
       return false;
     }
     if(next.kind==='conflict'){
-      if(typeof root.ARISE_SYNC_CONFLICT_UI!=="undefined"&&root.ARISE_SYNC_CONFLICT_UI.open)root.ARISE_SYNC_CONFLICT_UI.open();
-      else if(typeof toast==='function')toast('Есть конфликт изменений. Открой настройки синхронизации и выбери версию данных.');
+      const conflictUI=root.ARISE_SYNC_CONFLICT_UI;
+      if(conflictUI&&typeof conflictUI.showConflicts==='function')conflictUI.showConflicts();
+      else if(typeof toast==='function')toast('Есть конфликт изменений. Открой конфликт синхронизации и выбери версию данных.');
       return false;
     }
     const sync=root.ARISE_SYNC;
     if(!sync||typeof sync.pushAll!=="function")return false;
-    updateSyncIndicator();
     try{
       await sync.pushAll();
       updateSyncIndicator();
@@ -71,13 +71,6 @@
       if(typeof toast==='function')toast('Не удалось синхронизировать. Локальные изменения сохранены — можно повторить позже.');
       return false;
     }
-  }
-
-  function bindSyncIndicator(scope=document){
-    const el=scope&&scope.querySelector?scope.querySelector('.product-sync'):null;
-    if(!el)return;
-    applySyncIndicator(el);
-    el.onclick=()=>{retrySync();};
   }
 
   function modalIsOpen(){const modal=typeof document!=="undefined"&&document.getElementById('modal');return !!(modal&&modal.classList.contains('open'));}
@@ -128,7 +121,13 @@
     root.addEventListener('online',updateSyncIndicator);
     root.addEventListener('offline',updateSyncIndicator);
     root.addEventListener('arise:sync',updateSyncIndicator);
+    root.addEventListener('click',event=>{
+      const button=event.target&&event.target.closest?event.target.closest('.product-sync'):null;
+      if(!button)return;
+      event.preventDefault();
+      retrySync();
+    });
   }
 
-  root.ARISE_PRODUCT_UI={icon,syncState,applySyncIndicator,updateSyncIndicator,retrySync,bindSyncIndicator,modalIsOpen,runQuick,bindQuickActions};
+  root.ARISE_PRODUCT_UI={icon,syncState,applySyncIndicator,updateSyncIndicator,retrySync,modalIsOpen,runQuick,bindQuickActions};
 })(typeof globalThis!=="undefined"?globalThis:window);
