@@ -8,7 +8,7 @@ const accountSettings=fs.readFileSync('account-settings.js','utf8');
 const profileLifecycle=fs.readFileSync('profile-lifecycle.js','utf8');
 const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
-const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
+const retired=['renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
 
 function retirementRegistry(){
   const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\n  \];/);
@@ -17,6 +17,7 @@ function retirementRegistry(){
 }
 
 test('canonical settings owns markup while physical compatibility source remains staged',()=>{
+  assert.doesNotMatch(shell,/function\s+renderTopbar\s*\(/,'topbar should stay physically retired');
   const registry=retirementRegistry();
   for(const name of retired) assert.match(registry,new RegExp(`\\["${name}"`),`${name} should stay retired by the production loader`);
   assert.match(index,/html=retireLegacyRenderers\(html\);/);

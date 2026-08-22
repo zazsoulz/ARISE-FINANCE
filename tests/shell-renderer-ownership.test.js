@@ -22,10 +22,13 @@ const stagedShellRenderers=[
   {name:'renderSettings',legacy:/function\s+renderSettings\s*\(/,canonical:/root\.renderSettings\s*=\s*renderSettings/,owner:'settings-ui.js',source:settingsUi}
 ];
 
-test('compatibility shell renderers have explicit canonical owners',()=>{
+test('canonical screen renderers keep explicit external owners through physical retirement',()=>{
   for(const entry of ownership){
-    assert.match(shell,entry.legacy,`${entry.name} legacy shell definition missing; update ownership map when it is physically retired`);
     assert.match(entry.source,entry.canonical,`${entry.name} is not owned by ${entry.owner}`);
+  }
+  assert.doesNotMatch(shell,/function\s+renderTopbar\s*\(/,'renderTopbar should be physically retired');
+  for(const entry of ownership.filter(entry=>entry.name!=='renderTopbar')){
+    assert.match(shell,entry.legacy,`${entry.name} should remain staged until its dedicated physical-retirement PR`);
   }
 });
 

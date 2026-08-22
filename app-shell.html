@@ -2494,60 +2494,6 @@ document
 
 
 /* =========================================================
-   TOP BAR
-========================================================= */
-
-function renderTopbar(){
-  const account =
-    state.account;
-
-  const letter =
-    (
-      account.name ||
-      "П"
-    )
-    .trim()
-    .slice(0,1)
-    .toUpperCase();
-
-  return `
-    <header class="topbar">
-
-      <div class="logo">
-        ARISE
-        <span>FINANCE</span>
-      </div>
-
-      <div class="user">
-
-        <div class="avatar">
-          ${
-            account.avatar
-            ?
-            `<img
-              src="${escapeHTML(account.avatar)}"
-              alt=""
-            >`
-            :
-            escapeHTML(letter)
-          }
-        </div>
-
-        <span>
-          ${escapeHTML(
-            account.name ||
-            "Пользователь"
-          )}
-        </span>
-
-      </div>
-
-    </header>
-  `;
-}
-
-
-/* =========================================================
    NAV
 ========================================================= */
 
