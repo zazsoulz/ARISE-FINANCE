@@ -10,17 +10,18 @@ const navMarker=`/* =========================================================\n 
 const homeMarker=`/* =========================================================\n   HOME\n========================================================= */`;
 const goalCardMarker=`/* =========================================================\n   GOAL CARD\n========================================================= */`;
 
-test('production loader retires legacy topbar nav and home from the effective compatibility shell',()=>{
-  assert.match(shell,/function\s+renderTopbar\s*\(/,'source compatibility shell should still contain topbar until physical source retirement');
-  assert.match(shell,/function\s+renderNav\s*\(/,'source compatibility shell should still contain nav until physical source retirement');
-  assert.match(shell,/function\s+renderHome\s*\(/,'source compatibility shell should still contain home until physical source retirement');
+test('production loader retires legacy topbar nav home and income from the effective compatibility shell',()=>{
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome']){
+    assert.match(shell,new RegExp(`function\\s+${name}\\s*\\(`),`source compatibility shell should still contain ${name} until physical source retirement`);
+  }
   assert.match(index,/function\s+retireLegacyRenderer\s*\(/,'loader retirement helper missing');
   assert.equal(index.includes('retireLegacyRenderer(html,"renderTopbar",`/* =========================================================\\n   NAV\\n========================================================= */`)'),true,'renderTopbar is not retired before canonical runtime boot');
   assert.equal(index.includes('retireLegacyRenderer(html,"renderNav",`/* =========================================================\\n   HOME\\n========================================================= */`)'),true,'renderNav is not retired before canonical runtime boot');
   assert.equal(index.includes('retireLegacyRenderer(html,"renderHome",`/* =========================================================\\n   GOAL CARD\\n========================================================= */`)'),true,'renderHome is not retired before canonical runtime boot');
-  assert.match(ariseV3,/root\.renderTopbar\s*=\s*function\s*\(/,'canonical topbar owner missing');
-  assert.match(ariseV3,/root\.renderNav\s*=\s*function\s*\(/,'canonical nav owner missing');
-  assert.match(ariseV3,/root\.renderHome\s*=\s*function\s*\(/,'canonical home owner missing');
+  assert.equal(index.includes('retireLegacyRenderer(html,"renderIncome","function incomeRow(tx){")'),true,'renderIncome is not retired before canonical runtime boot');
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome']){
+    assert.match(ariseV3,new RegExp(`root\\.${name}\\s*=\\s*function\\s*\\(`),`canonical ${name} owner missing`);
+  }
 });
 
 test('renderer retirement helper fails closed when a compatibility boundary drifts',()=>{
@@ -38,11 +39,16 @@ test('renderer retirement helper fails closed when a compatibility boundary drif
   const followingGoalCard=shell.indexOf(goalCardMarker,homeStart);
   assert.ok(homeStart>=0,'legacy home missing before source retirement');
   assert.ok(followingGoalCard>homeStart,'home/goal-card boundary order drifted');
+  const incomeStart=shell.indexOf('function renderIncome(){');
+  const followingIncomeRow=shell.indexOf('function incomeRow(tx){',incomeStart);
+  assert.ok(incomeStart>=0,'legacy income missing before source retirement');
+  assert.ok(followingIncomeRow>incomeStart,'income/income-row boundary order drifted');
 });
 
-test('topbar nav and home are retired in staged compatibility cleanup',()=>{
-  assert.equal((index.match(/retireLegacyRenderer\(html,/g)||[]).length,3);
-  for(const name of ['renderTopbar','renderNav','renderHome']){
+test('topbar nav home and income are retired in staged compatibility cleanup',()=>{
+  assert.equal((index.match(/retireLegacyRenderer\(html,/g)||[]).length,4);
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome']){
     assert.equal(index.includes(`retireLegacyRenderer(html,"${name}"`),true,`${name} retirement missing`);
   }
+  assert.equal(index.includes('retireLegacyRenderer(html,"renderGoals"'),false,'goals should remain for a separate reviewed retirement step');
 });
