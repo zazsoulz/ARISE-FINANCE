@@ -56,7 +56,7 @@ jobs:
           independence=independence_path.read_text()
           old=re.compile(r"test\('canonical renderer owners define direct replacements while physical shell duplicates still exist',\(\)=>\{[\s\S]*?\n\}\);\n\n",re.M)
           replacement="""test('canonical renderer owners stay direct replacements through physical shell retirement',()=>{\n  for(const {name,source} of canonical){\n    const n=escaped(name);\n    const direct=name==='renderSettings'?new RegExp(`root\\\\.${n}\\\\s*=\\\\s*${n}`):new RegExp(`root\\\\.${n}\\\\s*=\\\\s*function\\\\s*\\\\(`);\n    assert.match(source,direct,`${name} is not a direct canonical replacement`);\n  }\n  assert.doesNotMatch(shell,/function\\s+renderTopbar\\s*\\(/,'physically retired topbar returned to compatibility shell');\n});\n\n"""
-          independence2,n=old.subn(replacement,independence,count=1)
+          independence2,n=old.subn(lambda _match: replacement,independence,count=1)
           if n!=1:
               raise SystemExit('shell independence contract replacement failed')
           independence_path.write_text(independence2)
@@ -65,7 +65,7 @@ jobs:
           ownership=ownership_path.read_text()
           old=re.compile(r"test\('compatibility shell renderers have explicit canonical owners',\(\)=>\{[\s\S]*?\n\}\);\n\n",re.M)
           replacement="""test('canonical screen renderers keep explicit external owners through physical retirement',()=>{\n  for(const entry of ownership){\n    assert.match(entry.source,entry.canonical,`${entry.name} is not owned by ${entry.owner}`);\n  }\n  assert.doesNotMatch(shell,/function\\s+renderTopbar\\s*\\(/,'renderTopbar should be physically retired');\n  for(const entry of ownership.filter(entry=>entry.name!=='renderTopbar')){\n    assert.match(shell,entry.legacy,`${entry.name} should remain staged until its dedicated physical-retirement PR`);\n  }\n});\n\n"""
-          ownership2,n=old.subn(replacement,ownership,count=1)
+          ownership2,n=old.subn(lambda _match: replacement,ownership,count=1)
           if n!=1:
               raise SystemExit('shell ownership contract replacement failed')
           ownership_path.write_text(ownership2)
