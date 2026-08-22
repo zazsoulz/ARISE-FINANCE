@@ -45,9 +45,14 @@ test('cross-renderer composition stays allowed during staged retirement',()=>{
   assert.doesNotMatch(analyticsUi,/oldRenderAnalytics\s*=\s*root\.renderAnalytics\b/i);
 });
 
-test('settings remains explicitly excluded because account settings still decorates the shell base renderer',()=>{
+test('settings composition is centralized while the legacy base markup remains staged',()=>{
   const accountSettings=fs.readFileSync('account-settings.js','utf8');
+  const profileLifecycle=fs.readFileSync('profile-lifecycle.js','utf8');
+  const settingsUi=fs.readFileSync('settings-ui.js','utf8');
   assert.match(shell,/function\s+renderSettings\s*\(/);
-  assert.match(accountSettings,/root\.renderSettings\s*=\s*function\s*\(/);
+  assert.doesNotMatch(accountSettings,/root\.renderSettings\s*=/);
+  assert.doesNotMatch(profileLifecycle,/root\.renderSettings\s*=/);
+  assert.match(settingsUi,/const\s+baseRenderSettings\s*=\s*root\.renderSettings/);
+  assert.match(settingsUi,/root\.renderSettings\s*=\s*renderSettings/);
   assert.equal(canonical.some(entry=>entry.name==='renderSettings'),false);
 });
