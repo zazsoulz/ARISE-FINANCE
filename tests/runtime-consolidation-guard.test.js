@@ -11,7 +11,8 @@ const retiredRuntime=[
   'canonical-ui-overrides.js',
   'goal-history-ui.js',
   'reserve-history-drilldown.js',
-  'currency-freshness-ui.js'
+  'currency-freshness-ui.js',
+  'screen-state-ui.js'
 ];
 
 const canonicalStyles=[
