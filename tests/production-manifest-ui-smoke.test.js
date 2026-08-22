@@ -98,3 +98,35 @@ test('production shell primary navigation and quick actions are live',async()=>{
 
   dom.window.close();
 });
+
+test('screen-level primary financial actions open their canonical workflows',async()=>{
+  const {dom,context}=await bootProductionRuntime();
+  const document=dom.window.document;
+
+  execute(context,"activePage='income'; render();",'open-income-page.js');
+  const incomeStart=document.getElementById('incomeStart');
+  assert.ok(incomeStart,'distribution page primary income action missing');
+  incomeStart.click();
+  assert.ok(document.getElementById('incomeAmount'),'distribution income action is dead');
+  execute(context,'closeModal()','close-income-page-modal.js');
+
+  execute(context,"activePage='goals'; render();",'open-goals-page.js');
+  const createGoal=document.getElementById('createGoal');
+  assert.ok(createGoal,'goals primary create action missing');
+  createGoal.click();
+  assert.ok(document.getElementById('goalName'),'goal create action is dead');
+  execute(context,'closeModal()','close-goal-modal.js');
+
+  execute(context,"activePage='history'; render();",'open-history-page.js');
+  const historyIncome=document.getElementById('historyIncome');
+  const historyExpense=document.getElementById('historyExpense');
+  assert.ok(historyIncome,'history income action missing');
+  assert.ok(historyExpense,'history expense action missing');
+  historyIncome.click();
+  assert.ok(document.getElementById('incomeAmount'),'history income action is dead');
+  execute(context,'closeModal()','close-history-income.js');
+  historyExpense.click();
+  assert.ok(document.getElementById('expenseAmount'),'history expense action is dead');
+
+  dom.window.close();
+});
