@@ -18,6 +18,47 @@
     const current=profile&&profile.settings&&profile.settings.currency||"RUB";
     return !nextCurrency||nextCurrency===current||!hasFinancialHistory(profile);
   }
+  function active(){
+    try{return typeof activeProfile==="function"?activeProfile():null;}catch(_){return null;}
+  }
+  function lockCurrencyControl(profile){
+    const select=typeof document!=="undefined"&&document.getElementById("settingsCurrency");
+    if(!select||!profile)return;
+    const locked=hasFinancialHistory(profile);
+    select.disabled=locked;
+    select.value=profile.settings&&profile.settings.currency||"RUB";
+    select.dataset.currencyLocked=locked?"true":"false";
+    const field=select.closest&&select.closest(".field");
+    if(field){
+      const old=field.querySelector("[data-settings-currency-note]");
+      if(old)old.remove();
+      const note=document.createElement("div");
+      note.dataset.settingsCurrencyNote="true";
+      note.className=`tiny ${locked?"warning":"muted"}`;
+      note.style.marginTop="7px";
+      note.textContent=locked
+        ?"Базовая валюта зафиксирована после появления финансовой истории. Исходная валюта операций хранится отдельно."
+        :"Базовую валюту можно менять, пока в профиле нет финансовой истории.";
+      field.appendChild(note);
+    }
+  }
+  function protectLegacySave(profile){
+    const button=typeof document!=="undefined"&&document.getElementById("saveProfileSettings");
+    const select=typeof document!=="undefined"&&document.getElementById("settingsCurrency");
+    if(!button||!select||!profile||button.__ariseCurrencyGuard)return;
+    const original=button.onclick;
+    button.onclick=event=>{
+      const current=profile.settings&&profile.settings.currency||"RUB";
+      const requested=select.value;
+      if(!canChangeBaseCurrency(profile,requested)){
+        select.value=current;
+        lockCurrencyControl(profile);
+        if(typeof toast==="function")toast("Базовую валюту нельзя менять после появления финансовой истории.");
+      }
+      return typeof original==="function"?original.call(button,event):undefined;
+    };
+    button.__ariseCurrencyGuard=true;
+  }
   function currentSession(){
     const remote=root.ARISE_SUPABASE;
     return remote&&remote.currentSession&&remote.currentSession();
@@ -180,9 +221,11 @@
 
   root.renderSettings=function(){
     previousRenderSettings();
+    const profile=active();
     const createButton=document.getElementById("newProfile");if(createButton)createButton.onclick=createProfileFromSettings;
     document.querySelectorAll("[data-delete-profile]").forEach(button=>{button.onclick=()=>removeProfile(button.dataset.deleteProfile);});
-    attachEditButtons();attachArchiveButton();
+    attachEditButtons();attachArchiveButton();lockCurrencyControl(profile);protectLegacySave(profile);
   };
-  root.ARISE_PROFILE_LIFECYCLE={createProfile:createProfileFromSettings,editProfile,renameProfile,removeProfile,restoreArchivedProfile,showArchivedProfiles,hasFinancialHistory,canChangeBaseCurrency};
+  root.ARISE_PROFILE_LIFECYCLE={createProfile:createProfileFromSettings,editProfile,renameProfile,removeProfile,restoreArchivedProfile,showArchivedProfiles,hasFinancialHistory,canChangeBaseCurrency,lockCurrencyControl,protectLegacySave};
+  root.ARISE_SETTINGS_CURRENCY_GUARD={lockCurrencyControl,protectLegacySave};
 })(typeof globalThis!=="undefined"?globalThis:window);

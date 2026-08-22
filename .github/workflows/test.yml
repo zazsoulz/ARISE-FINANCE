@@ -41,7 +41,6 @@ jobs:
           node --check arise-v3.js
           node --check expense-edit-ui.js
           node --check history-inspector.js
-          node --check settings-currency-guard.js
           node --check product-ui.js
           node --check reserve-lifecycle-ui.js
           node --check sync-conflict-ui.js
