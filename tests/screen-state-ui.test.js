@@ -16,7 +16,7 @@ function boot(page){
   for(const name of ['renderIncome','renderGoals','renderHistory','renderAnalytics']){
     window[name]=function(){window.document.getElementById('page').innerHTML='<div class="empty">Пока здесь пусто.</div><div class="empty">Вторичный пустой блок.</div>';};
   }
-  new vm.Script(fs.readFileSync('screen-state-ui.js','utf8'),{filename:'screen-state-ui.js'}).runInContext(dom.getInternalVMContext());
+  new vm.Script(fs.readFileSync('product-ui.js','utf8'),{filename:'product-ui.js'}).runInContext(dom.getInternalVMContext());
   return {dom,calls};
 }
 
@@ -73,4 +73,12 @@ test('enhancing the same page twice does not duplicate actions or status setup',
   assert.equal(empties[0].dataset.stateSemantics,'true');
   assert.equal(empties[1].dataset.stateSemantics,'true');
   dom.window.close();
+});
+
+test('screen state behavior lives in product-ui and the standalone layer stays retired',()=>{
+  const product=fs.readFileSync('product-ui.js','utf8');
+  const index=fs.readFileSync('index.html','utf8');
+  assert.equal(product.includes('ARISE_SCREEN_STATE_UI'),true);
+  assert.equal(index.includes('screen-state-ui.js'),false);
+  assert.equal(fs.existsSync('screen-state-ui.js'),false);
 });
