@@ -10,8 +10,16 @@ const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
 const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
 
+function retirementRegistry(){
+  const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\n  \];/);
+  assert.ok(match,'central retirement registry missing');
+  return match[1];
+}
+
 test('canonical settings owns markup while physical compatibility source remains staged',()=>{
-  for(const name of retired) assert.match(index,new RegExp(`retireLegacyRenderer\\(html,\\"${name}\\"`),`${name} should stay retired by the production loader`);
+  const registry=retirementRegistry();
+  for(const name of retired) assert.match(registry,new RegExp(`\\["${name}"`),`${name} should stay retired by the production loader`);
+  assert.match(index,/html=retireLegacyRenderers\(html\);/);
   assert.match(shell,/function renderSettings\(\)\{/,'physical compatibility source remains until helper extraction/source cleanup');
   assert.match(settingsUi,/function renderSettings\(\)\{/);
   assert.match(settingsUi,/id="settingsCurrency"/);
@@ -40,7 +48,8 @@ test('canonical settings coordinator loads after enhancers and before bootstrap-
 });
 
 test('legacy settings renderer is excluded without removing shared compatibility helpers yet',()=>{
-  assert.match(index,/retireLegacyRenderer\(html,"renderSettings","function categoryEditor\(category\)\{"\)/);
+  const registry=retirementRegistry();
+  assert.match(registry,/\["renderSettings","function categoryEditor\(category\)\{"\]/);
   for(const helper of ['function categoryEditor(category){','function saveCategoriesFromUI(){','function exportData(){','function importData(event){','function resetData(){']){
     assert.equal(shell.includes(helper),true,`${helper} must remain available until helper extraction is reviewed separately`);
   }
