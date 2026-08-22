@@ -7,36 +7,9 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
-    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: agent/physically-remove-legacy-topbar
-          fetch-depth: 0
-      - name: Remove obsolete integration eager render
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path=Path('financial-integration.js')
-          source=path.read_text()
-          target='  if(typeof root.render==="function") root.render();\n'
-          if source.count(target)!=1:
-              raise SystemExit('financial integration eager-render boundary drifted')
-          path.write_text(source.replace(target,''))
-          PY
-          git checkout origin/main -- .github/workflows/test.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --check
-          git commit -m "Defer initial render to canonical bootstrap"
-          git push origin HEAD:agent/physically-remove-legacy-topbar
-
   test:
     runs-on: ubuntu-latest
     steps:

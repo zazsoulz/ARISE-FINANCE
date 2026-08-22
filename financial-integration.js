@@ -358,5 +358,4 @@
     return `<div class="row"><div class="row-left"><strong class="negative">- ${money(tx.amount,tx.currency)}</strong><div class="tiny muted">${escapeHTML(tx.categoryName||"Свободные деньги")} · ${escapeHTML(tx.source||"Без описания")} · ${formatDate(tx.date)}</div></div><div class="row-right"><div class="pill">Расход</div></div></div>`;
   };
 
-  if(typeof root.render==="function") root.render();
 })(typeof globalThis!=="undefined"?globalThis:window);
