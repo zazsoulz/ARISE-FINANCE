@@ -13,7 +13,17 @@ const homeMarker=`/* =========================================================\n
 const goalCardMarker=`/* =========================================================\n   GOAL CARD\n========================================================= */`;
 const goalModalMarker=`/* =========================================================\n   GOAL MODAL\n========================================================= */`;
 const settingsMarker=`/* =========================================================\n   SETTINGS\n========================================================= */`;
-const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
+const canonical=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
+const boundaries={
+  renderTopbar:navMarker,
+  renderNav:homeMarker,
+  renderHome:goalCardMarker,
+  renderIncome:'function incomeRow(tx){',
+  renderGoals:goalModalMarker,
+  renderHistory:'function historyTransaction(tx){',
+  renderAnalytics:settingsMarker,
+  renderSettings:'function categoryEditor(category){'
+};
 
 function retirementRegistry(){
   const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\n  \];/);
@@ -21,37 +31,53 @@ function retirementRegistry(){
   return match[1];
 }
 
-test('production loader retires canonical screen duplicates from the effective compatibility shell',()=>{
-  for(const name of retired){
-    assert.match(shell,new RegExp(`function\\s+${name}\\s*\\(`),`source compatibility shell should still contain ${name} until physical source retirement`);
+function registryNames(){
+  return [...retirementRegistry().matchAll(/\["(render[A-Za-z]+)"/g)].map(match=>match[1]);
+}
+
+function sourceHas(name){
+  return new RegExp(`function\\s+${name}\\s*\\(`).test(shell);
+}
+
+test('canonical screen renderers have external owners independent of compatibility source',()=>{
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
+    assert.match(ariseV3,new RegExp(`root\\.${name}\\s*=\\s*function\\s*\\(`),`${name} canonical owner missing`);
   }
+  assert.match(analyticsUi,/root\.renderAnalytics\s*=\s*function\s*\(/,'renderAnalytics canonical owner missing');
+  assert.match(settingsUi,/root\.renderSettings\s*=\s*renderSettings/,'renderSettings canonical owner missing');
+});
+
+test('only legacy renderers still physically present are retired from the effective compatibility shell',()=>{
   assert.match(index,/function\s+retireLegacyRenderer\s*\(/,'loader retirement helper missing');
   assert.match(index,/function\s+retireLegacyRenderers\s*\(/,'central retirement pass missing');
   assert.match(index,/html=retireLegacyRenderers\(html\);/,'loader must apply the central retirement pass');
-  const registry=retirementRegistry();
-  for(const name of retired) assert.match(registry,new RegExp(`\\["${name}"`),`${name} retirement missing from registry`);
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']) assert.match(ariseV3,new RegExp(`root\\.${name}\\s*=\\s*function\\s*\\(`));
-  assert.match(analyticsUi,/root\.renderAnalytics\s*=\s*function\s*\(/);
-  assert.match(settingsUi,/root\.renderSettings\s*=\s*renderSettings/);
+
+  const physicallyPresent=canonical.filter(sourceHas);
+  assert.deepEqual(registryNames(),physicallyPresent,'retirement registry must track exactly the legacy renderers that still exist in app-shell.html');
 });
 
-test('renderer retirement helper fails closed when a compatibility boundary drifts',()=>{
+test('renderer retirement boundaries fail closed while a legacy renderer still exists',()=>{
   assert.match(index,/renderer boundary not found/);
   assert.match(index,/renderer end boundary not found/);
-  const checks=[
-    ['renderTopbar',navMarker],['renderNav',homeMarker],['renderHome',goalCardMarker],['renderIncome','function incomeRow(tx){'],
-    ['renderGoals',goalModalMarker],['renderHistory','function historyTransaction(tx){'],['renderAnalytics',settingsMarker],['renderSettings','function categoryEditor(category){']
-  ];
-  for(const [name,next] of checks){
-    const start=shell.indexOf(`function ${name}(){`),end=shell.indexOf(next,start);
-    assert.ok(start>=0,`legacy ${name} missing before source retirement`);
+
+  for(const name of registryNames()){
+    const next=boundaries[name];
+    assert.ok(next,`${name} boundary contract missing`);
+    const start=shell.indexOf(`function ${name}(){`);
+    const end=shell.indexOf(next,start);
+    assert.ok(start>=0,`${name} listed for retirement but missing from compatibility source`);
     assert.ok(end>start,`${name} retirement boundary drifted`);
   }
 });
 
-test('all canonical shell screen duplicates are retired in staged compatibility cleanup',()=>{
-  const registry=retirementRegistry();
-  const names=[...registry.matchAll(/\["(render[A-Za-z]+)"/g)].map(match=>match[1]);
-  assert.deepEqual(names,retired);
+test('physical renderer cleanup can proceed without weakening canonical ownership',()=>{
+  const names=registryNames();
+  assert.equal(new Set(names).size,names.length,'retirement registry contains duplicates');
+  assert.ok(names.every(name=>canonical.includes(name)),'retirement registry contains a non-canonical screen renderer');
   assert.equal((index.match(/html=retireLegacyRenderers\(html\);/g)||[]).length,1,'central retirement pass should execute exactly once');
+
+  for(const name of canonical){
+    if(sourceHas(name)) assert.ok(names.includes(name),`${name} still exists physically but is not retired at runtime`);
+    else assert.ok(!names.includes(name),`${name} was physically removed but remains in the retirement registry`);
+  }
 });
