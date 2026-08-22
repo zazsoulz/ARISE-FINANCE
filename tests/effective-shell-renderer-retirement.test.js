@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const index=fs.readFileSync('index.html','utf8');
 const shell=fs.readFileSync('app-shell.html','utf8');
 const ariseV3=fs.readFileSync('arise-v3.js','utf8');
+const analyticsUi=fs.readFileSync('analytics-ui.js','utf8');
 
 const navMarker=`/* =========================================================\n   NAV\n========================================================= */`;
 const homeMarker=`/* =========================================================\n   HOME\n========================================================= */`;
@@ -24,9 +25,10 @@ test('production loader retires canonical screen duplicates from the effective c
   assert.equal(index.includes('retireLegacyRenderer(html,"renderGoals",`/* =========================================================\\n   GOAL MODAL\\n========================================================= */`)'),true,'renderGoals is not retired before canonical runtime boot');
   assert.equal(index.includes('retireLegacyRenderer(html,"renderHistory","function historyTransaction(tx){")'),true,'renderHistory is not retired before canonical runtime boot');
   assert.equal(index.includes('retireLegacyRenderer(html,"renderAnalytics",`/* =========================================================\\n   SETTINGS\\n========================================================= */`)'),true,'renderAnalytics is not retired before canonical runtime boot');
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']){
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
     assert.match(ariseV3,new RegExp(`root\\.${name}\\s*=\\s*function\\s*\\(`),`canonical ${name} owner missing`);
   }
+  assert.match(analyticsUi,/root\.renderAnalytics\s*=\s*function\s*\(/,'canonical renderAnalytics owner missing from analytics-ui');
 });
 
 test('renderer retirement helper fails closed when a compatibility boundary drifts',()=>{
