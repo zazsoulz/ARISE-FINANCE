@@ -59,6 +59,7 @@ jobs:
           node --check auth-ui.js
           node --check account-settings.js
           node --check profile-lifecycle.js
+          node --check settings-ui.js
           node --check onboarding.js
           node --check runtime-integrity.js
           node --check financial-bootstrap.js

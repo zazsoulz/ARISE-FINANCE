@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
 const source=fs.readFileSync('account-settings.js','utf8');
+const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
 test('account settings layer exposes canonical account controls',()=>{
   for(const token of [
@@ -26,8 +27,11 @@ test('password change requires a nontrivial password and never persists plaintex
   assert.ok(source.includes('delete state.account.password'));
 });
 
-test('account settings augment financial settings instead of replacing them',()=>{
-  assert.ok(source.includes('const originalRenderSettings=root.renderSettings'));
-  assert.ok(source.includes('originalRenderSettings();'));
+test('account settings augment financial settings through the canonical coordinator',()=>{
+  assert.doesNotMatch(source,/root\.renderSettings\s*=/);
+  assert.ok(source.includes('function enhanceSettings()'));
   assert.ok(source.includes('data-canonical-account-card'));
+  assert.match(settingsUi,/ARISE_ACCOUNT_SETTINGS/);
+  assert.match(settingsUi,/enhanceAccountSettings\(\)/);
+  assert.match(settingsUi,/baseRenderSettings\(\)/);
 });

@@ -17,7 +17,9 @@ function boot({withHistory}){
       dom.window.document.getElementById('saveProfileSettings').onclick=()=>{profile.settings.currency=select.value;};
     }
   };
-  ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('profile-lifecycle.js','utf8'),ctx,{filename:'profile-lifecycle.js'});
+  ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync('profile-lifecycle.js','utf8'),ctx,{filename:'profile-lifecycle.js'});
+  vm.runInContext(fs.readFileSync('settings-ui.js','utf8'),ctx,{filename:'settings-ui.js'});
   return {ctx,dom,profile,toast:()=>toastText};
 }
 

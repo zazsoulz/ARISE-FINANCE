@@ -1,9 +1,6 @@
 (function(root){
   "use strict";
 
-  const originalRenderSettings=root.renderSettings;
-  if(typeof originalRenderSettings!=="function") return;
-
   function syncText(){
     if(typeof navigator!=="undefined"&&navigator.onLine===false) return "Офлайн · изменения сохраняются на устройстве";
     const result=root.ARISE_SYNC&&root.ARISE_SYNC.lastResult?root.ARISE_SYNC.lastResult():null;
@@ -95,8 +92,8 @@
     activePage="home";renderAuth();
   }
 
-  root.renderSettings=function(){
-    originalRenderSettings();const page=document.getElementById("page");const grid=page&&page.querySelector(".grid");if(!grid)return;
+  function enhanceSettings(){
+    const page=document.getElementById("page");const grid=page&&page.querySelector(".grid");if(!grid)return;
     for(const kicker of grid.querySelectorAll(".kicker")){if((kicker.textContent||"").trim()==="АККАУНТ"){const owner=kicker.closest(".c12,.c8,.c7,.c6,.c5,.c4,.c3");if(owner)owner.remove();}}
     grid.insertAdjacentHTML("afterbegin",accountCard());
     document.getElementById("canonicalAccountSave").onclick=saveAccount;
@@ -104,7 +101,8 @@
     document.getElementById("canonicalSyncNow").onclick=syncNow;
     document.getElementById("canonicalPasswordChange").onclick=showPasswordChange;
     document.getElementById("canonicalLogout").onclick=logout;
-  };
+  }
 
+  root.ARISE_ACCOUNT_SETTINGS={enhanceSettings,saveAccount,uploadAvatar,syncNow,showPasswordChange,logout};
   if(root.addEventListener)root.addEventListener("arise:sync",event=>{const detail=event.detail||{};if(detail.status==="synced")syncStatus("Синхронизировано");else if(detail.status==="error")syncStatus("Ошибка синхронизации",true);});
 })(typeof globalThis!=="undefined"?globalThis:window);
