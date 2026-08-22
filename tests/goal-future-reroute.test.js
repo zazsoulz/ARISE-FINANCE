@@ -130,10 +130,10 @@ test('loader keeps future reroute core before lifecycle UI and retires standalon
   const lifecycleCore=index.indexOf('./goal-lifecycle-core.js');
   const rerouteCore=index.indexOf('./goal-future-reroute-core.js');
   const expense=index.indexOf('./expense-reconciliation.js');
+  const productUi=index.indexOf('./product-ui.js');
   const lifecycleUi=index.indexOf('./goal-lifecycle-ui.js');
-  const modal=index.indexOf('./modal-accessibility.js');
   assert.ok(lifecycleCore>=0&&rerouteCore>lifecycleCore&&expense>rerouteCore);
-  assert.ok(lifecycleUi>=0&&modal>lifecycleUi);
+  assert.ok(productUi>=0&&lifecycleUi>productUi);
   assert.equal(index.includes('./goal-future-reroute-ui.js'),false);
   assert.equal(fs.existsSync('goal-future-reroute-ui.js'),false);
   const lifecycleSource=fs.readFileSync('goal-lifecycle-ui.js','utf8');
