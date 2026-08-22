@@ -58,7 +58,6 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   const reserveLifecycleUi=index.indexOf('./reserve-lifecycle-ui.js');
   const syncConflictUi=index.indexOf('./sync-conflict-ui.js');
   const goalLifecycleUi=index.indexOf('./goal-lifecycle-ui.js');
-  const modalAccessibility=index.indexOf('./modal-accessibility.js');
   const bootstrap=index.indexOf('./financial-bootstrap.js');
   assert.ok(core>=0);
   assert.ok(goalLifecycleCore>core,'goal lifecycle core must extend the canonical financial core');
@@ -84,8 +83,10 @@ test('loader wires financial, lifecycle, reconciliation, analytics, product, syn
   assert.ok(reserveLifecycleUi>productUi,'reserve lifecycle UI must load after its domain model and product shell');
   assert.ok(syncConflictUi>reserveLifecycleUi,'conflict resolution UI must wrap the final product topbar');
   assert.ok(goalLifecycleUi>syncConflictUi,'goal lifecycle UI must follow sync conflict controls');
-  assert.ok(modalAccessibility>goalLifecycleUi,'modal accessibility must wrap the final modal behavior');
-  assert.ok(bootstrap>modalAccessibility);
+  assert.ok(bootstrap>goalLifecycleUi,'bootstrap must remain after all product lifecycle UI');
+  const productUiSource=fs.readFileSync('product-ui.js','utf8');
+  assert.match(productUiSource,/ARISE_MODAL_ACCESSIBILITY/,'modal accessibility must live in the canonical product UI layer');
+  assert.equal(index.includes('./modal-accessibility.js'),false,'retired modal accessibility runtime must stay out of loader');
   assert.ok(index.includes('./arise-v3.css'));
   assert.ok(index.includes('./product-ui.css'));
 });
@@ -97,9 +98,10 @@ test('index inline bootstrap JavaScript parses',()=>{
 });
 
 test('runtime files exist',()=>{
-  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-edit-ui.js','history-inspector.js','product-ui.js','product-ui.css','reserve-lifecycle-ui.js','sync-conflict-ui.js','goal-lifecycle-ui.js','modal-accessibility.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
+  for(const path of ['currency-engine.js','financial-core.js','goal-lifecycle-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js','arise-v3.css','expense-edit-ui.js','history-inspector.js','product-ui.js','product-ui.css','reserve-lifecycle-ui.js','sync-conflict-ui.js','goal-lifecycle-ui.js','sync-outbox.js','local-account-store.js','sync-engine.js','sync-conflict-policy.js','sync-pull.js','sync-conflict-hardening.js','financial-bootstrap.js']){
     assert.equal(fs.existsSync(path),true,path+' missing');
   }
+  assert.equal(fs.existsSync('modal-accessibility.js'),false,'retired modal accessibility runtime should stay removed');
   assert.equal(fs.existsSync('expense-reconciliation-ui.js'),false,'retired expense reconciliation UI should stay removed');
 });
 
