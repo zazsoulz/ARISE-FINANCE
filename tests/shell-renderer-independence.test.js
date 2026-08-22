@@ -26,13 +26,13 @@ test('canonical renderer owners do not capture their own legacy shell implementa
   }
 });
 
-test('canonical renderer owners define direct replacements while physical shell duplicates still exist',()=>{
+test('canonical renderer owners stay direct replacements through physical shell retirement',()=>{
   for(const {name,source} of canonical){
     const n=escaped(name);
-    assert.match(shell,new RegExp(`function\\s+${n}\\s*\\(`),`${name} physical legacy definition unexpectedly disappeared; retire source in a dedicated PR`);
     const direct=name==='renderSettings'?new RegExp(`root\\.${n}\\s*=\\s*${n}`):new RegExp(`root\\.${n}\\s*=\\s*function\\s*\\(`);
     assert.match(source,direct,`${name} is not a direct canonical replacement`);
   }
+  assert.doesNotMatch(shell,/function\s+renderTopbar\s*\(/,'physically retired topbar returned to compatibility shell');
 });
 
 test('cross-renderer composition stays allowed during staged retirement',()=>{
