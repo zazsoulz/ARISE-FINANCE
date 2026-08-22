@@ -8,11 +8,8 @@ function boot({withHistory}){
   const dom=new JSDOM('<!doctype html><div id="page"></div>');
   const profile={settings:{currency:'RUB'},transactions:withHistory?[{id:'t1',type:'income',amount:1000}]:[],goals:[]};
   let toastText='';
-  const lifecycle={
-    hasFinancialHistory:p=>!!((p.transactions||[]).length||(p.goals||[]).some(g=>Number(g.current||g.ledgerStart||0)>0)),
-    canChangeBaseCurrency:(p,next)=>!next||next===(p.settings.currency||'RUB')||!((p.transactions||[]).length)
-  };
-  const ctx={console,document:dom.window.document,window:null,globalThis:null,ARISE_PROFILE_LIFECYCLE:lifecycle,
+  const ctx={console,document:dom.window.document,window:null,globalThis:null,
+    state:{profiles:[],activeProfileId:null},
     activeProfile:()=>profile,toast:text=>{toastText=text;},
     renderSettings:()=>{
       dom.window.document.getElementById('page').innerHTML='<div class="field"><label>Основная валюта</label><select id="settingsCurrency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div><button id="saveProfileSettings">Сохранить</button>';
@@ -20,7 +17,7 @@ function boot({withHistory}){
       dom.window.document.getElementById('saveProfileSettings').onclick=()=>{profile.settings.currency=select.value;};
     }
   };
-  ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('settings-currency-guard.js','utf8'),ctx,{filename:'settings-currency-guard.js'});
+  ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('profile-lifecycle.js','utf8'),ctx,{filename:'profile-lifecycle.js'});
   return {ctx,dom,profile,toast:()=>toastText};
 }
 
@@ -38,4 +35,11 @@ test('empty profile can still change base currency from legacy settings',()=>{
   assert.equal(select.disabled,false);assert.equal(select.dataset.currencyLocked,'false');
   select.value='USD';dom.window.document.getElementById('saveProfileSettings').click();
   assert.equal(profile.settings.currency,'USD');
+});
+
+test('currency guard is exported by profile lifecycle and standalone layer stays retired',()=>{
+  const {ctx}=boot({withHistory:false});
+  assert.equal(typeof ctx.ARISE_SETTINGS_CURRENCY_GUARD?.lockCurrencyControl,'function');
+  assert.equal(typeof ctx.ARISE_SETTINGS_CURRENCY_GUARD?.protectLegacySave,'function');
+  assert.equal(fs.existsSync('settings-currency-guard.js'),false);
 });
