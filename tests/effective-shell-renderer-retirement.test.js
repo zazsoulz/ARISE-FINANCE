@@ -13,20 +13,23 @@ const homeMarker=`/* =========================================================\n
 const goalCardMarker=`/* =========================================================\n   GOAL CARD\n========================================================= */`;
 const goalModalMarker=`/* =========================================================\n   GOAL MODAL\n========================================================= */`;
 const settingsMarker=`/* =========================================================\n   SETTINGS\n========================================================= */`;
+const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
+
+function retirementRegistry(){
+  const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\n  \];/);
+  assert.ok(match,'central retirement registry missing');
+  return match[1];
+}
 
 test('production loader retires canonical screen duplicates from the effective compatibility shell',()=>{
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings']){
+  for(const name of retired){
     assert.match(shell,new RegExp(`function\\s+${name}\\s*\\(`),`source compatibility shell should still contain ${name} until physical source retirement`);
   }
   assert.match(index,/function\s+retireLegacyRenderer\s*\(/,'loader retirement helper missing');
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderTopbar",`/* =========================================================\\n   NAV\\n========================================================= */`)'),true);
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderNav",`/* =========================================================\\n   HOME\\n========================================================= */`)'),true);
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderHome",`/* =========================================================\\n   GOAL CARD\\n========================================================= */`)'),true);
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderIncome","function incomeRow(tx){")'),true);
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderGoals",`/* =========================================================\\n   GOAL MODAL\\n========================================================= */`)'),true);
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderHistory","function historyTransaction(tx){")'),true);
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderAnalytics",`/* =========================================================\\n   SETTINGS\\n========================================================= */`)'),true);
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderSettings","function categoryEditor(category){")'),true);
+  assert.match(index,/function\s+retireLegacyRenderers\s*\(/,'central retirement pass missing');
+  assert.match(index,/html=retireLegacyRenderers\(html\);/,'loader must apply the central retirement pass');
+  const registry=retirementRegistry();
+  for(const name of retired) assert.match(registry,new RegExp(`\\["${name}"`),`${name} retirement missing from registry`);
   for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']) assert.match(ariseV3,new RegExp(`root\\.${name}\\s*=\\s*function\\s*\\(`));
   assert.match(analyticsUi,/root\.renderAnalytics\s*=\s*function\s*\(/);
   assert.match(settingsUi,/root\.renderSettings\s*=\s*renderSettings/);
@@ -47,7 +50,8 @@ test('renderer retirement helper fails closed when a compatibility boundary drif
 });
 
 test('all canonical shell screen duplicates are retired in staged compatibility cleanup',()=>{
-  const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
-  assert.equal((index.match(/retireLegacyRenderer\(html,/g)||[]).length,retired.length);
-  for(const name of retired) assert.equal(index.includes(`retireLegacyRenderer(html,"${name}"`),true,`${name} retirement missing`);
+  const registry=retirementRegistry();
+  const names=[...registry.matchAll(/\["(render[A-Za-z]+)"/g)].map(match=>match[1]);
+  assert.deepEqual(names,retired);
+  assert.equal((index.match(/html=retireLegacyRenderers\(html\);/g)||[]).length,1,'central retirement pass should execute exactly once');
 });
