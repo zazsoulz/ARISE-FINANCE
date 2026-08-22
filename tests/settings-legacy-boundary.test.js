@@ -8,16 +8,19 @@ const accountSettings=fs.readFileSync('account-settings.js','utf8');
 const profileLifecycle=fs.readFileSync('profile-lifecycle.js','utf8');
 const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
-const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics'];
+const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
 
-test('settings remains the only retained legacy screen base while canonical settings owns composition',()=>{
-  for(const name of retired){
-    assert.match(index,new RegExp(`retireLegacyRenderer\\(html,\\"${name}\\"`),`${name} should stay retired by the production loader`);
-  }
-  assert.doesNotMatch(index,/retireLegacyRenderer\(html,"renderSettings"/,'legacy settings base remains until its markup and handlers are extracted');
-  assert.match(shell,/function renderSettings\(\)\{/,'compatibility shell must still provide the settings base renderer for this staged pass');
-  assert.match(settingsUi,/const baseRenderSettings=root\.renderSettings/);
+test('canonical settings owns markup while physical compatibility source remains staged',()=>{
+  for(const name of retired) assert.match(index,new RegExp(`retireLegacyRenderer\\(html,\\"${name}\\"`),`${name} should stay retired by the production loader`);
+  assert.match(shell,/function renderSettings\(\)\{/,'physical compatibility source remains until helper extraction/source cleanup');
+  assert.match(settingsUi,/function renderSettings\(\)\{/);
+  assert.match(settingsUi,/id="settingsCurrency"/);
+  assert.match(settingsUi,/id="saveProfileSettings"/);
+  assert.match(settingsUi,/id="newProfile"/);
+  assert.match(settingsUi,/id="reservePercent"/);
+  assert.match(settingsUi,/id="saveReserve"/);
   assert.match(settingsUi,/root\.renderSettings=renderSettings/);
+  assert.doesNotMatch(settingsUi,/baseRenderSettings/);
 });
 
 test('account and profile modules expose enhancers instead of wrapping renderSettings independently',()=>{
@@ -32,23 +35,13 @@ test('account and profile modules expose enhancers instead of wrapping renderSet
 });
 
 test('canonical settings coordinator loads after enhancers and before bootstrap-era decorators',()=>{
-  const account=index.indexOf('./account-settings.js');
-  const profile=index.indexOf('./profile-lifecycle.js');
-  const settings=index.indexOf('./settings-ui.js');
-  const onboarding=index.indexOf('./onboarding.js');
-  const bootstrap=index.indexOf('./financial-bootstrap.js');
+  const account=index.indexOf('./account-settings.js'),profile=index.indexOf('./profile-lifecycle.js'),settings=index.indexOf('./settings-ui.js'),onboarding=index.indexOf('./onboarding.js'),bootstrap=index.indexOf('./financial-bootstrap.js');
   assert.ok(account>=0&&profile>account&&settings>profile&&onboarding>settings&&bootstrap>onboarding);
 });
 
-test('future settings base retirement must first replace legacy DOM contracts used by canonical modules',()=>{
-  const requiredIds=[
-    'settingsCurrency',
-    'saveProfileSettings',
-    'newProfile',
-    'reservePercent',
-    'saveReserve'
-  ];
-  for(const id of requiredIds){
-    assert.equal(shell.includes(`id="${id}"`),true,`${id} must stay available until canonical settings owns its markup and handler`);
+test('legacy settings renderer is excluded without removing shared compatibility helpers yet',()=>{
+  assert.match(index,/retireLegacyRenderer\(html,"renderSettings","function categoryEditor\(category\)\{"\)/);
+  for(const helper of ['function categoryEditor(category){','function saveCategoriesFromUI(){','function exportData(){','function importData(event){','function resetData(){']){
+    assert.equal(shell.includes(helper),true,`${helper} must remain available until helper extraction is reviewed separately`);
   }
 });
