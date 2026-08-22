@@ -11,8 +11,8 @@ const homeMarker=`/* =========================================================\n
 const goalCardMarker=`/* =========================================================\n   GOAL CARD\n========================================================= */`;
 const goalModalMarker=`/* =========================================================\n   GOAL MODAL\n========================================================= */`;
 
-test('production loader retires legacy topbar nav home income and goals from the effective compatibility shell',()=>{
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals']){
+test('production loader retires legacy topbar nav home income goals and history from the effective compatibility shell',()=>{
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
     assert.match(shell,new RegExp(`function\\s+${name}\\s*\\(`),`source compatibility shell should still contain ${name} until physical source retirement`);
   }
   assert.match(index,/function\s+retireLegacyRenderer\s*\(/,'loader retirement helper missing');
@@ -21,7 +21,8 @@ test('production loader retires legacy topbar nav home income and goals from the
   assert.equal(index.includes('retireLegacyRenderer(html,"renderHome",`/* =========================================================\\n   GOAL CARD\\n========================================================= */`)'),true,'renderHome is not retired before canonical runtime boot');
   assert.equal(index.includes('retireLegacyRenderer(html,"renderIncome","function incomeRow(tx){")'),true,'renderIncome is not retired before canonical runtime boot');
   assert.equal(index.includes('retireLegacyRenderer(html,"renderGoals",`/* =========================================================\\n   GOAL MODAL\\n========================================================= */`)'),true,'renderGoals is not retired before canonical runtime boot');
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals']){
+  assert.equal(index.includes('retireLegacyRenderer(html,"renderHistory","function historyTransaction(tx){")'),true,'renderHistory is not retired before canonical runtime boot');
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
     assert.match(ariseV3,new RegExp(`root\\.${name}\\s*=\\s*function\\s*\\(`),`canonical ${name} owner missing`);
   }
 });
@@ -49,12 +50,16 @@ test('renderer retirement helper fails closed when a compatibility boundary drif
   const followingGoalModal=shell.indexOf(goalModalMarker,goalsStart);
   assert.ok(goalsStart>=0,'legacy goals missing before source retirement');
   assert.ok(followingGoalModal>goalsStart,'goals/goal-modal boundary order drifted');
+  const historyStart=shell.indexOf('function renderHistory(){');
+  const followingHistoryTransaction=shell.indexOf('function historyTransaction(tx){',historyStart);
+  assert.ok(historyStart>=0,'legacy history missing before source retirement');
+  assert.ok(followingHistoryTransaction>historyStart,'history/history-transaction boundary order drifted');
 });
 
-test('topbar nav home income and goals are retired in staged compatibility cleanup',()=>{
-  assert.equal((index.match(/retireLegacyRenderer\(html,/g)||[]).length,5);
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals']){
+test('topbar nav home income goals and history are retired in staged compatibility cleanup',()=>{
+  assert.equal((index.match(/retireLegacyRenderer\(html,/g)||[]).length,6);
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
     assert.equal(index.includes(`retireLegacyRenderer(html,"${name}"`),true,`${name} retirement missing`);
   }
-  assert.equal(index.includes('retireLegacyRenderer(html,"renderHistory"'),false,'history should remain for a separate reviewed retirement step');
+  assert.equal(index.includes('retireLegacyRenderer(html,"renderAnalytics"'),false,'analytics should remain for a separate reviewed retirement step');
 });
