@@ -1,9 +1,6 @@
 (function(root){
   "use strict";
 
-  const previousRenderSettings=root.renderSettings;
-  if(typeof previousRenderSettings!=="function") return;
-
   function syncMeta(profile,remoteId){
     profile.ariseSync={...(profile.ariseSync||{}),remoteId,syncedAt:new Date().toISOString(),dirty:false};
   }
@@ -219,13 +216,13 @@
     createButton.insertAdjacentElement("afterend",button);
   }
 
-  root.renderSettings=function(){
-    previousRenderSettings();
+  function enhanceSettings(){
     const profile=active();
     const createButton=document.getElementById("newProfile");if(createButton)createButton.onclick=createProfileFromSettings;
     document.querySelectorAll("[data-delete-profile]").forEach(button=>{button.onclick=()=>removeProfile(button.dataset.deleteProfile);});
     attachEditButtons();attachArchiveButton();lockCurrencyControl(profile);protectLegacySave(profile);
-  };
-  root.ARISE_PROFILE_LIFECYCLE={createProfile:createProfileFromSettings,editProfile,renameProfile,removeProfile,restoreArchivedProfile,showArchivedProfiles,hasFinancialHistory,canChangeBaseCurrency,lockCurrencyControl,protectLegacySave};
+  }
+
+  root.ARISE_PROFILE_LIFECYCLE={createProfile:createProfileFromSettings,editProfile,renameProfile,removeProfile,restoreArchivedProfile,showArchivedProfiles,hasFinancialHistory,canChangeBaseCurrency,lockCurrencyControl,protectLegacySave,enhanceSettings};
   root.ARISE_SETTINGS_CURRENCY_GUARD={lockCurrencyControl,protectLegacySave};
 })(typeof globalThis!=="undefined"?globalThis:window);
