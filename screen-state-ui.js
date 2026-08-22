@@ -15,11 +15,17 @@
     render();
   }
 
-  function enhanceEmpty(el,page){
-    if(!el||el.dataset.stateEnhanced==="true")return;
-    el.dataset.stateEnhanced="true";
+  function markEmpty(el){
+    if(!el||el.dataset.stateSemantics==="true")return;
+    el.dataset.stateSemantics="true";
     el.setAttribute("role","status");
     el.setAttribute("aria-live","polite");
+  }
+
+  function enhanceEmpty(el,page){
+    if(!el||el.dataset.stateEnhanced==="true")return;
+    markEmpty(el);
+    el.dataset.stateEnhanced="true";
 
     const actions=document.createElement("div");
     actions.className="actions state-actions";
@@ -44,8 +50,10 @@
     const empties=[...rootEl.querySelectorAll(".empty")];
     if(!empties.length)return;
 
-    // Only the first page-level empty state gets a primary recovery action.
-    // Secondary empty cards remain concise and avoid repeated CTA clutter.
+    // Every empty block gets consistent accessible status semantics.
+    // Only the first page-level empty state receives primary recovery actions
+    // so secondary cards stay concise and avoid repeated CTA clutter.
+    empties.forEach(markEmpty);
     enhanceEmpty(empties[0],page);
   }
 
@@ -64,5 +72,5 @@
   wrap("renderHistory","history");
   wrap("renderAnalytics","analytics");
 
-  root.ARISE_SCREEN_STATE_UI={enhanceEmpty,enhancePage};
+  root.ARISE_SCREEN_STATE_UI={markEmpty,enhanceEmpty,enhancePage};
 })(typeof globalThis!=="undefined"?globalThis:window);
