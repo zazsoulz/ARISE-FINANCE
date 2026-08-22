@@ -6,7 +6,7 @@ const shell=fs.readFileSync('app-shell.html','utf8');
 const loader=fs.readFileSync('index.html','utf8');
 const ariseV3=fs.readFileSync('arise-v3.js','utf8');
 const analyticsUi=fs.readFileSync('analytics-ui.js','utf8');
-const accountSettings=fs.readFileSync('account-settings.js','utf8');
+const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
 const ownership=[
   {name:'renderTopbar',legacy:/function\s+renderTopbar\s*\(/,canonical:/root\.renderTopbar\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
@@ -18,8 +18,8 @@ const ownership=[
   {name:'renderAnalytics',legacy:/function\s+renderAnalytics\s*\(/,canonical:/root\.renderAnalytics\s*=\s*function\s*\(/,owner:'analytics-ui.js',source:analyticsUi}
 ];
 
-const decoratedShellRenderers=[
-  {name:'renderSettings',legacy:/function\s+renderSettings\s*\(/,decorator:/root\.renderSettings\s*=\s*function\s*\(/,owner:'account-settings.js',source:accountSettings}
+const stagedShellRenderers=[
+  {name:'renderSettings',legacy:/function\s+renderSettings\s*\(/,canonical:/root\.renderSettings\s*=\s*renderSettings/,owner:'settings-ui.js',source:settingsUi}
 ];
 
 test('compatibility shell renderers have explicit canonical owners',()=>{
@@ -29,10 +29,10 @@ test('compatibility shell renderers have explicit canonical owners',()=>{
   }
 });
 
-test('remaining shell-owned renderer decoration is explicit',()=>{
-  for(const entry of decoratedShellRenderers){
+test('remaining staged settings renderer composition is explicit',()=>{
+  for(const entry of stagedShellRenderers){
     assert.match(shell,entry.legacy,`${entry.name} shell base missing`);
-    assert.match(entry.source,entry.decorator,`${entry.name} is not decorated by ${entry.owner}`);
+    assert.match(entry.source,entry.canonical,`${entry.name} is not composed by ${entry.owner}`);
   }
 });
 
@@ -40,16 +40,20 @@ test('canonical renderer owners load before bootstrap in dependency order',()=>{
   const ariseIndex=loader.indexOf('./arise-v3.js');
   const analyticsIndex=loader.indexOf('./analytics-ui.js');
   const accountIndex=loader.indexOf('./account-settings.js');
+  const profileIndex=loader.indexOf('./profile-lifecycle.js');
+  const settingsIndex=loader.indexOf('./settings-ui.js');
   const bootstrapIndex=loader.indexOf('./financial-bootstrap.js');
   assert.ok(ariseIndex>=0,'arise-v3.js missing from production loader');
   assert.ok(analyticsIndex>ariseIndex,'analytics-ui.js must load after arise-v3.js');
   assert.ok(accountIndex>analyticsIndex,'account-settings.js must load after analytics-ui.js');
-  assert.ok(bootstrapIndex>accountIndex,'renderer owners must load before financial-bootstrap.js');
+  assert.ok(profileIndex>accountIndex,'profile-lifecycle.js must load after account settings');
+  assert.ok(settingsIndex>profileIndex,'settings-ui.js must load after its settings enhancers');
+  assert.ok(bootstrapIndex>settingsIndex,'renderer owners must load before financial-bootstrap.js');
 });
 
 test('physical shell retirement candidates are complete and auditable',()=>{
   const candidates=ownership.map(entry=>entry.name);
   assert.deepEqual(candidates,['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']);
   assert.equal(new Set(candidates).size,candidates.length);
-  assert.deepEqual(decoratedShellRenderers.map(entry=>entry.name),['renderSettings']);
+  assert.deepEqual(stagedShellRenderers.map(entry=>entry.name),['renderSettings']);
 });
