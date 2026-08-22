@@ -12,7 +12,8 @@ function boot(){
   context.closeModal=()=>{document.getElementById('modal').classList.remove('open');};
   context.window=context;context.globalThis=context;
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync('modal-accessibility.js','utf8'),context,{filename:'modal-accessibility.js'});
+  vm.runInContext(fs.readFileSync('product-ui.js','utf8'),context,{filename:'product-ui.js'});
+  assert.ok(context.ARISE_MODAL_ACCESSIBILITY,'modal accessibility API missing from product-ui.js');
   return {context,dom,document};
 }
 
