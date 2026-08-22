@@ -20,11 +20,14 @@ function boot(page){
   return {dom,calls};
 }
 
-test('income empty state exposes a real add-income action',()=>{
+test('income empty states are accessible while only the primary state gets an action',()=>{
   const {dom,calls}=boot('income');
   dom.window.renderIncome();
   const empties=dom.window.document.querySelectorAll('.empty');
-  assert.equal(empties[0].getAttribute('role'),'status');
+  for(const empty of empties){
+    assert.equal(empty.getAttribute('role'),'status');
+    assert.equal(empty.getAttribute('aria-live'),'polite');
+  }
   assert.equal(empties[0].querySelectorAll('button').length,1);
   assert.equal(empties[1].querySelectorAll('button').length,0,'secondary empty cards stay concise');
   empties[0].querySelector('button').click();
@@ -57,5 +60,17 @@ test('analytics empty state routes to distribution instead of a dead end',()=>{
   dom.window.document.querySelector('.empty button').click();
   assert.equal(dom.window.activePage,'income');
   assert.deepEqual(calls,[['render','income']]);
+  dom.window.close();
+});
+
+test('enhancing the same page twice does not duplicate actions or status setup',()=>{
+  const {dom}=boot('income');
+  dom.window.renderIncome();
+  const api=dom.window.ARISE_SCREEN_STATE_UI;
+  api.enhancePage('income');
+  const empties=dom.window.document.querySelectorAll('.empty');
+  assert.equal(empties[0].querySelectorAll('button').length,1);
+  assert.equal(empties[0].dataset.stateSemantics,'true');
+  assert.equal(empties[1].dataset.stateSemantics,'true');
   dom.window.close();
 });
