@@ -18,16 +18,16 @@ const canonical=[
 
 function escaped(name){return name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 
-test('canonical renderer owners do not capture legacy shell implementations',()=>{
+test('canonical renderer owners do not capture their own legacy shell implementations',()=>{
   for(const {name,source} of canonical){
     const n=escaped(name);
+    const suffix=name.replace(/^render/,'');
     const capturePatterns=[
-      new RegExp(`(?:const|let|var)\\s+\\w+\\s*=\\s*root\\.${n}\\b`),
-      new RegExp(`(?:const|let|var)\\s+\\w+\\s*=\\s*${n}\\b`),
-      new RegExp(`original(?:Render)?${n.replace(/^render/,'')}\\s*=\\s*root\\.${n}\\b`,'i')
+      new RegExp(`(?:const|let|var)\\s+(?:old|legacy|original)(?:Render)?${suffix}\\s*=\\s*root\\.${n}\\b`,'i'),
+      new RegExp(`(?:const|let|var)\\s+(?:old|legacy|original)(?:Render)?${suffix}\\s*=\\s*${n}\\b`,'i')
     ];
     for(const pattern of capturePatterns){
-      assert.doesNotMatch(source,pattern,`${name} still captures/delegates to the compatibility-shell implementation`);
+      assert.doesNotMatch(source,pattern,`${name} still captures/delegates to its compatibility-shell implementation`);
     }
   }
 });
@@ -38,6 +38,11 @@ test('canonical renderer owners define direct replacements while shell duplicate
     assert.match(shell,new RegExp(`function\\s+${n}\\s*\\(`),`${name} legacy definition unexpectedly disappeared; retire it in a dedicated PR`);
     assert.match(source,new RegExp(`root\\.${n}\\s*=\\s*function\\s*\\(`),`${name} is not a direct canonical replacement`);
   }
+});
+
+test('cross-renderer composition stays allowed during staged retirement',()=>{
+  assert.match(analyticsUi,/const\s+oldRenderNav\s*=\s*root\.renderNav\b/,'analytics navigation compatibility composition unexpectedly changed');
+  assert.doesNotMatch(analyticsUi,/oldRenderAnalytics\s*=\s*root\.renderAnalytics\b/i);
 });
 
 test('settings remains explicitly excluded because account settings still decorates the shell base renderer',()=>{
