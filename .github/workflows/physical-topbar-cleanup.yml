@@ -73,8 +73,8 @@ jobs:
           settings=settings.replace(needle, needle+"  assert.doesNotMatch(shell,/function\\s+renderTopbar\\s*\\(/,'topbar should stay physically retired');\n",1)
           settings_path.write_text(settings)
 
-          workflow=Path('.github/workflows/physical-topbar-cleanup.yml')
-          workflow.unlink()
+          Path('.github/physical-topbar-cleanup.trigger').unlink(missing_ok=True)
+          Path('.github/workflows/physical-topbar-cleanup.yml').unlink()
           PY
       - name: Commit physical cleanup
         run: |
