@@ -1,0 +1,86 @@
+name: Physical topbar cleanup
+
+on:
+  push:
+    branches: [agent/physically-remove-legacy-topbar]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/physically-remove-legacy-topbar
+      - name: Remove retired topbar source and align contracts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          shell_path=Path('app-shell.html')
+          shell=shell_path.read_text()
+          top='/* =========================================================\n   TOP BAR\n========================================================= */'
+          nav='/* =========================================================\n   NAV\n========================================================= */'
+          start=shell.index(top)
+          end=shell.index(nav,start)
+          removed=shell[start:end]
+          if 'function renderTopbar(){' not in removed:
+              raise SystemExit('renderTopbar boundary drifted')
+          shell=shell[:start]+shell[end:]
+          if 'function renderTopbar(){' in shell:
+              raise SystemExit('renderTopbar still present after cleanup')
+          shell_path.write_text(shell)
+
+          index_path=Path('index.html')
+          index=index_path.read_text()
+          index2=re.sub(r'\n    \["renderTopbar",[^\n]+\],','',index,count=1)
+          if index2==index or '["renderTopbar"' in index2:
+              raise SystemExit('renderTopbar registry cleanup failed')
+          index_path.write_text(index2)
+
+          legacy_path=Path('tests/legacy-renderer-retirement-contract.test.js')
+          legacy=legacy_path.read_text().replace("  'renderTopbar',\n",'')
+          legacy=legacy.replace("const index=fs.readFileSync('index.html','utf8');\n", "const index=fs.readFileSync('index.html','utf8');\nconst shell=fs.readFileSync('app-shell.html','utf8');\n")
+          legacy=legacy.replace("test('legacy screen renderer retirement is owned by one registry',()=>{", "test('remaining legacy screen renderer retirement is owned by one registry',()=>{")
+          legacy += "\ntest('physically retired topbar stays out of compatibility source and registry',()=>{\n  assert.doesNotMatch(shell,/function\\s+renderTopbar\\s*\\(/);\n  assert.equal(index.includes('[\\\"renderTopbar\\\"'),false);\n});\n"
+          legacy_path.write_text(legacy)
+
+          independence_path=Path('tests/shell-renderer-independence.test.js')
+          independence=independence_path.read_text()
+          old=re.compile(r"test\('canonical renderer owners define direct replacements while physical shell duplicates still exist',\(\)=>\{[\s\S]*?\n\}\);\n\n",re.M)
+          replacement="""test('canonical renderer owners stay direct replacements through physical shell retirement',()=>{\n  for(const {name,source} of canonical){\n    const n=escaped(name);\n    const direct=name==='renderSettings'?new RegExp(`root\\\\.${n}\\\\s*=\\\\s*${n}`):new RegExp(`root\\\\.${n}\\\\s*=\\\\s*function\\\\s*\\\\(`);\n    assert.match(source,direct,`${name} is not a direct canonical replacement`);\n  }\n  assert.doesNotMatch(shell,/function\\s+renderTopbar\\s*\\(/,'physically retired topbar returned to compatibility shell');\n});\n\n"""
+          independence2,n=old.subn(replacement,independence,count=1)
+          if n!=1:
+              raise SystemExit('shell independence contract replacement failed')
+          independence_path.write_text(independence2)
+
+          ownership_path=Path('tests/shell-renderer-ownership.test.js')
+          ownership=ownership_path.read_text()
+          old=re.compile(r"test\('compatibility shell renderers have explicit canonical owners',\(\)=>\{[\s\S]*?\n\}\);\n\n",re.M)
+          replacement="""test('canonical screen renderers keep explicit external owners through physical retirement',()=>{\n  for(const entry of ownership){\n    assert.match(entry.source,entry.canonical,`${entry.name} is not owned by ${entry.owner}`);\n  }\n  assert.doesNotMatch(shell,/function\\s+renderTopbar\\s*\\(/,'renderTopbar should be physically retired');\n  for(const entry of ownership.filter(entry=>entry.name!=='renderTopbar')){\n    assert.match(shell,entry.legacy,`${entry.name} should remain staged until its dedicated physical-retirement PR`);\n  }\n});\n\n"""
+          ownership2,n=old.subn(replacement,ownership,count=1)
+          if n!=1:
+              raise SystemExit('shell ownership contract replacement failed')
+          ownership_path.write_text(ownership2)
+
+          settings_path=Path('tests/settings-legacy-boundary.test.js')
+          settings=settings_path.read_text().replace("const retired=['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];", "const retired=['renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];")
+          needle="test('canonical settings owns markup while physical compatibility source remains staged',()=>{\n"
+          settings=settings.replace(needle, needle+"  assert.doesNotMatch(shell,/function\\s+renderTopbar\\s*\\(/,'topbar should stay physically retired');\n",1)
+          settings_path.write_text(settings)
+
+          workflow=Path('.github/workflows/physical-topbar-cleanup.yml')
+          workflow.unlink()
+          PY
+      - name: Commit physical cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Physically retire legacy topbar renderer"
+          git push origin HEAD:agent/physically-remove-legacy-topbar
