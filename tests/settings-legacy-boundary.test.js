@@ -8,7 +8,7 @@ const accountSettings=fs.readFileSync('account-settings.js','utf8');
 const profileLifecycle=fs.readFileSync('profile-lifecycle.js','utf8');
 const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
-const retired=['renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings'];
+const retired=['renderGoals','renderHistory','renderAnalytics','renderSettings'];
 
 function retirementRegistry(){
   const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\n  \];/);
@@ -17,13 +17,14 @@ function retirementRegistry(){
 }
 
 test('canonical settings owns markup while remaining compatibility renderers stay staged',()=>{
-  assert.doesNotMatch(shell,/function\s+renderTopbar\s*\(/,'topbar should stay physically retired');
-  assert.doesNotMatch(shell,/function\s+renderNav\s*\(/,'navigation should stay physically retired');
-  assert.doesNotMatch(shell,/function\s+renderHome\s*\(/,'home should stay physically retired');
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome']){
+    assert.doesNotMatch(shell,new RegExp(`function\\s+${name}\\s*\\(`),`${name} should stay physically retired`);
+  }
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/,'legacy navigation model should stay physically retired');
   const registry=retirementRegistry();
-  assert.doesNotMatch(registry,/\["renderNav"/,'physically retired navigation must not remain in registry');
-  assert.doesNotMatch(registry,/\["renderHome"/,'physically retired home must not remain in registry');
+  for(const name of ['renderNav','renderHome','renderIncome']){
+    assert.doesNotMatch(registry,new RegExp(`\\["${name}"`),`${name} must not remain in registry after physical retirement`);
+  }
   for(const name of retired) assert.match(registry,new RegExp(`\\["${name}"`),`${name} should stay retired by the production loader`);
   assert.match(index,/html=retireLegacyRenderers\(html\);/);
   assert.match(shell,/function renderSettings\(\)\{/,'physical settings compatibility source remains until helper extraction/source cleanup');

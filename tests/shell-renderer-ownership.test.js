@@ -12,7 +12,7 @@ const ownership=[
   {name:'renderTopbar',legacy:/function\s+renderTopbar\s*\(/,canonical:/root\.renderTopbar\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
   {name:'renderNav',legacy:/function\s+renderNav\s*\(/,canonical:/root\.renderNav\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
   {name:'renderHome',legacy:/function\s+renderHome\s*\(/,canonical:/root\.renderHome\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
-  {name:'renderIncome',legacy:/function\s+renderIncome\s*\(/,canonical:/root\.renderIncome\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
+  {name:'renderIncome',legacy:/function\s+renderIncome\s*\(/,canonical:/root\.renderIncome\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
   {name:'renderGoals',legacy:/function\s+renderGoals\s*\(/,canonical:/root\.renderGoals\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
   {name:'renderHistory',legacy:/function\s+renderHistory\s*\(/,canonical:/root\.renderHistory\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
   {name:'renderAnalytics',legacy:/function\s+renderAnalytics\s*\(/,canonical:/root\.renderAnalytics\s*=\s*function\s*\(/,owner:'analytics-ui.js',source:analyticsUi}
@@ -32,6 +32,7 @@ test('canonical screen renderers keep explicit external owners through physical 
     }
   }
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/,'legacy navigation item model should stay physically retired with renderNav');
+  assert.match(shell,/function\s+incomeRow\s*\(/,'incomeRow must remain while only the retired income screen renderer is removed');
 });
 
 test('remaining staged settings renderer composition is explicit',()=>{
@@ -60,6 +61,6 @@ test('physical shell retirement candidates are complete and auditable',()=>{
   const candidates=ownership.map(entry=>entry.name);
   assert.deepEqual(candidates,['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']);
   assert.equal(new Set(candidates).size,candidates.length);
-  assert.deepEqual(ownership.filter(entry=>entry.physicallyRetired).map(entry=>entry.name),['renderTopbar','renderNav','renderHome']);
+  assert.deepEqual(ownership.filter(entry=>entry.physicallyRetired).map(entry=>entry.name),['renderTopbar','renderNav','renderHome','renderIncome']);
   assert.deepEqual(stagedShellRenderers.map(entry=>entry.name),['renderSettings']);
 });
