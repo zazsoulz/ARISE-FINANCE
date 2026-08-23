@@ -41,7 +41,7 @@ test('legacy nav cleanup fails closed on malformed boundaries',()=>{
   const malformedShell=shell.replace('function renderNav(){','function renamedLegacyNav(){');
   assert.throws(()=>removeLegacyNavSource(malformedShell),/renderNav missing/);
 
-  const malformedIndex=index.replace(RENDER_NAV_RETIREMENT,RENDER_NAV_RETIREMENT.replace('    ["renderNav"','     ["renderNav"'));
+  const malformedIndex=index.replace(RENDER_NAV_RETIREMENT,RENDER_NAV_RETIREMENT.replace('"renderNav",','"renderNav" ,'));
   assert.notEqual(malformedIndex,index,'malformed fixture must preserve renderNav while changing the exact registry entry');
   assert.throws(()=>removeRenderNavRetirementEntry(malformedIndex),/retirement entry is malformed/);
 });
