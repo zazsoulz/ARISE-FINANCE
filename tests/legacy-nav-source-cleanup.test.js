@@ -58,13 +58,13 @@ test('cleanup targets JS nav source rather than earlier CSS NAV marker',()=>{
   assert.match(cleaned,/function\s+renderHome\s*\(/);
 });
 
-test('current compatibility shell has physical nav source and registry entry retired',()=>{
+test('current compatibility shell has nav and home source physically retired',()=>{
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/);
   assert.doesNotMatch(shell,/function\s+renderNav\s*\(/);
   assert.match(shell,/function\s+bindNav\s*\(/);
   assert.match(shell,/function\s+profileSwitcher\s*\(/);
   assert.match(shell,/function\s+bindProfileSwitcher\s*\(/);
-  assert.match(shell,/function\s+renderHome\s*\(/);
+  assert.doesNotMatch(shell,/function\s+renderHome\s*\(/);
   assert.equal(index.includes(RENDER_NAV_RETIREMENT),false);
   assert.equal(removeLegacyNavSource(shell),shell,'cleanup must be idempotent on physically retired shell');
   assert.equal(removeRenderNavRetirementEntry(index),index,'registry cleanup must be idempotent after retirement');
