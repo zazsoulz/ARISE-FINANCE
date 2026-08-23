@@ -35,9 +35,11 @@ test('analytics cleanup fails closed on damaged boundary',()=>{
   assert.throws(()=>removeLegacyAnalyticsSource(fixture),/SETTINGS boundary missing/);
 });
 
-test('retirement registry entry is removed atomically and idempotently',()=>{
-  assert.equal(index.includes(RENDER_ANALYTICS_RETIREMENT),true);
+test('analytics retirement registry is staged or physically retired atomically',()=>{
   const cleaned=removeRenderAnalyticsRetirementEntry(index);
+  const shellChanged=removeLegacyAnalyticsSource(shell)!==shell;
+  const indexChanged=cleaned!==index;
+  assert.equal(shellChanged,indexChanged,'analytics shell source and retirement entry must transition atomically');
   assert.equal(cleaned.includes('"renderAnalytics"'),false);
   assert.equal(removeRenderAnalyticsRetirementEntry(cleaned),cleaned);
 });

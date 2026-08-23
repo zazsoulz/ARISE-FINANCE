@@ -8,7 +8,7 @@ const accountSettings=fs.readFileSync('account-settings.js','utf8');
 const profileLifecycle=fs.readFileSync('profile-lifecycle.js','utf8');
 const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
-const retired=['renderAnalytics','renderSettings'];
+const retired=['renderSettings'];
 
 function retirementRegistry(){
   const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\n  \];/);
@@ -17,12 +17,12 @@ function retirementRegistry(){
 }
 
 test('canonical settings owns markup while remaining compatibility renderers stay staged',()=>{
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']){
     assert.doesNotMatch(shell,new RegExp(`function\\s+${name}\\s*\\(`),`${name} should stay physically retired`);
   }
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/,'legacy navigation model should stay physically retired');
   const registry=retirementRegistry();
-  for(const name of ['renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
+  for(const name of ['renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']){
     assert.doesNotMatch(registry,new RegExp(`\\["${name}"`),`${name} must not remain in registry after physical retirement`);
   }
   for(const name of retired) assert.match(registry,new RegExp(`\\["${name}"`),`${name} should stay retired by the production loader`);
