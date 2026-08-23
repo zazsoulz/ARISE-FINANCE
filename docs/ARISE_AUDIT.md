@@ -1,13 +1,13 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `08678b450fe2a2e5f5e6d6f6ef08e33658ed76aa` (2026-08-21).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `7eafc5773ea26d08f88ec2a52ee387912657f671` (2026-08-23).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
 ## Executive summary
 ARISE is beyond foundational ledger/auth/sync work. `main` contains a ledger-backed financial core, account auth, isolated financial profiles, Supabase persistence, local-first mutation outboxes, conflict detection and explicit local-vs-server resolution UI, mixed-currency support, transaction-derived history/analytics, funded-goal lifecycle protection, completed-goal future-funds rerouting, explicit create/edit expense reconciliation, transaction-backed reserve lifecycle, quantitative consequence previews for manual income-plan edits, onboarding templates, completed-goal lifecycle analytics, stale-FX disclosure, explicit essential-expense reserve runway inputs, historical/backdated FX policy disclosure, recoverable finance-profile archiving, reserve transaction drill-down, accessible analytics chart data, actionable global sync states, actionable bootstrap recovery and a production-equivalent standalone preview path.
 
-The lifecycle-correctness and compatibility-delete backlog is closed. The highest-value remaining work is now real beta-environment verification, operational Supabase hardening, compatibility-shell consolidation and final cross-screen product polish. Vercel remains intentionally outside the active development loop; GitHub Actions, branch/PR review and standalone/local artifacts remain the verification path until stable beta.
+The lifecycle-correctness and compatibility-delete backlog is closed. The highest-value remaining work is now real beta-environment verification, operational Supabase hardening, staged compatibility-shell removal and final cross-screen product polish. The shell consolidation is no longer only conceptual: legacy topbar source has been physically removed, the canonical navigation/profile helpers were extracted, and the loader is prepared for physical removal of the remaining legacy navigation model/renderer without reintroducing duplicate ownership. Vercel remains intentionally outside the active development loop; GitHub Actions, branch/PR review and standalone/local artifacts remain the verification path until stable beta.
 
 ## Financial core
 - ✅ One effective financial calculation source of truth is used at runtime.
@@ -18,7 +18,7 @@ The lifecycle-correctness and compatibility-delete backlog is closed. The highes
 - ✅ Goal and reserve balances are transaction-derived.
 - ✅ Explicit controlled/uncontrolled expense accounting is implemented for create and edit flows.
 - ✅ Multi-profile isolation has regression coverage.
-- 🟡 Historical compatibility layers still surround the canonical runtime and should be physically consolidated before release.
+- 🟡 Historical compatibility layers still surround the canonical runtime and are being physically removed in staged, regression-gated steps.
 
 ## Categories
 - ✅ User-defined categories are editable/deletable and have no magic names.
@@ -142,7 +142,7 @@ The lifecycle-correctness and compatibility-delete backlog is closed. The highes
 - ✅ Quick income/expense actions and sync/offline status are visible.
 - ✅ Responsive/focus/touch/modal behavior has regression coverage.
 - ✅ Motion is restrained and respects reduced-motion preferences.
-- ✅ Production primary actions have dedicated smoke coverage.
+- ✅ Production primary actions have dedicated smoke coverage, including reserve lifecycle actions.
 - ✅ Bootstrap failure has an actionable recovery state, including a distinct offline explanation and retry action.
 - ✅ Global sync/error/conflict states are actionable instead of passive indicators.
 - 🟡 Empty/loading/error/retry behavior still needs a final screen-by-screen consistency pass.
@@ -155,8 +155,11 @@ The lifecycle-correctness and compatibility-delete backlog is closed. The highes
 - ✅ GitHub Actions cover syntax, financial regressions, loader/bootstrap and headless UI contracts.
 - ✅ Browser runtime is fenced from direct legacy Supabase-table access.
 - ✅ Standalone preview is assembled from the canonical runtime manifest rather than a divergent hand-maintained loader.
-- 🟡 `app-shell.html` remains a large compatibility artifact and should eventually be physically simplified.
-- 🟡 CSS/JS override layers should be consolidated after behavior stabilizes.
+- ✅ Legacy `renderTopbar()` source is physically removed from `app-shell.html`; initial rendering is owned by canonical bootstrap.
+- ✅ Shared navigation/profile-switch helpers are extracted into `navigation-compat.js` so legacy nav source can be removed without losing behavior.
+- ✅ Effective runtime already excludes legacy `NAV_ITEMS` and `renderNav()`, and loader/tests now tolerate their physical absence while still failing closed on malformed legacy blocks.
+- 🟡 `app-shell.html` remains a large compatibility artifact; the next staged source-removal target is `NAV_ITEMS + renderNav`, followed by the remaining retired screen renderers one at a time.
+- 🟡 Remaining CSS/JS compatibility layers should continue to be consolidated only behind regression gates.
 
 ## Immediate prioritized backlog
 ### P0 — beta correctness/hardening
@@ -170,7 +173,7 @@ The lifecycle-correctness and compatibility-delete backlog is closed. The highes
 3. Keep consequence previews quantitative only where the calculation is deterministic and useful; avoid decorative forecasts.
 
 ### P2 — beta polish
-1. Consolidate legacy shell/override layers and remove dead code/buttons.
+1. Continue staged physical shell consolidation: remove `NAV_ITEMS + renderNav` from `app-shell.html`, shrink the retirement registry, then remove each remaining retired renderer only after the full regression gate passes.
 2. Review empty/loading/error/offline/retry states screen by screen for consistent actions and copy.
 3. Finish real-device chart/touch interaction polish and final icon pass.
 4. Run standalone mobile/desktop browser verification using the canonical manifest-based preview artifact.
