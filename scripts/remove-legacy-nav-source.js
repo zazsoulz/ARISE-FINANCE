@@ -1,35 +1,29 @@
 const fs=require('node:fs');
 
 const NAV_MARKER=`/* =========================================================\n   NAV\n========================================================= */`;
+const LEGACY_NAV_SOURCE_START=`${NAV_MARKER}\n\nconst NAV_ITEMS = [`;
 const PROFILE_MARKER=`/* =========================================================\n   PROFILE SWITCHER\n========================================================= */`;
 const RENDER_NAV_RETIREMENT=`    ["renderNav",\`/* =========================================================\\n   HOME\\n========================================================= */\`],\n`;
 
 function removeLegacyNavSource(source){
-  const navStart=source.indexOf(NAV_MARKER);
-  const profileStart=source.indexOf(PROFILE_MARKER);
+  const navSourceStart=source.indexOf(LEGACY_NAV_SOURCE_START);
 
-  if(navStart<0){
+  if(navSourceStart<0){
     if(/\bconst\s+NAV_ITEMS\s*=/.test(source)||/\bfunction\s+renderNav\s*\(/.test(source)){
-      throw new Error('Legacy navigation source is malformed: marker missing.');
+      throw new Error('Legacy navigation source is malformed: JS navigation boundary missing.');
     }
     return source;
   }
 
-  if(profileStart<0||profileStart<=navStart){
+  const profileStart=source.indexOf(PROFILE_MARKER,navSourceStart);
+  if(profileStart<0||profileStart<=navSourceStart){
     throw new Error('Legacy navigation source is malformed: profile-switch boundary missing.');
   }
 
-  const block=source.slice(navStart,profileStart);
+  const block=source.slice(navSourceStart,profileStart);
   const hasItems=/\bconst\s+NAV_ITEMS\s*=/.test(block);
   const hasRenderer=/\bfunction\s+renderNav\s*\(/.test(block);
   const hasBind=/\bfunction\s+bindNav\s*\(/.test(block);
-
-  if(!hasItems&&!hasRenderer){
-    if(!hasBind){
-      throw new Error('Legacy navigation source is malformed: bindNav boundary helper missing.');
-    }
-    return source;
-  }
 
   if(!hasItems){
     throw new Error('Legacy navigation source is malformed: NAV_ITEMS missing.');
@@ -45,7 +39,7 @@ function removeLegacyNavSource(source){
   if(bindStart<0) throw new Error('Legacy navigation source is malformed: bindNav start missing.');
 
   const bindSource=block.slice(bindStart).trimEnd();
-  return source.slice(0,navStart)+NAV_MARKER+'\n\n'+bindSource+'\n\n\n'+source.slice(profileStart);
+  return source.slice(0,navSourceStart)+NAV_MARKER+'\n\n'+bindSource+'\n\n\n'+source.slice(profileStart);
 }
 
 function removeRenderNavRetirementEntry(source){
@@ -109,4 +103,4 @@ if(require.main===module){
   run();
 }
 
-module.exports={NAV_MARKER,PROFILE_MARKER,RENDER_NAV_RETIREMENT,removeLegacyNavSource,removeRenderNavRetirementEntry};
+module.exports={NAV_MARKER,LEGACY_NAV_SOURCE_START,PROFILE_MARKER,RENDER_NAV_RETIREMENT,removeLegacyNavSource,removeRenderNavRetirementEntry};
