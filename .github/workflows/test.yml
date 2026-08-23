@@ -38,6 +38,7 @@ jobs:
           node --check goal-completion-analytics.js
           node --check analytics-ui.js
           node --check product-rules.js
+          node --check navigation-compat.js
           node --check arise-v3.js
           node --check expense-edit-ui.js
           node --check history-inspector.js
