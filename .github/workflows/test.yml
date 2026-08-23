@@ -7,15 +7,13 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -69,18 +67,3 @@ jobs:
           node --check scripts/build-standalone-preview.js
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
-      - name: Apply guarded physical home cleanup on the staged branch
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/physical-remove-legacy-home' && github.actor != 'github-actions[bot]'
-        run: |
-          node scripts/remove-legacy-home-source.js --check
-          node scripts/remove-legacy-home-source.js --write
-          changed="$(git diff --name-only | sort)"
-          expected="$(printf 'app-shell.html\nindex.html' | sort)"
-          test "$changed" = "$expected"
-          git diff --check
-          node --test tests/legacy-home-source-cleanup.test.js
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add app-shell.html index.html
-          git commit -m 'Physically remove legacy home renderer'
-          git push origin HEAD:${{ github.head_ref }}
