@@ -9,8 +9,8 @@ const analyticsUi=fs.readFileSync('analytics-ui.js','utf8');
 const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
 const ownership=[
-  {name:'renderTopbar',legacy:/function\s+renderTopbar\s*\(/,canonical:/root\.renderTopbar\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
-  {name:'renderNav',legacy:/function\s+renderNav\s*\(/,canonical:/root\.renderNav\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
+  {name:'renderTopbar',legacy:/function\s+renderTopbar\s*\(/,canonical:/root\.renderTopbar\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
+  {name:'renderNav',legacy:/function\s+renderNav\s*\(/,canonical:/root\.renderNav\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
   {name:'renderHome',legacy:/function\s+renderHome\s*\(/,canonical:/root\.renderHome\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
   {name:'renderIncome',legacy:/function\s+renderIncome\s*\(/,canonical:/root\.renderIncome\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
   {name:'renderGoals',legacy:/function\s+renderGoals\s*\(/,canonical:/root\.renderGoals\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3},
@@ -25,11 +25,13 @@ const stagedShellRenderers=[
 test('canonical screen renderers keep explicit external owners through physical retirement',()=>{
   for(const entry of ownership){
     assert.match(entry.source,entry.canonical,`${entry.name} is not owned by ${entry.owner}`);
+    if(entry.physicallyRetired){
+      assert.doesNotMatch(shell,entry.legacy,`${entry.name} should stay physically retired`);
+    }else{
+      assert.match(shell,entry.legacy,`${entry.name} should remain staged until its dedicated physical-retirement PR`);
+    }
   }
-  assert.doesNotMatch(shell,/function\s+renderTopbar\s*\(/,'renderTopbar should be physically retired');
-  for(const entry of ownership.filter(entry=>entry.name!=='renderTopbar')){
-    assert.match(shell,entry.legacy,`${entry.name} should remain staged until its dedicated physical-retirement PR`);
-  }
+  assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/,'legacy navigation item model should stay physically retired with renderNav');
 });
 
 test('remaining staged settings renderer composition is explicit',()=>{
@@ -58,5 +60,6 @@ test('physical shell retirement candidates are complete and auditable',()=>{
   const candidates=ownership.map(entry=>entry.name);
   assert.deepEqual(candidates,['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']);
   assert.equal(new Set(candidates).size,candidates.length);
+  assert.deepEqual(ownership.filter(entry=>entry.physicallyRetired).map(entry=>entry.name),['renderTopbar','renderNav']);
   assert.deepEqual(stagedShellRenderers.map(entry=>entry.name),['renderSettings']);
 });

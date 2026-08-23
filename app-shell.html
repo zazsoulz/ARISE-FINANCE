@@ -2497,39 +2497,6 @@ document
    NAV
 ========================================================= */
 
-const NAV_ITEMS = [
-  ["home","Главная"],
-  ["income","Доход"],
-  ["expenses","Расходы"],
-  ["goals","Цели"],
-  ["history","История"],
-  ["analytics","Аналитика"],
-  ["settings","Настройки"]
-];
-
-function renderNav(){
-  return `
-    <nav class="nav">
-      ${
-        NAV_ITEMS.map(
-          ([id,label])=>`
-            <button
-              class="${
-                activePage===id
-                  ? "active"
-                  : ""
-              }"
-              data-page="${id}"
-            >
-              ${label}
-            </button>
-          `
-        ).join("")
-      }
-    </nav>
-  `;
-}
-
 function bindNav(){
   document
     .querySelectorAll(

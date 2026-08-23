@@ -19,7 +19,7 @@ test('navigation compatibility helpers load before canonical renderers',()=>{
   }
 });
 
-test('profile switcher renders and switches financial profiles independently of retired nav block',()=>{
+test('profile switcher renders and switches financial profiles independently of retired nav source',()=>{
   const dom=new JSDOM('<!doctype html><div id="host"></div>');
   const state={activeProfileId:'p1',profiles:[{id:'p1',name:'Основной'},{id:'p2',name:'Второй'}]};
   let switched='';
@@ -36,13 +36,14 @@ test('profile switcher renders and switches financial profiles independently of 
   assert.equal(switched,'p2');
 });
 
-test('legacy nav retirement currently spans helpers that now have an external canonical owner',()=>{
-  const start=shell.indexOf('function renderNav(){');
-  const home=shell.indexOf('/* =========================================================\n   HOME\n========================================================= */',start);
-  assert.ok(start>=0&&home>start);
-  const retiredBlock=shell.slice(start,home);
+test('physical nav retirement preserves shared helpers through external compatibility ownership',()=>{
+  assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/);
+  assert.doesNotMatch(shell,/function\s+renderNav\s*\(/);
   for(const helper of ['function bindNav(){','function profileSwitcher(){','function bindProfileSwitcher(){']){
-    assert.ok(retiredBlock.includes(helper),`${helper} no longer sits inside the legacy nav retirement block; review this contract before changing cleanup boundaries`);
+    assert.ok(shell.includes(helper),`${helper} must remain in compatibility source until its own physical extraction cleanup`);
   }
   assert.match(source,/ARISE_NAVIGATION_COMPAT/);
+  for(const name of ['bindNav','profileSwitcher','bindProfileSwitcher']){
+    assert.match(source,new RegExp(`root\\.${name}=${name}`));
+  }
 });
