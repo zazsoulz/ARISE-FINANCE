@@ -28,7 +28,7 @@ function boot({registered=false}={}){
   const {window}=dom; window.alert=()=>{}; window.confirm=()=>true;
   const context=dom.getInternalVMContext(); execute(context,effectiveShellScript(),'app-shell-effective.js');
   if(registered) execute(context,`state.account.registered=true; state.account.name='QA'; state.account.email='qa@example.com'; saveState();`,'seed-state.js');
-  for(const path of ['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','financial-bootstrap.js']) executeFile(context,path);
+  for(const path of ['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','analytics-engine.js','analytics-ui.js','financial-bootstrap.js']) executeFile(context,path);
   return {dom,context};
 }
 
@@ -40,7 +40,7 @@ test('registered user boots into A1-V3 financial flow',()=>{
   const {dom}=boot({registered:true}); const document=dom.window.document;
   assert.ok(document.querySelector('.arise-v3-home')); assert.ok(document.querySelector('.arise-flow-stage')); assert.ok(document.querySelector('.arise-remainder')); assert.ok(document.getElementById('homeIncome'));
   assert.equal(document.querySelector('.logo')?.textContent.includes('ARISE'),true);
-  assert.deepEqual([...document.querySelectorAll('.nav [data-page]')].map(el=>el.dataset.page),['home','income','goals','history']);
+  assert.deepEqual([...document.querySelectorAll('.nav [data-page]')].map(el=>el.dataset.page),['home','income','goals','history','analytics']);
   assert.equal([...document.querySelectorAll('.arise-flow-node')].length,4); dom.window.close();
 });
 
