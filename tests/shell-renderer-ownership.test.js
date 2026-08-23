@@ -15,7 +15,7 @@ const ownership=[
   {name:'renderIncome',legacy:/function\s+renderIncome\s*\(/,canonical:/root\.renderIncome\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
   {name:'renderGoals',legacy:/function\s+renderGoals\s*\(/,canonical:/root\.renderGoals\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
   {name:'renderHistory',legacy:/function\s+renderHistory\s*\(/,canonical:/root\.renderHistory\s*=\s*function\s*\(/,owner:'arise-v3.js',source:ariseV3,physicallyRetired:true},
-  {name:'renderAnalytics',legacy:/function\s+renderAnalytics\s*\(/,canonical:/root\.renderAnalytics\s*=\s*function\s*\(/,owner:'analytics-ui.js',source:analyticsUi}
+  {name:'renderAnalytics',legacy:/function\s+renderAnalytics\s*\(/,canonical:/root\.renderAnalytics\s*=\s*function\s*\(/,owner:'analytics-ui.js',source:analyticsUi,physicallyRetired:true}
 ];
 
 const stagedShellRenderers=[
@@ -63,6 +63,6 @@ test('physical shell retirement candidates are complete and auditable',()=>{
   const candidates=ownership.map(entry=>entry.name);
   assert.deepEqual(candidates,['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']);
   assert.equal(new Set(candidates).size,candidates.length);
-  assert.deepEqual(ownership.filter(entry=>entry.physicallyRetired).map(entry=>entry.name),['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']);
+  assert.deepEqual(ownership.filter(entry=>entry.physicallyRetired).map(entry=>entry.name),['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']);
   assert.deepEqual(stagedShellRenderers.map(entry=>entry.name),['renderSettings']);
 });

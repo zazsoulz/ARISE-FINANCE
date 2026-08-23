@@ -4,82 +4,82 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches:
-      - main
-      - agent/apply-physical-analytics-cleanup
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Update staged Analytics retirement contracts
-        if: github.ref == 'refs/heads/agent/apply-physical-analytics-cleanup'
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          def rep(path, old, new):
-              p=Path(path); s=p.read_text()
-              if old not in s: raise SystemExit(f'missing replacement in {path}: {old[:80]!r}')
-              p.write_text(s.replace(old,new))
-          rep('tests/browser-smoke.test.js',
-              "['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','financial-bootstrap.js']",
-              "['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','analytics-engine.js','analytics-ui.js','financial-bootstrap.js']")
-          rep('tests/history-inspector.test.js',
-              "['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','history-inspector.js','financial-bootstrap.js']",
-              "['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','analytics-engine.js','analytics-ui.js','history-inspector.js','financial-bootstrap.js']")
-          rep('tests/profile-isolation.test.js',
-              "['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','arise-v3.js','financial-bootstrap.js']",
-              "['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','arise-v3.js','analytics-engine.js','analytics-ui.js','financial-bootstrap.js']")
-          rep('tests/reserve-settings.test.js',
-              "['financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','financial-bootstrap.js']",
-              "['financial-core.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','analytics-engine.js','analytics-ui.js','financial-bootstrap.js']")
-          rep('tests/legacy-renderer-retirement-contract.test.js',
-              "const EXPECTED=[\n  'renderAnalytics',\n  'renderSettings'\n];",
-              "const EXPECTED=[\n  'renderSettings'\n];")
-          rep('tests/legacy-renderer-retirement-contract.test.js',
-              "for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){",
-              "for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']){")
-          rep('tests/settings-legacy-boundary.test.js',"const retired=['renderAnalytics','renderSettings'];","const retired=['renderSettings'];")
-          rep('tests/settings-legacy-boundary.test.js',
-              "for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){",
-              "for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']){")
-          rep('tests/settings-legacy-boundary.test.js',
-              "for(const name of ['renderNav','renderHome','renderIncome','renderGoals','renderHistory']){",
-              "for(const name of ['renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']){")
-          rep('tests/shell-renderer-ownership.test.js',
-              "{name:'renderAnalytics',legacy:/function\\s+renderAnalytics\\s*\\(/,canonical:/root\\.renderAnalytics\\s*=\\s*function\\s*\\(/,owner:'analytics-ui.js',source:analyticsUi}",
-              "{name:'renderAnalytics',legacy:/function\\s+renderAnalytics\\s*\\(/,canonical:/root\\.renderAnalytics\\s*=\\s*function\\s*\\(/,owner:'analytics-ui.js',source:analyticsUi,physicallyRetired:true}")
-          rep('tests/shell-renderer-ownership.test.js',
-              "['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']",
-              "['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics']")
-          p=Path('tests/legacy-analytics-source-removal.test.js'); s=p.read_text()
-          old="""test('retirement registry entry is removed atomically and idempotently',()=>{\n  assert.equal(index.includes(RENDER_ANALYTICS_RETIREMENT),true);\n  const cleaned=removeRenderAnalyticsRetirementEntry(index);\n  assert.equal(cleaned.includes('\"renderAnalytics\"'),false);\n  assert.equal(removeRenderAnalyticsRetirementEntry(cleaned),cleaned);\n});"""
-          new="""test('analytics retirement registry is staged or physically retired atomically',()=>{\n  const cleaned=removeRenderAnalyticsRetirementEntry(index);\n  const shellChanged=removeLegacyAnalyticsSource(shell)!==shell;\n  const indexChanged=cleaned!==index;\n  assert.equal(shellChanged,indexChanged,'analytics shell source and retirement entry must transition atomically');\n  assert.equal(cleaned.includes('\"renderAnalytics\"'),false);\n  assert.equal(removeRenderAnalyticsRetirementEntry(cleaned),cleaned);\n});"""
-          if old not in s: raise SystemExit('legacy analytics assertion block not found')
-          p.write_text(s.replace(old,new))
-          PY
-          git checkout origin/main -- .github/workflows/test.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests .github/workflows/test.yml
-          git diff --cached --quiet && exit 0
-          git commit -m "Update tests after Analytics source retirement"
-          git push origin HEAD:agent/apply-physical-analytics-cleanup
-      - name: Stop after contract update push
-        if: github.ref == 'refs/heads/agent/apply-physical-analytics-cleanup'
-        run: exit 0
       - name: Install smoke-test dependency
-        if: github.ref != 'refs/heads/agent/apply-physical-analytics-cleanup'
         run: npm install --no-save jsdom@26.1.0
       - name: Syntax check
-        if: github.ref != 'refs/heads/agent/apply-physical-analytics-cleanup'
-        run: echo deferred to PR run
+        run: |
+          node --check currency-engine.js
+          node --check currency-runtime.js
+          node --check currency-display.js
+          node --check financial-core.js
+          node --check goal-lifecycle-core.js
+          node --check reserve-lifecycle-core.js
+          node --check goal-future-reroute-core.js
+          node --check expense-reconciliation.js
+          node --check financial-runtime.js
+          node --check goal-history.js
+          node --check financial-integration.js
+          node --check reserve-analytics.js
+          node --check reserve-essential-spend.js
+          node --check analytics-engine.js
+          node --check goal-completion-analytics.js
+          node --check analytics-ui.js
+          node --check product-rules.js
+          node --check navigation-compat.js
+          node --check arise-v3.js
+          node --check expense-edit-ui.js
+          node --check history-inspector.js
+          node --check product-ui.js
+          node --check reserve-lifecycle-ui.js
+          node --check sync-conflict-ui.js
+          node --check goal-lifecycle-ui.js
+          node --check supabase-public-config.js
+          node --check supabase-client.js
+          node --check sync-outbox.js
+          node --check indexeddb-store.js
+          node --check local-account-store.js
+          node --check sync-engine.js
+          node --check sync-entity-outbox.js
+          node --check sync-conflict-policy.js
+          node --check sync-pull.js
+          node --check transaction-transfer-metadata.js
+          node --check sync-conflict-hardening.js
+          node --check auth-ui.js
+          node --check account-settings.js
+          node --check profile-lifecycle.js
+          node --check settings-ui.js
+          node --check onboarding.js
+          node --check runtime-integrity.js
+          node --check financial-bootstrap.js
+          node --check scripts/build-standalone-preview.js
+          node --check scripts/remove-legacy-nav-source.js
+          node --check scripts/remove-legacy-home-source.js
+          node --check scripts/remove-legacy-income-source.js
+          node --check scripts/remove-legacy-goals-source.js
+          node --check scripts/remove-legacy-history-source.js
+          node --check scripts/remove-legacy-analytics-source.js
+          node --check scripts/remove-legacy-settings-source.js
+      - name: Physical cleanup guards
+        run: |
+          node scripts/remove-legacy-nav-source.js --check
+          node scripts/remove-legacy-home-source.js --check
+          node scripts/remove-legacy-income-source.js --check
+          node scripts/remove-legacy-goals-source.js --check
+          node scripts/remove-legacy-history-source.js --check
+          node scripts/remove-legacy-analytics-source.js --check
+          node scripts/remove-legacy-settings-source.js --check
+      - name: Regression and UI smoke tests
+        run: node --test tests/*.test.js
