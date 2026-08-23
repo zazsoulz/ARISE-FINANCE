@@ -35,6 +35,14 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
     ["renderAnalytics",`/* =========================================================\n   SETTINGS\n========================================================= */`],
     ["renderSettings","function categoryEditor(category){"]
   ];
+  function retireLegacyNavigationConstants(source){
+    const marker="const NAV_ITEMS = [";
+    const start=source.indexOf(marker);
+    if(start<0)throw new Error("ARISE shell navigation constants boundary not found.");
+    const end=source.indexOf("];",start);
+    if(end<0)throw new Error("ARISE shell navigation constants end boundary not found.");
+    return source.slice(0,start)+"/* Legacy NAV_ITEMS retired from effective compatibility shell; canonical navigation owns its item model. */\n\n"+source.slice(end+2);
+  }
   function retireLegacyRenderer(source,name,nextMarker){
     const marker=`function ${name}(){`;
     const start=source.indexOf(marker);
@@ -44,9 +52,10 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
     return source.slice(0,start)+`/* ${name} retired from effective compatibility shell; canonical owner loads before bootstrap. */\n\n`+source.slice(end);
   }
   function retireLegacyRenderers(source){
+    const withoutLegacyNavigationModel=retireLegacyNavigationConstants(source);
     return LEGACY_RENDERER_RETIREMENT.reduce(
       (html,[name,nextMarker])=>retireLegacyRenderer(html,name,nextMarker),
-      source
+      withoutLegacyNavigationModel
     );
   }
   try{
