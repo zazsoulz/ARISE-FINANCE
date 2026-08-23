@@ -65,5 +65,6 @@ jobs:
           node --check runtime-integrity.js
           node --check financial-bootstrap.js
           node --check scripts/build-standalone-preview.js
+          node --check scripts/remove-legacy-income-source.js
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
