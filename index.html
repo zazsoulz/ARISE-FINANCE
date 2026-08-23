@@ -38,7 +38,7 @@ html,body{margin:0;min-height:100%;background:#080b0f;color:#f0f2f3;font-family:
   function retireLegacyNavigationConstants(source){
     const marker="const NAV_ITEMS = [";
     const start=source.indexOf(marker);
-    if(start<0)throw new Error("ARISE shell navigation constants boundary not found.");
+    if(start<0)return source;
     const end=source.indexOf("];",start);
     if(end<0)throw new Error("ARISE shell navigation constants end boundary not found.");
     return source.slice(0,start)+"/* Legacy NAV_ITEMS retired from effective compatibility shell; canonical navigation owns its item model. */\n\n"+source.slice(end+2);
