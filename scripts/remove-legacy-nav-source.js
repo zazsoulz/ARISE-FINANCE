@@ -53,7 +53,14 @@ function removeRenderNavRetirementEntry(source){
     return source.replace(RENDER_NAV_RETIREMENT,'');
   }
 
-  if(/LEGACY_RENDERER_RETIREMENT/.test(source)&&/\["renderNav"/.test(source)){
+  const registryStart=source.indexOf('const LEGACY_RENDERER_RETIREMENT=[');
+  if(registryStart<0) return source;
+  const registryEnd=source.indexOf('];',registryStart);
+  if(registryEnd<0){
+    throw new Error('Legacy renderer retirement registry is malformed.');
+  }
+  const registry=source.slice(registryStart,registryEnd+2);
+  if(registry.includes('"renderNav"')){
     throw new Error('Legacy renderNav retirement entry is malformed.');
   }
 
