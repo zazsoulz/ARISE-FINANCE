@@ -6,7 +6,6 @@ const index=fs.readFileSync('index.html','utf8');
 const shell=fs.readFileSync('app-shell.html','utf8');
 
 const EXPECTED=[
-  'renderHistory',
   'renderAnalytics',
   'renderSettings'
 ];
@@ -33,12 +32,13 @@ test('retirement stays fail-closed on missing shell boundaries',()=>{
   assert.match(index,/LEGACY_RENDERER_RETIREMENT\.reduce/);
 });
 
-test('physically retired topbar navigation home income and goals stay out of compatibility source and registry',()=>{
-  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals']){
+test('physically retired topbar navigation home income goals and history stay out of compatibility source and registry',()=>{
+  for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory']){
     assert.doesNotMatch(shell,new RegExp(`function\\s+${name}\\s*\\(`));
     assert.equal(index.includes(`["${name}"`),false,`${name} must not remain in retirement registry after source removal`);
   }
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/);
   assert.match(shell,/function\s+incomeRow\s*\(/,'incomeRow compatibility helper must remain after renderIncome source retirement');
   assert.match(shell,/function\s+showGoalModal\s*\(/,'goal modal lifecycle must remain after renderGoals source retirement');
+  assert.match(shell,/function\s+historyTransaction\s*\(/,'historyTransaction compatibility helper must remain after renderHistory source retirement');
 });
