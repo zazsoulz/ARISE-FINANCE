@@ -27,8 +27,8 @@ function boot(){
   for(const path of [
     'financial-core.js','goal-lifecycle-core.js','reserve-lifecycle-core.js','goal-future-reroute-core.js',
     'expense-reconciliation.js','financial-runtime.js','goal-history.js','financial-integration.js',
-    'reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','arise-v3.js',
-    'history-inspector.js','analytics-ui.js','expense-edit-ui.js','product-ui.js'
+    'reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','navigation-compat.js','arise-v3.js',
+    'history-inspector.js','analytics-ui.js','expense-edit-ui.js','product-ui.js','reserve-lifecycle-ui.js'
   ]) file(ctx,path);
   run(ctx,'render();','render.js');
   return {dom,ctx,document:dom.window.document};
@@ -106,5 +106,24 @@ test('profile control routes to account and financial settings instead of a dead
   profile.click();
   assert.equal(run(ctx,'activePage','profile-active-page.js'),'settings');
   assert.ok(document.getElementById('settingsProfileName'),'profile control did not open financial settings');
+  dom.window.close();
+});
+
+test('reserve lifecycle primary controls open real deposit flow and persist settings',()=>{
+  const {dom,ctx,document}=boot();
+  run(ctx,`activePage='settings'; render();`,'reserve-settings.js');
+  const section=document.getElementById('reserveLifecycle');
+  assert.ok(section,'reserve lifecycle section missing from settings');
+  const deposit=document.getElementById('reserveDepositAction');
+  const save=document.getElementById('saveReserveLifecycleSettings');
+  assert.ok(deposit&&save,'reserve lifecycle primary controls missing');
+  deposit.click();
+  assert.ok(document.getElementById('reserveDepositAmount'),'reserve deposit action is dead');
+  run(ctx,'closeModal(); activePage="settings"; render();','reserve-settings-again.js');
+  document.getElementById('reserveTargetBalance').value='300000';
+  document.getElementById('reserveEssentialSpend').value='60000';
+  document.getElementById('saveReserveLifecycleSettings').click();
+  const saved=run(ctx,'(()=>{const r=activeProfile().settings.reserve||{}; return {targetBalance:r.targetBalance,monthlyEssentialSpend:r.monthlyEssentialSpend};})()','reserve-saved.js');
+  assert.deepEqual({...saved},{targetBalance:300000,monthlyEssentialSpend:60000});
   dom.window.close();
 });
