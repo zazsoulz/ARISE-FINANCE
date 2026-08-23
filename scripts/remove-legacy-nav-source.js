@@ -2,6 +2,7 @@ const fs=require('node:fs');
 
 const NAV_MARKER=`/* =========================================================\n   NAV\n========================================================= */`;
 const PROFILE_MARKER=`/* =========================================================\n   PROFILE SWITCHER\n========================================================= */`;
+const RENDER_NAV_RETIREMENT=`    ["renderNav",\`/* =========================================================\\n   HOME\\n========================================================= */\`],\n`;
 
 function removeLegacyNavSource(source){
   const navStart=source.indexOf(NAV_MARKER);
@@ -47,24 +48,57 @@ function removeLegacyNavSource(source){
   return source.slice(0,navStart)+NAV_MARKER+'\n\n'+bindSource+'\n\n\n'+source.slice(profileStart);
 }
 
+function removeRenderNavRetirementEntry(source){
+  if(source.includes(RENDER_NAV_RETIREMENT)){
+    return source.replace(RENDER_NAV_RETIREMENT,'');
+  }
+
+  const registryStart=source.indexOf('const LEGACY_RENDERER_RETIREMENT=[');
+  if(registryStart<0) return source;
+  const registryEnd=source.indexOf('];',registryStart);
+  if(registryEnd<0){
+    throw new Error('Legacy renderer retirement registry is malformed.');
+  }
+  const registry=source.slice(registryStart,registryEnd+2);
+  if(registry.includes('"renderNav"')){
+    throw new Error('Legacy renderNav retirement entry is malformed.');
+  }
+
+  return source;
+}
+
 function run(argv=process.argv.slice(2)){
   const mode=argv[0]||'--check';
-  const path=argv[1]||'app-shell.html';
-  const source=fs.readFileSync(path,'utf8');
-  const cleaned=removeLegacyNavSource(source);
+  const shellPath=argv[1]||'app-shell.html';
+  const indexPath=argv[2]||'index.html';
+  const shellSource=fs.readFileSync(shellPath,'utf8');
+  const indexSource=fs.readFileSync(indexPath,'utf8');
+  const cleanedShell=removeLegacyNavSource(shellSource);
+  const cleanedIndex=removeRenderNavRetirementEntry(indexSource);
+  const shellChanged=cleanedShell!==shellSource;
+  const indexChanged=cleanedIndex!==indexSource;
 
   if(mode==='--check'){
-    if(cleaned===source){
-      console.log('Legacy NAV_ITEMS/renderNav source is already removed.');
+    if(!shellChanged&&!indexChanged){
+      console.log('Legacy navigation source and retirement entry are already removed.');
       return;
     }
-    console.log('Legacy NAV_ITEMS/renderNav source can be removed safely.');
+    if(shellChanged!==indexChanged){
+      throw new Error('Physical navigation cleanup is not atomic: shell and retirement registry are out of sync.');
+    }
+    console.log('Legacy navigation source and retirement entry can be removed atomically.');
     return;
   }
 
   if(mode==='--write'){
-    if(cleaned!==source) fs.writeFileSync(path,cleaned);
-    console.log(cleaned===source?'No legacy navigation source found.':'Legacy navigation source removed.');
+    if(shellChanged!==indexChanged){
+      throw new Error('Physical navigation cleanup is not atomic: refusing partial write.');
+    }
+    if(shellChanged){
+      fs.writeFileSync(shellPath,cleanedShell);
+      fs.writeFileSync(indexPath,cleanedIndex);
+    }
+    console.log(shellChanged?'Legacy navigation source and retirement entry removed.':'No legacy navigation source found.');
     return;
   }
 
@@ -75,4 +109,4 @@ if(require.main===module){
   run();
 }
 
-module.exports={NAV_MARKER,PROFILE_MARKER,removeLegacyNavSource};
+module.exports={NAV_MARKER,PROFILE_MARKER,RENDER_NAV_RETIREMENT,removeLegacyNavSource,removeRenderNavRetirementEntry};
