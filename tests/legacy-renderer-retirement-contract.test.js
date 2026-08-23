@@ -6,7 +6,6 @@ const index=fs.readFileSync('index.html','utf8');
 const shell=fs.readFileSync('app-shell.html','utf8');
 
 const EXPECTED=[
-  'renderNav',
   'renderHome',
   'renderIncome',
   'renderGoals',
@@ -37,7 +36,10 @@ test('retirement stays fail-closed on missing shell boundaries',()=>{
   assert.match(index,/LEGACY_RENDERER_RETIREMENT\.reduce/);
 });
 
-test('physically retired topbar stays out of compatibility source and registry',()=>{
-  assert.doesNotMatch(shell,/function\s+renderTopbar\s*\(/);
-  assert.equal(index.includes('[\"renderTopbar\"'),false);
+test('physically retired topbar and navigation stay out of compatibility source and registry',()=>{
+  for(const name of ['renderTopbar','renderNav']){
+    assert.doesNotMatch(shell,new RegExp(`function\\s+${name}\\s*\\(`));
+    assert.equal(index.includes(`["${name}"`),false,`${name} must not remain in retirement registry after source removal`);
+  }
+  assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/);
 });
