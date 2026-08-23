@@ -1,0 +1,40 @@
+name: Apply guarded legacy home cleanup
+
+on:
+  push:
+    branches:
+      - agent/physical-remove-legacy-home
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/physical-remove-legacy-home
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify guarded cleanup is applicable
+        run: node scripts/remove-legacy-home-source.js --check
+      - name: Apply guarded cleanup
+        run: node scripts/remove-legacy-home-source.js --write
+      - name: Restrict generated diff
+        run: |
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf 'app-shell.html\nindex.html' | sort)"
+          test "$changed" = "$expected"
+          git diff --check
+      - name: Run focused cleanup tests
+        run: node --test tests/legacy-home-source-cleanup.test.js
+      - name: Commit generated cleanup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-shell.html index.html
+          git commit -m 'Physically remove legacy home renderer'
+          git push origin HEAD:agent/physical-remove-legacy-home
