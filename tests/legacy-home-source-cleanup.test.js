@@ -32,10 +32,18 @@ function indexFixture(){
   return `const LEGACY_RENDERER_RETIREMENT=[\n${RENDER_HOME_RETIREMENT}    ["renderIncome","function incomeRow(tx){"]\n  ];`;
 }
 
-test('current compatibility shell has an exactly bounded removable legacy home renderer',()=>{
+test('current compatibility shell home source is either staged or fully retired',()=>{
   const homeStart=shell.indexOf(HOME_MARKER);
+  const hasRenderer=/\bfunction\s+renderHome\s*\(/.test(shell);
+
+  if(homeStart<0){
+    assert.equal(hasRenderer,false,'renderHome must not survive without its HOME boundary');
+    assert.ok(shell.includes(GOAL_CARD_MARKER),'GOAL CARD marker must remain after home retirement');
+    assert.ok(shell.includes('function goalCard('),'goalCard must remain after home retirement');
+    return;
+  }
+
   const goalStart=shell.indexOf(GOAL_CARD_MARKER,homeStart+HOME_MARKER.length);
-  assert.ok(homeStart>=0,'HOME marker missing');
   assert.ok(goalStart>homeStart,'GOAL CARD marker must follow HOME');
   const block=shell.slice(homeStart,goalStart);
   assert.equal((block.match(/\bfunction\s+renderHome\s*\(/g)||[]).length,1);
@@ -75,10 +83,18 @@ test('retirement cleanup removes exactly renderHome and is idempotent',()=>{
   assert.equal(removeRenderHomeRetirementEntry(cleaned),cleaned);
 });
 
-test('current shell and retirement registry remain atomic before physical cleanup',()=>{
+test('current shell and retirement registry are atomically staged or retired',()=>{
   const shellChanged=removeLegacyHomeSource(shell)!==shell;
   const indexChanged=removeRenderHomeRetirementEntry(index)!==index;
-  assert.equal(shellChanged,true,'current shell should still contain legacy renderHome source');
-  assert.equal(indexChanged,true,'current registry should still contain renderHome retirement entry');
-  assert.equal(shellChanged,indexChanged);
+  assert.equal(shellChanged,indexChanged,'shell source and retirement registry must change together');
+
+  if(!shellChanged){
+    assert.equal(/\bfunction\s+renderHome\s*\(/.test(shell),false,'retired shell must not contain renderHome');
+    const registryStart=index.indexOf('const LEGACY_RENDERER_RETIREMENT=[');
+    const registryEnd=registryStart<0?-1:index.indexOf('];',registryStart);
+    if(registryStart>=0&&registryEnd>registryStart){
+      const registry=index.slice(registryStart,registryEnd+2);
+      assert.equal(registry.includes('"renderHome"'),false,'retired registry must not contain renderHome');
+    }
+  }
 });
