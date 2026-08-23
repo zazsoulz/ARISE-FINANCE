@@ -63,14 +63,18 @@ test('refuses malformed renderHistory retirement entry',()=>{
   assert.throws(()=>removeRenderHistoryRetirementEntry(malformed),/retirement entry is malformed/);
 });
 
-test('current main shell and retirement registry are removable atomically',()=>{
+test('current shell and retirement registry are atomically staged or retired',()=>{
   const shell=fs.readFileSync('app-shell.html','utf8');
   const index=fs.readFileSync('index.html','utf8');
   const cleanedShell=removeLegacyHistorySource(shell);
   const cleanedIndex=removeRenderHistoryRetirementEntry(index);
-  assert.notEqual(cleanedShell,shell,'legacy history block should still exist before physical cleanup');
-  assert.notEqual(cleanedIndex,index,'renderHistory retirement entry should still exist before physical cleanup');
+  const shellChanged=cleanedShell!==shell;
+  const indexChanged=cleanedIndex!==index;
+  assert.equal(shellChanged,indexChanged,'history shell source and retirement entry must transition atomically');
   assert.equal(cleanedShell.includes('function renderHistory(){'),false,'renderHistory must be removed');
   assert.equal(cleanedShell.includes('function historyMonthBlock('),false,'retired historyMonthBlock helper must be removed with renderer');
   assert.equal(cleanedShell.includes(HISTORY_TRANSACTION_BOUNDARY),true,'historyTransaction compatibility helper must survive cleanup');
+  if(!shellChanged){
+    assert.equal(index.includes('"renderHistory"'),false,'physically retired renderHistory must stay out of registry');
+  }
 });
