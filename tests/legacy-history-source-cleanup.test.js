@@ -10,16 +10,17 @@ const {
 }=require('../scripts/remove-legacy-history-source.js');
 
 function sampleShell(extra=''){
-  return `before\n${HISTORY_MARKER}\nfunction renderHistory(){ return 'legacy'; }\n${extra}${HISTORY_TRANSACTION_BOUNDARY}\n  return 'helper';\n}\nafter`;
+  return `before\n${HISTORY_MARKER}\nfunction renderHistory(){ return 'legacy'; }\nfunction historyMonthBlock(){ return 'retired-helper'; }\n${extra}${HISTORY_TRANSACTION_BOUNDARY}\n  return 'helper';\n}\nafter`;
 }
 
 function sampleIndex(entry=RENDER_HISTORY_RETIREMENT){
   return `before\nconst LEGACY_RENDERER_RETIREMENT=[\n${entry}    ["renderAnalytics","marker"],\n];\nafter`;
 }
 
-test('removes only legacy history renderer and preserves historyTransaction helper',()=>{
+test('removes retired history renderer block and preserves historyTransaction helper',()=>{
   const result=removeLegacyHistorySource(sampleShell());
   assert.equal(result.includes('function renderHistory(){'),false);
+  assert.equal(result.includes('function historyMonthBlock(){'),false);
   assert.equal(result.includes(HISTORY_MARKER),false);
   assert.equal(result.includes(HISTORY_TRANSACTION_BOUNDARY),true);
   assert.equal(result.includes("return 'helper'"),true);
@@ -43,7 +44,7 @@ test('refuses malformed history boundaries',()=>{
   );
 });
 
-test('refuses broad cleanup when another helper appears inside renderer block',()=>{
+test('refuses broad cleanup when an unknown helper appears inside retired block',()=>{
   assert.throws(
     ()=>removeLegacyHistorySource(sampleShell('function accidentalHelper(){}\n')),
     /unexpected helper accidentalHelper/
@@ -67,7 +68,9 @@ test('current main shell and retirement registry are removable atomically',()=>{
   const index=fs.readFileSync('index.html','utf8');
   const cleanedShell=removeLegacyHistorySource(shell);
   const cleanedIndex=removeRenderHistoryRetirementEntry(index);
-  assert.notEqual(cleanedShell,shell,'legacy renderHistory source should still exist before physical cleanup');
+  assert.notEqual(cleanedShell,shell,'legacy history block should still exist before physical cleanup');
   assert.notEqual(cleanedIndex,index,'renderHistory retirement entry should still exist before physical cleanup');
+  assert.equal(cleanedShell.includes('function renderHistory(){'),false,'renderHistory must be removed');
+  assert.equal(cleanedShell.includes('function historyMonthBlock('),false,'retired historyMonthBlock helper must be removed with renderer');
   assert.equal(cleanedShell.includes(HISTORY_TRANSACTION_BOUNDARY),true,'historyTransaction compatibility helper must survive cleanup');
 });
