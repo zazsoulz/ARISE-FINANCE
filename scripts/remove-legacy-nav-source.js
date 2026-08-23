@@ -19,13 +19,24 @@ function removeLegacyNavSource(source){
   }
 
   const block=source.slice(navStart,profileStart);
-  if(!/\bconst\s+NAV_ITEMS\s*=/.test(block)){
+  const hasItems=/\bconst\s+NAV_ITEMS\s*=/.test(block);
+  const hasRenderer=/\bfunction\s+renderNav\s*\(/.test(block);
+  const hasBind=/\bfunction\s+bindNav\s*\(/.test(block);
+
+  if(!hasItems&&!hasRenderer){
+    if(!hasBind){
+      throw new Error('Legacy navigation source is malformed: bindNav boundary helper missing.');
+    }
+    return source;
+  }
+
+  if(!hasItems){
     throw new Error('Legacy navigation source is malformed: NAV_ITEMS missing.');
   }
-  if(!/\bfunction\s+renderNav\s*\(/.test(block)){
+  if(!hasRenderer){
     throw new Error('Legacy navigation source is malformed: renderNav missing.');
   }
-  if(!/\bfunction\s+bindNav\s*\(/.test(block)){
+  if(!hasBind){
     throw new Error('Legacy navigation source is malformed: bindNav boundary helper missing.');
   }
 
