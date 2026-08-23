@@ -20,16 +20,15 @@ function removeLegacyHomeSource(source){
   }
 
   const block=source.slice(homeStart,goalCardStart);
-  const rendererMatches=block.match(/\bfunction\s+renderHome\s*\(/g)||[];
-  if(rendererMatches.length!==1){
-    throw new Error(`Legacy home source is malformed: expected one renderHome, found ${rendererMatches.length}.`);
+  const functionNames=[...block.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(match=>match[1]);
+  const rendererCount=functionNames.filter(name=>name==='renderHome').length;
+  if(rendererCount!==1){
+    throw new Error(`Legacy home source is malformed: expected one renderHome, found ${rendererCount}.`);
   }
 
-  const unexpectedFunction=block
-    .replace(/\bfunction\s+renderHome\s*\(/,'function __expected_renderHome__(')
-    .match(/\bfunction\s+[A-Za-z_$][\w$]*\s*\(/);
+  const unexpectedFunction=functionNames.find(name=>name!=='renderHome');
   if(unexpectedFunction){
-    throw new Error(`Legacy home source contains unexpected helper ${unexpectedFunction[0]}; refusing broad cleanup.`);
+    throw new Error(`Legacy home source contains unexpected helper ${unexpectedFunction}; refusing broad cleanup.`);
   }
 
   return source.slice(0,homeStart)+source.slice(goalCardStart);
