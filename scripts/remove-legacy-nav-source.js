@@ -2,7 +2,7 @@ const fs=require('node:fs');
 
 const NAV_MARKER=`/* =========================================================\n   NAV\n========================================================= */`;
 const PROFILE_MARKER=`/* =========================================================\n   PROFILE SWITCHER\n========================================================= */`;
-const RETIREMENT_ENTRY=/\n\s*\["renderNav",`\/\* =========================================================\\n   HOME\\n========================================================= \*\/`\],?/;
+const RENDER_NAV_RETIREMENT=`    ["renderNav",\`/* =========================================================\\n   HOME\\n========================================================= */\`],\n`;
 
 function removeLegacyNavSource(source){
   const navStart=source.indexOf(NAV_MARKER);
@@ -49,15 +49,15 @@ function removeLegacyNavSource(source){
 }
 
 function removeRenderNavRetirementEntry(source){
-  const hasEntry=source.includes('["renderNav",`/* =========================================================\\n   HOME\\n========================================================= */`]');
-  if(!hasEntry){
-    if(/LEGACY_RENDERER_RETIREMENT/.test(source)&&/\["renderNav"/.test(source)){
-      throw new Error('Legacy renderNav retirement entry is malformed.');
-    }
-    return source;
+  if(source.includes(RENDER_NAV_RETIREMENT)){
+    return source.replace(RENDER_NAV_RETIREMENT,'');
   }
 
-  return source.replace(/\n\s*\["renderNav",`\/\* =========================================================\\n   HOME\\n========================================================= \*\/`\],?/, '');
+  if(/LEGACY_RENDERER_RETIREMENT/.test(source)&&/\["renderNav"/.test(source)){
+    throw new Error('Legacy renderNav retirement entry is malformed.');
+  }
+
+  return source;
 }
 
 function run(argv=process.argv.slice(2)){
@@ -102,4 +102,4 @@ if(require.main===module){
   run();
 }
 
-module.exports={NAV_MARKER,PROFILE_MARKER,removeLegacyNavSource,removeRenderNavRetirementEntry};
+module.exports={NAV_MARKER,PROFILE_MARKER,RENDER_NAV_RETIREMENT,removeLegacyNavSource,removeRenderNavRetirementEntry};
