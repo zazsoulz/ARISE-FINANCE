@@ -65,8 +65,17 @@ jobs:
           node --check runtime-integrity.js
           node --check financial-bootstrap.js
           node --check scripts/build-standalone-preview.js
+          node --check scripts/remove-legacy-nav-source.js
+          node --check scripts/remove-legacy-home-source.js
           node --check scripts/remove-legacy-income-source.js
           node --check scripts/remove-legacy-goals-source.js
           node --check scripts/remove-legacy-history-source.js
+      - name: Physical cleanup guards
+        run: |
+          node scripts/remove-legacy-nav-source.js --check
+          node scripts/remove-legacy-home-source.js --check
+          node scripts/remove-legacy-income-source.js --check
+          node scripts/remove-legacy-goals-source.js --check
+          node scripts/remove-legacy-history-source.js --check
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
