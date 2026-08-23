@@ -3,6 +3,7 @@ const fs=require('node:fs');
 const HISTORY_MARKER=`/* =========================================================\n   HISTORY\n========================================================= */`;
 const HISTORY_TRANSACTION_BOUNDARY='function historyTransaction(tx){';
 const RENDER_HISTORY_RETIREMENT=`    ["renderHistory","function historyTransaction(tx){"],\n`;
+const ALLOWED_HISTORY_FUNCTIONS=new Set(['renderHistory','historyMonthBlock']);
 
 function removeLegacyHistorySource(source){
   const historyStart=source.indexOf(HISTORY_MARKER);
@@ -26,7 +27,7 @@ function removeLegacyHistorySource(source){
     throw new Error(`Legacy history source is malformed: expected one renderHistory, found ${rendererCount}.`);
   }
 
-  const unexpectedFunction=functionNames.find(name=>name!=='renderHistory');
+  const unexpectedFunction=functionNames.find(name=>!ALLOWED_HISTORY_FUNCTIONS.has(name));
   if(unexpectedFunction){
     throw new Error(`Legacy history source contains unexpected helper ${unexpectedFunction}; refusing broad cleanup.`);
   }
@@ -90,4 +91,4 @@ function run(argv=process.argv.slice(2)){
 
 if(require.main===module) run();
 
-module.exports={HISTORY_MARKER,HISTORY_TRANSACTION_BOUNDARY,RENDER_HISTORY_RETIREMENT,removeLegacyHistorySource,removeRenderHistoryRetirementEntry};
+module.exports={HISTORY_MARKER,HISTORY_TRANSACTION_BOUNDARY,RENDER_HISTORY_RETIREMENT,ALLOWED_HISTORY_FUNCTIONS,removeLegacyHistorySource,removeRenderHistoryRetirementEntry};
