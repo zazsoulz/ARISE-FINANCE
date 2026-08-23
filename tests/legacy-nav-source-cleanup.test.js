@@ -2,6 +2,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {
+  NAV_MARKER,
+  LEGACY_NAV_SOURCE_START,
   RENDER_NAV_RETIREMENT,
   removeLegacyNavSource,
   removeRenderNavRetirementEntry
@@ -9,6 +11,21 @@ const {
 
 const shell=fs.readFileSync('app-shell.html','utf8');
 const index=fs.readFileSync('index.html','utf8');
+
+test('legacy nav cleanup targets the JS nav source rather than the earlier CSS NAV marker',()=>{
+  const cssNavStart=shell.indexOf(NAV_MARKER);
+  const jsNavStart=shell.indexOf(LEGACY_NAV_SOURCE_START);
+  assert.ok(cssNavStart>=0,'CSS NAV marker should exist in current compatibility shell');
+  assert.ok(jsNavStart>cssNavStart,'JS navigation source must be a later, more specific boundary');
+
+  const cssPrefix=shell.slice(0,jsNavStart);
+  const cleaned=removeLegacyNavSource(shell);
+  assert.equal(cleaned.slice(0,cssPrefix.length),cssPrefix,'cleanup must preserve every byte before the JS navigation source');
+  assert.equal(cleaned.includes('.nav{'),true,'legacy shell CSS must not be removed by JS cleanup');
+  assert.equal(cleaned.includes('GRID / CARDS'),true,'unrelated compatibility styles must survive cleanup');
+  assert.equal(cleaned.includes('<body>'),true,'shell document structure must survive cleanup');
+  assert.equal(cleaned.includes('const STORAGE_KEY'),true,'shared compatibility runtime before navigation must survive cleanup');
+});
 
 test('legacy nav cleanup removes only duplicate nav model and renderer',()=>{
   const cleaned=removeLegacyNavSource(shell);
@@ -37,9 +54,12 @@ test('legacy nav cleanup is idempotent after source removal',()=>{
   assert.equal(removeRenderNavRetirementEntry(cleanedIndex),cleanedIndex);
 });
 
-test('legacy nav cleanup fails closed on malformed boundaries',()=>{
+test('legacy nav cleanup fails closed on malformed JS boundaries',()=>{
   const malformedShell=shell.replace('function renderNav(){','function renamedLegacyNav(){');
   assert.throws(()=>removeLegacyNavSource(malformedShell),/renderNav missing/);
+
+  const missingJsBoundary=shell.replace(LEGACY_NAV_SOURCE_START,`${NAV_MARKER}\n\n/* boundary damaged */\nconst NAV_ITEMS = [`);
+  assert.throws(()=>removeLegacyNavSource(missingJsBoundary),/JS navigation boundary missing/);
 
   const malformedIndex=index.replace(RENDER_NAV_RETIREMENT,RENDER_NAV_RETIREMENT.replace('"renderNav",','"renderNav" ,'));
   assert.notEqual(malformedIndex,index,'malformed fixture must preserve renderNav while changing the exact registry entry');
