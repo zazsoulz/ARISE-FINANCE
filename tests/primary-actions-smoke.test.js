@@ -28,7 +28,8 @@ function boot(){
     'financial-core.js','goal-lifecycle-core.js','reserve-lifecycle-core.js','goal-future-reroute-core.js',
     'expense-reconciliation.js','financial-runtime.js','goal-history.js','financial-integration.js',
     'reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','navigation-compat.js','arise-v3.js',
-    'history-inspector.js','analytics-ui.js','expense-edit-ui.js','product-ui.js','reserve-lifecycle-ui.js'
+    'history-inspector.js','analytics-ui.js','expense-edit-ui.js','product-ui.js','reserve-lifecycle-ui.js',
+    'account-settings.js','profile-lifecycle.js','settings-ui.js'
   ]) file(ctx,path);
   run(ctx,'render();','render.js');
   return {dom,ctx,document:dom.window.document};
