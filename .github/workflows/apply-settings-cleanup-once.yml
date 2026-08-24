@@ -1,0 +1,45 @@
+name: Apply Settings Cleanup Once
+
+on:
+  push:
+    branches:
+      - agent/apply-physical-settings-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/apply-physical-settings-cleanup
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Apply guarded cleanup
+        run: node scripts/remove-legacy-settings-source.js --write app-shell.html index.html
+      - name: Verify targeted source removal
+        run: |
+          node scripts/remove-legacy-settings-source.js --check app-shell.html index.html
+          if grep -q 'function renderSettings()' app-shell.html; then
+            echo 'legacy renderSettings still present' >&2
+            exit 1
+          fi
+          if grep -q '"renderSettings"' index.html; then
+            echo 'renderSettings retirement entry still present' >&2
+            exit 1
+          fi
+          grep -q 'function categoryEditor(category)' app-shell.html
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/apply-settings-cleanup-once.yml
+      - name: Commit guarded result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add app-shell.html index.html .github/workflows/apply-settings-cleanup-once.yml
+          git commit -m 'Physically remove retired Settings renderer'
+          git push origin HEAD:agent/apply-physical-settings-cleanup
