@@ -38,7 +38,8 @@ test('new user boots into registration instead of a blank or app screen',()=>{
 
 test('registered user boots into A1-V3 financial flow',()=>{
   const {dom}=boot({registered:true}); const document=dom.window.document;
-  assert.ok(document.querySelector('.arise-v3-home')); assert.ok(document.querySelector('.arise-flow-stage')); assert.ok(document.querySelector('.arise-remainder')); assert.ok(document.getElementById('homeIncome'));
+  assert.ok(document.querySelector('.arise-v3-home')); assert.ok(document.querySelector('.arise-flow-stage')); assert.ok(document.querySelector('.arise-flow-canvas')); assert.ok(document.querySelector('.arise-remainder')); assert.ok(document.getElementById('homeIncome'));
+  assert.equal(document.querySelectorAll('.arise-flow-svg,.arise-flow-branch,.arise-flow-drift,.arise-flow-particles,.arise-flow-source').length,0);
   assert.equal(document.querySelector('.logo')?.textContent.includes('ARISE'),true);
   assert.deepEqual([...document.querySelectorAll('.nav [data-page]')].map(el=>el.dataset.page),['home','income','goals','history','analytics']);
   assert.equal([...document.querySelectorAll('.arise-flow-node')].length,4); dom.window.close();

@@ -38,78 +38,216 @@
     return `<circle class="arise-flow-particle ${tone}" r="${radius}"><animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto"><mpath href="#${path}"/></animateMotion></circle>`;
   }
 
+  const homeFlowVertexShader=[
+    "attribute vec2 aPosition;",
+    "varying vec2 vUv;",
+    "void main(){",
+    "  vUv=aPosition*.5+.5;",
+    "  gl_Position=vec4(aPosition,0.0,1.0);",
+    "}"
+  ].join("\n");
+
+  const homeFlowFragmentShader=[
+    "precision mediump float;",
+    "varying vec2 vUv;",
+    "uniform sampler2D uTexture;",
+    "uniform float uTime;",
+    "uniform float uCanvasAspect;",
+    "uniform float uTextureAspect;",
+    "vec2 rotateAround(vec2 point,vec2 center,float angle){",
+    "  float s=sin(angle);",
+    "  float c=cos(angle);",
+    "  vec2 p=point-center;",
+    "  return center+mat2(c,-s,s,c)*p;",
+    "}",
+    "void main(){",
+    "  float drawWidth=min(0.94,uTextureAspect/uCanvasAspect);",
+    "  vec2 uv=vec2((vUv.x-0.5)/drawWidth+0.5,vUv.y);",
+    "  if(uv.x<=0.0||uv.x>=1.0||uv.y<=0.0||uv.y>=1.0){gl_FragColor=vec4(0.0);return;}",
+    "  float down=1.0-uv.y;",
+    "  float body=smoothstep(0.015,0.72,down);",
+    "  float pool=smoothstep(0.66,0.97,down);",
+    "  float lateral=sin((uv.x-0.5)*7.0+uTime*0.23);",
+    "  float current=sin(down*12.0-uTime*0.82+lateral*1.45)+0.46*sin(down*27.0+uTime*0.57+(uv.x-0.5)*9.0);",
+    "  float cross=sin((uv.x-0.5)*18.0+down*8.0-uTime*0.61);",
+    "  vec2 flowUv=uv;",
+    "  flowUv.x+=(current*0.0092+cross*0.0038)*(0.24+0.76*body);",
+    "  flowUv.y+=cross*0.0044+sin(down*19.0-uTime*0.47+lateral)*0.0028;",
+    "  float poolAngle=(sin(uTime*0.34)+0.38*sin(down*11.0-uTime*0.71))*0.019*pool;",
+    "  flowUv=mix(flowUv,rotateAround(flowUv,vec2(0.5,0.115),poolAngle),pool);",
+    "  flowUv.x+=sin((flowUv.y-0.12)*35.0+uTime*0.76)*0.0085*pool;",
+    "  vec4 base=texture2D(uTexture,flowUv);",
+    "  float travel=0.5+0.5*sin(down*58.0-uTime*2.55+lateral*2.2);",
+    "  vec3 color=base.rgb*(0.94+0.11*travel);",
+    "  float alpha=base.a;",
+    "  float edgeFade=smoothstep(0.0,0.025,uv.y)*smoothstep(0.0,0.022,1.0-uv.y);",
+    "  gl_FragColor=vec4(color,alpha*edgeFade);",
+    "}"
+  ].join("\n");
+
+  function parseFlowTexture(value){
+    const raw=String(value||"").trim();
+    const match=raw.match(/^url\((.*)\)$/i);
+    if(!match)return "";
+    let source=match[1].trim();
+    if((source.startsWith('"')&&source.endsWith('"'))||(source.startsWith("'")&&source.endsWith("'")))source=source.slice(1,-1);
+    try{return new URL(source,root.document?.baseURI||root.location?.href).href;}catch(_error){return source;}
+  }
+
+  function compileHomeFlowShader(gl,type,source){
+    const shader=gl.createShader(type);
+    gl.shaderSource(shader,source);
+    gl.compileShader(shader);
+    if(gl.getShaderParameter(shader,gl.COMPILE_STATUS))return shader;
+    const message=gl.getShaderInfoLog(shader)||"ARISE flow shader compilation failed";
+    gl.deleteShader(shader);
+    throw new Error(message);
+  }
+
+  function createHomeFlowProgram(gl){
+    const vertex=compileHomeFlowShader(gl,gl.VERTEX_SHADER,homeFlowVertexShader);
+    const fragment=compileHomeFlowShader(gl,gl.FRAGMENT_SHADER,homeFlowFragmentShader);
+    const program=gl.createProgram();
+    gl.attachShader(program,vertex);
+    gl.attachShader(program,fragment);
+    gl.linkProgram(program);
+    gl.deleteShader(vertex);
+    gl.deleteShader(fragment);
+    if(gl.getProgramParameter(program,gl.LINK_STATUS))return program;
+    const message=gl.getProgramInfoLog(program)||"ARISE flow shader link failed";
+    gl.deleteProgram(program);
+    throw new Error(message);
+  }
+
+  function sizeHomeFlowCanvas(canvas,maxRatio=1.4){
+    const ratio=Math.min(maxRatio,Math.max(1,Number(root.devicePixelRatio)||1));
+    const width=Math.max(1,Math.round(canvas.clientWidth*ratio));
+    const height=Math.max(1,Math.round(canvas.clientHeight*ratio));
+    if(canvas.width!==width)canvas.width=width;
+    if(canvas.height!==height)canvas.height=height;
+    return {width,height};
+  }
+
+  function startWebGLHomeFlow(canvas,image,reducedMotion){
+    const gl=canvas.getContext("webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false,powerPreference:"high-performance"})
+      ||canvas.getContext("experimental-webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false});
+    if(!gl)return null;
+    const program=createHomeFlowProgram(gl);
+    const buffer=gl.createBuffer();
+    const texture=gl.createTexture();
+    gl.useProgram(program);
+    gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+    const position=gl.getAttribLocation(program,"aPosition");
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+    const uniforms={
+      texture:gl.getUniformLocation(program,"uTexture"),
+      time:gl.getUniformLocation(program,"uTime"),
+      canvasAspect:gl.getUniformLocation(program,"uCanvasAspect"),
+      textureAspect:gl.getUniformLocation(program,"uTextureAspect")
+    };
+    gl.uniform1i(uniforms.texture,0);
+    gl.clearColor(0,0,0,0);
+    const started=root.performance?.now?.()||Date.now();
+    let handle=0;
+    let frames=0;
+    let stopped=false;
+    const stop=()=>{
+      if(stopped)return;
+      stopped=true;
+      if(handle)root.cancelAnimationFrame(handle);
+      gl.deleteTexture(texture);
+      gl.deleteBuffer(buffer);
+      gl.deleteProgram(program);
+    };
+    const draw=now=>{
+      if(stopped)return;
+      if(!canvas.isConnected){stop();return;}
+      const {width,height}=sizeHomeFlowCanvas(canvas,.78);
+      const elapsed=Math.max(0,(Number(now)||started)-started)/1000;
+      gl.viewport(0,0,width,height);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(program);
+      gl.uniform1f(uniforms.time,elapsed);
+      gl.uniform1f(uniforms.canvasAspect,width/height);
+      gl.uniform1f(uniforms.textureAspect,(image.naturalWidth||image.width)/(image.naturalHeight||image.height));
+      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      frames+=1;
+      if(frames===1||frames%6===0){
+        canvas.dataset.flowFrames=String(frames);
+        canvas.dataset.flowTime=elapsed.toFixed(3);
+      }
+      if(reducedMotion){
+        canvas.dataset.flowMotion="reduced";
+      }else{
+        handle=root.requestAnimationFrame(draw);
+      }
+    };
+    canvas.dataset.flowRenderer="webgl";
+    canvas.classList.add("is-running");
+    draw(started);
+    return {stop};
+  }
+
+  function startCanvasHomeFlow(canvas,image,reducedMotion){
+    const context=canvas.getContext("2d",{alpha:true});
+    if(!context)return null;
+    const {width,height}=sizeHomeFlowCanvas(canvas,1);
+    const drawWidth=height*(image.naturalWidth||image.width)/(image.naturalHeight||image.height);
+    context.clearRect(0,0,width,height);
+    context.drawImage(image,(width-drawWidth)/2,0,drawWidth,height);
+    canvas.dataset.flowRenderer="static2d";
+    canvas.dataset.flowFrames="1";
+    canvas.dataset.flowTime="0.000";
+    canvas.dataset.flowMotion=reducedMotion?"reduced":"unsupported";
+    canvas.classList.add("is-running");
+    return {stop(){}};
+  }
+
+  function startHomeFluidFlow(canvas){
+    if(!canvas||typeof root.Image!=="function")return null;
+    const styles=typeof root.getComputedStyle==="function"?root.getComputedStyle(canvas):null;
+    const texture=parseFlowTexture(styles?.getPropertyValue("--arise-flow-texture"));
+    if(!texture)return null;
+    const reducedMotion=Boolean(root.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+    const image=new root.Image();
+    image.decoding="async";
+    let controller=null;
+    let renderError="";
+    image.onload=()=>{
+      if(!canvas.isConnected)return;
+      try{
+        controller=startWebGLHomeFlow(canvas,image,reducedMotion);
+      }catch(error){
+        renderError=String(error?.message||error).slice(0,160);
+        canvas.dataset.flowError=renderError;
+      }
+      if(controller)return;
+      let target=canvas;
+      if(canvas.getContext("webgl")||canvas.getContext("experimental-webgl")){
+        target=canvas.cloneNode(false);
+        if(renderError)target.dataset.flowError=renderError;
+        canvas.replaceWith(target);
+      }
+      controller=startCanvasHomeFlow(target,image,reducedMotion);
+      if(!controller)target.dataset.flowRenderer="static";
+    };
+    image.onerror=()=>{canvas.dataset.flowRenderer="static";};
+    image.src=texture;
+    return {stop:()=>controller?.stop()};
+  }
+
   function homeFlowScene(){
-    return `<svg class="arise-flow-svg" viewBox="0 0 600 570" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="ariseTrunk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff9ea" stop-opacity=".98"/><stop offset=".34" stop-color="#d9dde0" stop-opacity=".82"/><stop offset=".72" stop-color="#d8bd80" stop-opacity=".72"/><stop offset="1" stop-color="#b78b45" stop-opacity=".16"/></linearGradient>
-        <linearGradient id="ariseRibbon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f0df" stop-opacity=".82"/><stop offset=".46" stop-color="#9fb9c0" stop-opacity=".22"/><stop offset="1" stop-color="#cda65d" stop-opacity=".58"/></linearGradient>
-        <radialGradient id="arisePool"><stop offset="0" stop-color="#f0d79f" stop-opacity=".17"/><stop offset=".5" stop-color="#c49a53" stop-opacity=".055"/><stop offset="1" stop-color="#c49a53" stop-opacity="0"/></radialGradient>
-        <filter id="ariseSoftGlow" x="-80%" y="-30%" width="260%" height="170%"><feGaussianBlur stdDeviation="5.5"/></filter>
-        <filter id="ariseParticleGlow" x="-500%" y="-500%" width="1000%" height="1000%"><feGaussianBlur stdDeviation="1.6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      </defs>
-      <ellipse class="arise-flow-pool" cx="300" cy="495" rx="205" ry="58" fill="url(#arisePool)"/>
-      <g class="arise-flow-sheets">
-        <path d="M300 18 C274 112 307 194 248 292 C214 350 251 430 300 490 C273 419 315 350 286 284 C250 200 315 111 300 18 Z"/>
-        <path d="M300 18 C326 112 293 194 352 292 C386 350 349 430 300 490 C327 419 285 350 314 284 C350 200 285 111 300 18 Z"/>
-        <path d="M300 18 C290 128 315 220 289 329 C277 399 294 451 300 490 C308 447 325 398 310 329 C284 220 310 128 300 18 Z"/>
-      </g>
-      <g class="arise-flow-contours">
-        <path d="M300 18 C258 94 270 167 245 238 C220 310 236 408 300 488"/>
-        <path d="M300 18 C342 94 330 167 355 238 C380 310 364 408 300 488"/>
-        <path d="M300 18 C227 111 247 191 211 279 C184 345 214 432 300 492"/>
-        <path d="M300 18 C373 111 353 191 389 279 C416 345 386 432 300 492"/>
-      </g>
-      <g class="arise-flow-hairs">
-        <path d="M300 18 C268 112 318 183 258 287 C221 352 254 431 300 490"/>
-        <path d="M300 18 C332 112 282 183 342 287 C379 352 346 431 300 490"/>
-        <path d="M300 18 C281 119 333 201 276 314 C251 363 271 438 300 490"/>
-        <path d="M300 18 C319 119 267 201 324 314 C349 363 329 438 300 490"/>
-        <path d="M300 18 C252 132 296 216 242 335 C219 386 259 450 300 490"/>
-        <path d="M300 18 C348 132 304 216 358 335 C381 386 341 450 300 490"/>
-      </g>
-      <g class="arise-flow-aura" filter="url(#ariseSoftGlow)">
-        <path d="M300 18 C276 116 327 180 283 282 C252 354 277 425 300 490"/>
-        <path d="M300 18 C327 110 273 190 318 284 C348 347 323 425 300 490"/>
-        <path d="M300 76 C282 91 267 103 252 112"/>
-        <path d="M300 146 C318 159 334 169 348 180"/>
-        <path d="M299 265 C281 281 266 294 252 306"/>
-        <path d="M302 338 C320 352 334 360 348 372"/>
-      </g>
-      <path id="ariseFlowTrunk" class="arise-flow-ribbon" d="M300 18 C276 116 327 180 283 282 C252 354 277 425 300 490"/>
-      <path class="arise-flow-ribbon secondary" d="M300 18 C327 110 273 190 318 284 C348 347 323 425 300 490"/>
-      <path class="arise-flow-ghost" d="M300 18 C285 92 316 154 292 226 C266 302 284 373 300 480"/>
-      <path class="arise-flow-ghost" d="M300 18 C321 99 282 164 309 244 C335 322 315 394 300 480"/>
-      <path class="arise-flow-main" d="M300 18 C304 104 295 170 300 248 C305 334 292 411 300 480"/>
-      <path class="arise-flow-main secondary" d="M295 18 C286 118 315 184 291 276 C273 347 291 415 300 480"/>
-      <path class="arise-flow-main tertiary" d="M305 18 C319 112 286 189 311 275 C330 347 311 416 300 480"/>
-      <path id="ariseFlowFixed" class="arise-flow-branch" style="--branch:#d3b36e" d="M300 76 C282 91 267 103 252 112"/>
-      <path class="arise-flow-drift" style="--branch:#d3b36e" d="M300 76 C282 91 267 103 252 112"/>
-      <path id="ariseFlowCategories" class="arise-flow-branch" style="--branch:#e1c17a" d="M300 146 C318 159 334 169 348 180"/>
-      <path class="arise-flow-drift" style="--branch:#e1c17a" d="M300 146 C318 159 334 169 348 180"/>
-      <path id="ariseFlowReserve" class="arise-flow-branch cool" style="--branch:#a9d0d1" d="M299 265 C281 281 266 294 252 306"/>
-      <path class="arise-flow-drift" style="--branch:#a9d0d1" d="M299 265 C281 281 266 294 252 306"/>
-      <path id="ariseFlowGoals" class="arise-flow-branch" style="--branch:#d0a65e" d="M302 338 C320 352 334 360 348 372"/>
-      <path class="arise-flow-drift" style="--branch:#d0a65e" d="M302 338 C320 352 334 360 348 372"/>
-      <g class="arise-flow-particles" filter="url(#ariseParticleGlow)">
-        ${flowParticle("ariseFlowTrunk",6.7,-1.2,"ivory",2.2)}
-        ${flowParticle("ariseFlowTrunk",8.4,-5.7,"warm",1.35)}
-        ${flowParticle("ariseFlowTrunk",10.1,-8.4,"cool",1.1)}
-        ${flowParticle("ariseFlowFixed",4.8,-1.1,"warm",1.8)}
-        ${flowParticle("ariseFlowFixed",6.1,-4.4,"warm",1.05)}
-        ${flowParticle("ariseFlowCategories",5.2,-2.9,"ivory",1.7)}
-        ${flowParticle("ariseFlowCategories",6.8,-5.2,"warm",1.05)}
-        ${flowParticle("ariseFlowReserve",5.7,-.8,"cool",1.8)}
-        ${flowParticle("ariseFlowReserve",7.2,-4.9,"cool",1.05)}
-        ${flowParticle("ariseFlowGoals",5.1,-2.1,"warm",1.8)}
-        ${flowParticle("ariseFlowGoals",7.4,-6.2,"ivory",1.05)}
-      </g>
-      <g class="arise-flow-pool-rings">
-        <ellipse cx="300" cy="493" rx="92" ry="19"/><ellipse cx="300" cy="495" rx="145" ry="34"/><ellipse cx="300" cy="497" rx="202" ry="52"/>
-      </g>
-      <g class="arise-flow-sparks">
-        <circle cx="292" cy="94" r=".6"/><circle cx="308" cy="138" r=".8"/><circle cx="286" cy="207" r=".55"/><circle cx="316" cy="251" r=".7"/><circle cx="275" cy="326" r=".65"/><circle cx="327" cy="371" r=".75"/><circle cx="282" cy="418" r=".6"/><circle cx="272" cy="470" r="1.2"/><circle cx="321" cy="476" r=".9"/><circle cx="244" cy="492" r=".7"/><circle cx="354" cy="501" r="1"/><circle cx="204" cy="512" r=".8"/><circle cx="390" cy="485" r=".65"/><circle cx="298" cy="522" r=".8"/>
-      </g>
-    </svg>`;
+    return '<canvas class="arise-flow-canvas" aria-hidden="true"></canvas>';
   }
 
   function summaryFlowScene(){
@@ -160,7 +298,6 @@
       <div class="arise-v3-month">${escapeHTML(formatMonth(activeMonth))}</div>
       <section class="arise-v3-income"><div class="arise-v3-income-label">Доход в месяце</div><div class="arise-v3-income-value">${money(data.income)}</div><div class="arise-v3-income-note">поступило</div></section>
       <section class="arise-flow-stage" aria-label="Распределение дохода">
-        <div class="arise-flow-source" aria-hidden="true"></div>
         ${homeFlowScene()}
         ${node({side:"left",kind:"fixed",name:"Обязательное",amount:data.fixed,total:data.income,color:"#d3b36e",page:"income",delay:120})}
         ${node({side:"right",kind:"categories",name:"Категории",amount:data.categories,total:data.income,color:"#e1c17a",page:"income",delay:210})}
@@ -172,6 +309,7 @@
       <button class="arise-v3-cta" id="homeIncome" data-v3-page="income"><span>${data.unallocated>0?"Посмотреть распределение":"Изменить распределение"}</span><span>→</span></button>
     </main>`;
     bindPageLinks(page);
+    startHomeFluidFlow(page.querySelector(".arise-flow-canvas"));
   };
 
   root.renderIncome=function(){
@@ -333,5 +471,5 @@
     bindHistoryChart(page);
   };
 
-  root.ARISE_V3={groupMonth,historyChartPoints,monotoneChartPath,chartPath,chartAreaPath,chartDots,historyChartHits,compactChartValue,historyChartGuides,historyTrend,bindHistoryChart,categoryRuleMeta,goalPace,homeFlowScene,summaryFlowScene};
+  root.ARISE_V3={groupMonth,historyChartPoints,monotoneChartPath,chartPath,chartAreaPath,chartDots,historyChartHits,compactChartValue,historyChartGuides,historyTrend,bindHistoryChart,categoryRuleMeta,goalPace,homeFlowScene,summaryFlowScene,startHomeFluidFlow};
 })(typeof globalThis!=="undefined"?globalThis:window);
