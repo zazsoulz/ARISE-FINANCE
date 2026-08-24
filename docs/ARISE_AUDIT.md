@@ -1,13 +1,13 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `ad07a38fdb8f40c40703183cfa2b3f6b9f5d0b95` (2026-08-23).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `818b196bd5eb458e531ff434a639b7019de4ad97` (2026-08-24).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
 ## Executive summary
 ARISE is beyond foundational ledger/auth/sync work. `main` contains a ledger-backed financial core, account auth, isolated financial profiles, Supabase persistence, local-first mutation outboxes, explicit sync-conflict resolution, mixed-currency support, transaction-derived history/analytics, funded-goal lifecycle protection, completed-goal future-funds rerouting, explicit create/edit expense reconciliation, transaction-backed reserve lifecycle, quantitative consequence previews, onboarding templates, completed-goal analytics, stale/backdated FX disclosure, explicit essential-expense reserve runway inputs, recoverable finance-profile archiving, reserve transaction drill-down, accessible analytics chart data, actionable sync/bootstrap states and a production-equivalent standalone preview path.
 
-The highest-value remaining work is now operational beta verification, final shell consolidation and cross-screen product polish. Physical compatibility-shell removal has progressed materially: legacy `renderTopbar`, navigation source, `renderHome`, `renderIncome`, `renderGoals`, `renderHistory` and `renderAnalytics` are physically gone from `app-shell.html`. `renderSettings` is now the final legacy screen renderer still physically present, even though canonical Settings ownership already lives in `settings-ui.js`. Vercel remains intentionally outside the active development loop until stable beta/production.
+The highest-value remaining work is now operational beta verification, final shared-helper/CSS consolidation and cross-screen product polish. All primary legacy screen renderers — Topbar, Navigation, Home, Income, Goals, History, Analytics and Settings — are physically gone from `app-shell.html`; canonical screen ownership now lives outside the compatibility shell. The remaining compatibility surface consists of shared helpers and historical CSS/runtime scaffolding that should be removed only behind explicit ownership and regression gates. Vercel remains intentionally outside the active development loop until stable beta/production.
 
 ## Financial core
 - ✅ One effective financial calculation source of truth is used at runtime.
@@ -155,12 +155,12 @@ The highest-value remaining work is now operational beta verification, final she
 - ✅ Browser runtime is fenced from direct legacy Supabase-table access.
 - ✅ Standalone preview is assembled from the canonical runtime manifest rather than a divergent loader.
 - ✅ Canonical screen ownership is external to the compatibility shell for Topbar, Navigation, Home, Income, Goals, History, Analytics and Settings.
-- ✅ Legacy `renderTopbar`, `NAV_ITEMS + renderNav`, `renderHome`, `renderIncome`, `renderGoals`, `renderHistory + historyMonthBlock` and `renderAnalytics` have been physically removed from `app-shell.html`.
+- ✅ Legacy `renderTopbar`, `NAV_ITEMS + renderNav`, `renderHome`, `renderIncome`, `renderGoals`, `renderHistory + historyMonthBlock`, `renderAnalytics` and `renderSettings` have all been physically removed from `app-shell.html`.
+- ✅ The primary-screen retirement registry is now empty; future renderer retirement remains fail-closed if a new staged entry is ever introduced.
+- ✅ Product/category Settings decoration no longer wraps a legacy renderer and is composed explicitly through canonical `settings-ui.js` enhancers.
 - ✅ Shared navigation/profile-switch helpers live in `navigation-compat.js`.
 - ✅ Physical cleanup scripts are fail-closed and are executed by CI in read-only guard mode.
-- ✅ A guarded physical-removal transform exists for legacy `renderSettings()` and is wired into CI.
-- 🟡 Legacy `renderSettings()` source is the final legacy screen renderer still physically present; remove it atomically with its retirement-registry entry while preserving `categoryEditor` and remaining shared helpers.
-- 🟡 Remaining shared compatibility helpers/CSS should continue to be consolidated only behind behavior-preserving regression gates.
+- 🟡 Remaining shared compatibility helpers/CSS should continue to be consolidated only behind explicit ownership and behavior-preserving regression gates.
 
 ## Immediate prioritized backlog
 ### P0 — beta correctness/hardening
@@ -174,12 +174,11 @@ The highest-value remaining work is now operational beta verification, final she
 3. Keep consequence previews quantitative only where the calculation is deterministic and useful.
 
 ### P2 — beta polish / consolidation
-1. Physically remove legacy `renderSettings()` using the existing guarded transform, update the retirement registry and run the full CI gate.
-2. Continue shrinking remaining compatibility helpers/CSS only after ownership is explicit and regression protected.
-3. Review loading/error/offline/retry states screen by screen for consistent actions and copy.
-4. Finish real-device chart/touch interaction polish and final icon pass.
-5. Run standalone mobile/desktop browser verification using the canonical manifest-based preview artifact.
-6. Perform the final dead-primary-action inventory and accessibility pass after consolidation.
+1. Continue shrinking remaining shared compatibility helpers/CSS only after ownership is explicit and regression protected.
+2. Review loading/error/offline/retry states screen by screen for consistent actions and copy.
+3. Finish real-device chart/touch interaction polish and final icon pass.
+4. Run standalone mobile/desktop browser verification using the canonical manifest-based preview artifact.
+5. Perform the final dead-primary-action inventory and accessibility pass after consolidation.
 
 ## Definition of beta-ready core
 Do not reintroduce Vercel as an active dependency until all of the following are true:
