@@ -104,7 +104,7 @@ test('production future-flow action persists rule by stable completed-goal id',a
   const configured=document.querySelector('[data-completed-goal-id="done"] [data-goal-future-state]');
   assert.ok(configured,'configured future-flow state missing after save');
   assert.equal(configured.dataset.goalFutureState,'configured');
-  assert.match(configured.textContent,/12000/);
+  assert.match(configured.textContent,/12\s*000/);
   assert.match(configured.textContent,/резерв/);
 
   dom.window.close();
