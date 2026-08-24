@@ -12,6 +12,21 @@
     v3.__publicGroupWrapped=true;
   }
 
+  function normalizeReserveTargetCompatibility(){
+    const reserveAnalytics=globalThis.ARISE_RESERVE_ANALYTICS;
+    if(!reserveAnalytics||typeof reserveAnalytics.normalizeTargetSettings!=="function")return false;
+    let changed=false;
+    for(const profile of state.profiles||[]){
+      profile.settings=profile.settings||{};
+      const normalized=reserveAnalytics.normalizeTargetSettings(profile.settings.reserve||{});
+      if(normalized.changed){
+        profile.settings.reserve=normalized.settings;
+        changed=true;
+      }
+    }
+    return changed;
+  }
+
   try{
     const requiredCore=["planIncome","monthStats","availableFree","reserveBalance","goalBalance","validatePlan"];
     const integrity=globalThis.ARISE_RUNTIME_INTEGRITY&&globalThis.ARISE_RUNTIME_INTEGRITY.verify
@@ -69,6 +84,11 @@
       }catch(error){
         console.error("ARISE auth bootstrap",error);
       }
+    }
+
+    if(normalizeReserveTargetCompatibility()){
+      globalThis.ARISE_SYNC_SILENT=true;
+      try{saveState();}finally{globalThis.ARISE_SYNC_SILENT=false;}
     }
 
     if(state.account.registered) render();
