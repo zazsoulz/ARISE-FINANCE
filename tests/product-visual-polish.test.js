@@ -22,11 +22,25 @@ test("home and distribution share the organic animated flow language",()=>{
 
 test("analytics finishing preserves data-backed charts while adding depth",()=>{
   assert.match(analyticsSource,/function area\(values/);
+  assert.match(analyticsSource,/function monotonePath\(points\)/);
   assert.match(analyticsSource,/class="analytics-area income-area"/);
   assert.match(analyticsSource,/class="analytics-area expense-area"/);
+  assert.match(analyticsSource,/class="analytics-y-scale"/);
+  assert.match(analyticsSource,/--kpi-ratio:/);
   assert.match(analyticsSource,/pathLength="1"/);
   assert.match(analyticsSource,/analytics-reserve-satellite/);
   assert.match(analyticsSource,/analytics\.monthly\(profile,currentMonth\)/);
+});
+
+test("history, goals and reserve use the calibrated data-visualization language",()=>{
+  assert.match(v3Source,/function monotoneChartPath\(points\)/);
+  assert.match(v3Source,/class="v3-chart-y-scale"/);
+  assert.match(v3Source,/class="v3-chart-change/);
+  assert.match(v3Source,/class="goal-ring-terminal"/);
+  assert.match(productCss,/ARISE DATA & TYPE CALIBRATION/);
+  assert.match(productCss,/--arise-weight-number:275/);
+  assert.match(productCss,/\.analytics-terminal-guide,/);
+  assert.match(productCss,/\.analytics-reserve-center small/);
 });
 
 test("auth and settings use the same product-level visual vocabulary",()=>{

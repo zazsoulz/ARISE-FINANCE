@@ -46,3 +46,12 @@ test('financial pulse uses a shared vertical scale instead of normalizing each s
   assert.equal(ctx.ARISE_ANALYTICS_UI.path([100],720,200,20,1000),'M360.0 164.0');
   assert.notEqual(ctx.ARISE_ANALYTICS_UI.path([100],720,200,20,1000),ctx.ARISE_ANALYTICS_UI.path([100],720,200,20,100));
 });
+
+test('financial pulse uses monotone curves, measured rails and an explicit terminal state',()=>{
+  const {ctx,dom}=boot();ctx.renderAnalytics();
+  assert.match(ctx.ARISE_ANALYTICS_UI.path([100,180,140,220]),/ C/);
+  assert.equal(dom.window.document.querySelectorAll('.analytics-y-scale span').length,3);
+  assert.equal(dom.window.document.querySelectorAll('.analytics-pulse .is-terminal').length,2);
+  assert.equal(dom.window.document.querySelectorAll('.analytics-terminal-guide').length,1);
+  assert.match(dom.window.document.querySelector('.kpi-expense').getAttribute('style'),/--kpi-ratio:/);
+});
