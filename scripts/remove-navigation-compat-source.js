@@ -1,22 +1,22 @@
 const fs=require('node:fs');
 
-const NAV_MARKER=`/* =========================================================\n   NAV\n========================================================= */`;
+const NAV_FUNCTION_BOUNDARY='function bindNav(){';
 const GOAL_CARD_MARKER=`/* =========================================================\n   GOAL CARD\n========================================================= */`;
 const ALLOWED_FUNCTIONS=new Set(['bindNav','profileSwitcher','bindProfileSwitcher']);
 
 function removeNavigationCompatSource(source){
-  const navStart=source.indexOf(NAV_MARKER);
+  const navStart=source.indexOf(NAV_FUNCTION_BOUNDARY);
 
   if(navStart<0){
     const legacyNames=['bindNav','profileSwitcher','bindProfileSwitcher'];
     const remaining=legacyNames.find(name=>new RegExp(`\\bfunction\\s+${name}\\s*\\(`).test(source));
     if(remaining){
-      throw new Error(`Navigation compatibility source is malformed: ${remaining} remains without NAV boundary.`);
+      throw new Error(`Navigation compatibility source is malformed: ${remaining} remains without bindNav boundary.`);
     }
     return source;
   }
 
-  const goalCardStart=source.indexOf(GOAL_CARD_MARKER,navStart+NAV_MARKER.length);
+  const goalCardStart=source.indexOf(GOAL_CARD_MARKER,navStart+NAV_FUNCTION_BOUNDARY.length);
   if(goalCardStart<0||goalCardStart<=navStart){
     throw new Error('Navigation compatibility source is malformed: GOAL CARD boundary missing.');
   }
@@ -67,4 +67,4 @@ function run(argv=process.argv.slice(2)){
 
 if(require.main===module) run();
 
-module.exports={NAV_MARKER,GOAL_CARD_MARKER,ALLOWED_FUNCTIONS,removeNavigationCompatSource};
+module.exports={NAV_FUNCTION_BOUNDARY,GOAL_CARD_MARKER,ALLOWED_FUNCTIONS,removeNavigationCompatSource};
