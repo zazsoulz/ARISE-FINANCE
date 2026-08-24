@@ -6870,3 +6870,215 @@ body::before{
     transform:none!important;
   }
 }
+
+/* =========================================================
+   ARISE FLUID MASS MOTION
+   The hero material itself flows; routes and particles remain secondary.
+========================================================= */
+
+.arise-flow-stage::before{
+  z-index:0!important;
+  inset:5% 18% 7%!important;
+  opacity:.72!important;
+  background:
+    radial-gradient(ellipse at 47% 38%,rgba(171,210,210,.09),transparent 48%),
+    radial-gradient(ellipse at 55% 72%,rgba(223,189,117,.105),transparent 47%)!important;
+  filter:blur(18px)!important;
+  mix-blend-mode:screen;
+  animation:none!important;
+}
+
+.arise-flow-stage::after{
+  animation:none!important;
+}
+
+.arise-flow-material{
+  position:absolute;
+  z-index:1;
+  inset:-6px -2px 0;
+  pointer-events:none;
+  overflow:hidden;
+  contain:paint;
+  background:url("./assets/arise-flow-organic-v3.webp") center / auto 101% no-repeat;
+  opacity:.7;
+  mix-blend-mode:screen;
+  filter:none;
+  transform-origin:50% 58%;
+  will-change:transform,opacity;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 3%,#000 95%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 3%,#000 95%,transparent 100%);
+  animation:ariseFluidBodyDrift 8.6s cubic-bezier(.45,.05,.55,.95) infinite;
+}
+
+.arise-flow-material::before{
+  content:"";
+  position:absolute;
+  inset:-2%;
+  pointer-events:none;
+  background:inherit;
+  mix-blend-mode:normal;
+  filter:none;
+  clip-path:inset(3% 0 7%);
+  transform-origin:48% 56%;
+  will-change:transform,opacity;
+}
+
+.arise-flow-material::before{
+  opacity:.25;
+  animation:ariseFluidInnerShear 7.4s ease-in-out infinite alternate;
+}
+
+.arise-flow-svg{
+  z-index:3!important;
+}
+
+.arise-flow-sheets{
+  opacity:.72!important;
+}
+
+.arise-flow-sheets path{
+  transform-box:fill-box;
+  transform-origin:center bottom;
+  animation:none!important;
+}
+
+.arise-flow-sheets path:nth-child(2){
+  animation:none!important;
+}
+
+.arise-flow-sheets path:nth-child(3){
+  animation:none!important;
+}
+
+.arise-flow-contours{
+  opacity:.5!important;
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:none!important;
+}
+
+.arise-flow-hairs{
+  opacity:.54!important;
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:none!important;
+}
+
+.arise-flow-aura{
+  opacity:.24!important;
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:none!important;
+}
+
+.arise-flow-aura path:nth-child(n+3){
+  stroke-width:3!important;
+  opacity:.08!important;
+}
+
+.arise-flow-ribbon{
+  opacity:.34!important;
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:none!important;
+}
+
+.arise-flow-ribbon.secondary{
+  opacity:.25!important;
+  animation:none!important;
+}
+
+.arise-flow-ghost{
+  opacity:.14!important;
+}
+
+.arise-flow-main{
+  opacity:.2!important;
+}
+
+.arise-flow-main.secondary{opacity:.15!important}
+.arise-flow-main.tertiary{opacity:.11!important}
+
+.arise-flow-branch{
+  stroke-width:.82!important;
+  opacity:.42!important;
+  filter:drop-shadow(0 0 3px var(--branch))!important;
+}
+
+.arise-flow-drift,
+.arise-flow-particles{
+  display:none!important;
+}
+
+.arise-flow-grain circle{
+  fill:#dfbd75;
+  opacity:0;
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:ariseFluidGrain var(--duration,8s) linear var(--delay,0s) infinite;
+}
+
+.arise-flow-grain circle.ivory{fill:#fff6df}
+.arise-flow-grain circle.cool{fill:#abd2d2}
+
+.arise-flow-sparks{
+  opacity:.58;
+}
+
+@keyframes ariseFluidBodyDrift{
+  0%,100%{transform:translate3d(-5px,3px,0) scaleX(.972) scaleY(1.008)}
+  32%{transform:translate3d(5px,-3px,0) scaleX(1.036) scaleY(.994)}
+  67%{transform:translate3d(-2px,4px,0) scaleX(.99) scaleY(1.014)}
+}
+
+@keyframes ariseFluidInnerShear{
+  0%{transform:translate3d(-11px,-6px,0) scaleX(.94) scaleY(1.02);opacity:.14}
+  52%{transform:translate3d(10px,4px,0) scaleX(1.065) scaleY(.986);opacity:.3}
+  100%{transform:translate3d(-3px,9px,0) scaleX(.985) scaleY(1.014);opacity:.19}
+}
+
+@keyframes ariseFluidGrain{
+  0%{opacity:0;transform:translate3d(0,-54px,0) scale(.65)}
+  16%{opacity:.26}
+  48%{opacity:.72}
+  82%{opacity:.22}
+  100%{opacity:0;transform:translate3d(var(--drift,0px),86px,0) scale(1.08)}
+}
+
+@media(max-width:520px){
+  .arise-flow-material{
+    inset:-4px -14px 1px;
+    opacity:.72;
+    background-size:auto 100.5%;
+  }
+
+  .arise-flow-material::before{
+    opacity:.23;
+  }
+
+  .arise-flow-aura{
+    opacity:.19!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .arise-flow-stage::before,
+  .arise-flow-material,
+  .arise-flow-material::before,
+  .arise-flow-sheets path,
+  .arise-flow-contours,
+  .arise-flow-hairs,
+  .arise-flow-aura,
+  .arise-flow-ribbon{
+    animation:none!important;
+    transform:none!important;
+  }
+
+  .arise-flow-material{
+    filter:none!important;
+  }
+
+  .arise-flow-grain{
+    display:none!important;
+  }
+}

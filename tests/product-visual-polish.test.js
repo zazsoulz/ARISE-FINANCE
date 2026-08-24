@@ -10,14 +10,28 @@ const productSource=fs.readFileSync("product-ui.js","utf8");
 
 test("home and distribution share the organic animated flow language",()=>{
   assert.match(v3Source,/function homeFlowScene\(\)/);
+  assert.match(v3Source,/class="arise-flow-material"/);
   assert.match(v3Source,/class="arise-flow-sheets"/);
   assert.match(v3Source,/class="arise-flow-contours"/);
-  assert.match(v3Source,/class="arise-flow-particles"/);
+  assert.match(v3Source,/class="arise-flow-grain"/);
+  assert.doesNotMatch(v3Source,/class="arise-flow-drift"/);
+  assert.doesNotMatch(v3Source,/class="arise-flow-particles"/);
+  assert.doesNotMatch(v3Source,/flowParticle\("ariseFlow(?:Trunk|Fixed|Categories|Reserve|Goals)"/);
   assert.match(v3Source,/class="v3-summary-particles"/);
-  assert.ok((v3Source.match(/animateMotion/g)||[]).length>=2,"flow scenes must include moving particles");
+  assert.match(productCss,/@keyframes ariseFluidBodyDrift/);
+  assert.match(productCss,/@keyframes ariseFluidInnerShear/);
+  assert.match(productCss,/@keyframes ariseFluidGrain/);
   for(const kind of ["fixed","categories","reserve","goals"]){
     assert.ok(v3Source.includes(`kind:"${kind}"`),`${kind} flow destination is missing`);
   }
+});
+
+test("home flow motion is intrinsic, performant and reduced-motion safe",()=>{
+  assert.match(productCss,/\.arise-flow-material\{[\s\S]*?will-change:transform,opacity;[\s\S]*?animation:ariseFluidBodyDrift/);
+  assert.match(productCss,/\.arise-flow-material::before\{[\s\S]*?animation:ariseFluidInnerShear/);
+  assert.match(productCss,/\.arise-flow-drift,\s*\.arise-flow-particles\{\s*display:none!important/);
+  assert.match(productCss,/@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.arise-flow-material,[\s\S]*?animation:none!important/);
+  assert.match(productCss,/@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.arise-flow-grain\{\s*display:none!important/);
 });
 
 test("analytics finishing preserves data-backed charts while adding depth",()=>{

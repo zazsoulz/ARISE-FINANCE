@@ -46,6 +46,7 @@
         <radialGradient id="arisePool"><stop offset="0" stop-color="#f0d79f" stop-opacity=".17"/><stop offset=".5" stop-color="#c49a53" stop-opacity=".055"/><stop offset="1" stop-color="#c49a53" stop-opacity="0"/></radialGradient>
         <filter id="ariseSoftGlow" x="-80%" y="-30%" width="260%" height="170%"><feGaussianBlur stdDeviation="5.5"/></filter>
         <filter id="ariseParticleGlow" x="-500%" y="-500%" width="1000%" height="1000%"><feGaussianBlur stdDeviation="1.6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <clipPath id="ariseFlowBodyClip"><path d="M300 18 C224 105 243 205 207 306 C178 388 224 456 300 505 C376 456 422 388 393 306 C357 205 376 105 300 18 Z"/></clipPath>
       </defs>
       <ellipse class="arise-flow-pool" cx="300" cy="495" rx="205" ry="58" fill="url(#arisePool)"/>
       <g class="arise-flow-sheets">
@@ -83,25 +84,11 @@
       <path class="arise-flow-main secondary" d="M295 18 C286 118 315 184 291 276 C273 347 291 415 300 480"/>
       <path class="arise-flow-main tertiary" d="M305 18 C319 112 286 189 311 275 C330 347 311 416 300 480"/>
       <path id="ariseFlowFixed" class="arise-flow-branch" style="--branch:#d3b36e" d="M300 76 C282 91 267 103 252 112"/>
-      <path class="arise-flow-drift" style="--branch:#d3b36e" d="M300 76 C282 91 267 103 252 112"/>
       <path id="ariseFlowCategories" class="arise-flow-branch" style="--branch:#e1c17a" d="M300 146 C318 159 334 169 348 180"/>
-      <path class="arise-flow-drift" style="--branch:#e1c17a" d="M300 146 C318 159 334 169 348 180"/>
       <path id="ariseFlowReserve" class="arise-flow-branch cool" style="--branch:#a9d0d1" d="M299 265 C281 281 266 294 252 306"/>
-      <path class="arise-flow-drift" style="--branch:#a9d0d1" d="M299 265 C281 281 266 294 252 306"/>
       <path id="ariseFlowGoals" class="arise-flow-branch" style="--branch:#d0a65e" d="M302 338 C320 352 334 360 348 372"/>
-      <path class="arise-flow-drift" style="--branch:#d0a65e" d="M302 338 C320 352 334 360 348 372"/>
-      <g class="arise-flow-particles" filter="url(#ariseParticleGlow)">
-        ${flowParticle("ariseFlowTrunk",6.7,-1.2,"ivory",2.2)}
-        ${flowParticle("ariseFlowTrunk",8.4,-5.7,"warm",1.35)}
-        ${flowParticle("ariseFlowTrunk",10.1,-8.4,"cool",1.1)}
-        ${flowParticle("ariseFlowFixed",4.8,-1.1,"warm",1.8)}
-        ${flowParticle("ariseFlowFixed",6.1,-4.4,"warm",1.05)}
-        ${flowParticle("ariseFlowCategories",5.2,-2.9,"ivory",1.7)}
-        ${flowParticle("ariseFlowCategories",6.8,-5.2,"warm",1.05)}
-        ${flowParticle("ariseFlowReserve",5.7,-.8,"cool",1.8)}
-        ${flowParticle("ariseFlowReserve",7.2,-4.9,"cool",1.05)}
-        ${flowParticle("ariseFlowGoals",5.1,-2.1,"warm",1.8)}
-        ${flowParticle("ariseFlowGoals",7.4,-6.2,"ivory",1.05)}
+      <g class="arise-flow-grain" clip-path="url(#ariseFlowBodyClip)" filter="url(#ariseParticleGlow)">
+        <circle cx="284" cy="104" r=".7" style="--delay:-1.2s;--duration:6.8s;--drift:8px"/><circle class="cool" cx="309" cy="139" r=".55" style="--delay:-4.8s;--duration:8.4s;--drift:-7px"/><circle cx="267" cy="185" r=".8" style="--delay:-3.1s;--duration:7.6s;--drift:11px"/><circle class="ivory" cx="323" cy="220" r=".65" style="--delay:-6.2s;--duration:9.1s;--drift:-10px"/><circle class="cool" cx="279" cy="256" r=".5" style="--delay:-2.4s;--duration:7.9s;--drift:6px"/><circle cx="314" cy="292" r=".75" style="--delay:-5.7s;--duration:8.8s;--drift:-9px"/><circle class="ivory" cx="263" cy="330" r=".55" style="--delay:-7.1s;--duration:9.6s;--drift:12px"/><circle cx="329" cy="360" r=".7" style="--delay:-.7s;--duration:7.2s;--drift:-13px"/><circle class="cool" cx="289" cy="399" r=".6" style="--delay:-4.1s;--duration:8.2s;--drift:8px"/><circle cx="310" cy="431" r=".8" style="--delay:-6.8s;--duration:9.4s;--drift:-6px"/><circle class="ivory" cx="250" cy="454" r=".55" style="--delay:-2.9s;--duration:7.7s;--drift:14px"/><circle class="cool" cx="347" cy="468" r=".65" style="--delay:-5.3s;--duration:8.6s;--drift:-15px"/>
       </g>
       <g class="arise-flow-pool-rings">
         <ellipse cx="300" cy="493" rx="92" ry="19"/><ellipse cx="300" cy="495" rx="145" ry="34"/><ellipse cx="300" cy="497" rx="202" ry="52"/>
@@ -162,6 +149,7 @@
       <section class="arise-flow-stage" aria-label="Распределение дохода">
         <div class="arise-flow-source" aria-hidden="true"></div>
         ${homeFlowScene()}
+        <div class="arise-flow-material" aria-hidden="true"></div>
         ${node({side:"left",kind:"fixed",name:"Обязательное",amount:data.fixed,total:data.income,color:"#d3b36e",page:"income",delay:120})}
         ${node({side:"right",kind:"categories",name:"Категории",amount:data.categories,total:data.income,color:"#e1c17a",page:"income",delay:210})}
         ${node({side:"left",kind:"reserve",name:"Резерв",amount:data.reserve,total:data.income,color:"#a9d0d1",page:"settings",delay:300})}
