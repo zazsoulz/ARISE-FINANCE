@@ -26,10 +26,11 @@ test('all primary legacy screen renderers stay physically retired from app-shell
   }
 });
 
-test('legacy screen retirement registry is empty after physical cleanup',()=>{
-  const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\];/);
-  assert.ok(match,'retirement registry declaration missing');
-  assert.equal(match[1].trim(),'','retirement registry should stay empty once all primary screen sources are gone');
+test('dead primary-screen retirement loader stays removed from production bootstrap',()=>{
+  assert.doesNotMatch(index,/LEGACY_RENDERER_RETIREMENT/);
+  assert.doesNotMatch(index,/retireLegacyRenderer/);
+  assert.doesNotMatch(index,/retireLegacyRenderers/);
+  assert.doesNotMatch(index,/retireLegacyNavigationConstants/);
 });
 
 test('canonical owners for all primary screens remain in external runtime modules',()=>{
