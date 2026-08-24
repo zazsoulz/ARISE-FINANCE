@@ -14,7 +14,11 @@ test("home uses a continuous material flow without route rails",()=>{
   assert.match(v3Source,/function startHomeFluidFlow\(canvas\)/);
   assert.match(v3Source,/requestAnimationFrame\(draw\)/);
   assert.match(v3Source,/uniform float uTime/);
-  assert.match(v3Source,/texture2D\(uTexture,flowUv\)/);
+  assert.match(v3Source,/texture2D\(uTexture,shapeUv\)/);
+  assert.match(v3Source,/texture2D\(uTexture,materialUv\)/);
+  assert.match(v3Source,/float valueNoise\(vec2 point\)/);
+  assert.match(v3Source,/vec2 particlePoint=/);
+  assert.match(v3Source,/Math\.min\(1\/30,/);
   assert.doesNotMatch(v3Source,/class="arise-flow-svg"/);
   assert.doesNotMatch(v3Source,/class="arise-flow-branch"/);
   assert.doesNotMatch(v3Source,/class="arise-flow-drift"/);

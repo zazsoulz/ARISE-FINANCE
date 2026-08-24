@@ -48,12 +48,31 @@
   ].join("\n");
 
   const homeFlowFragmentShader=[
+    "#ifdef GL_FRAGMENT_PRECISION_HIGH",
+    "precision highp float;",
+    "#else",
     "precision mediump float;",
+    "#endif",
     "varying vec2 vUv;",
     "uniform sampler2D uTexture;",
     "uniform float uTime;",
     "uniform float uCanvasAspect;",
     "uniform float uTextureAspect;",
+    "float hash21(vec2 point){",
+    "  vec2 p=fract(point*vec2(123.34,345.45));",
+    "  p+=dot(p,p+34.345);",
+    "  return fract(p.x*p.y);",
+    "}",
+    "float valueNoise(vec2 point){",
+    "  vec2 cell=floor(point);",
+    "  vec2 local=fract(point);",
+    "  local=local*local*(3.0-2.0*local);",
+    "  float a=hash21(cell);",
+    "  float b=hash21(cell+vec2(1.0,0.0));",
+    "  float c=hash21(cell+vec2(0.0,1.0));",
+    "  float d=hash21(cell+vec2(1.0,1.0));",
+    "  return mix(mix(a,b,local.x),mix(c,d,local.x),local.y);",
+    "}",
     "vec2 rotateAround(vec2 point,vec2 center,float angle){",
     "  float s=sin(angle);",
     "  float c=cos(angle);",
@@ -65,23 +84,36 @@
     "  vec2 uv=vec2((vUv.x-0.5)/drawWidth+0.5,vUv.y);",
     "  if(uv.x<=0.0||uv.x>=1.0||uv.y<=0.0||uv.y>=1.0){gl_FragColor=vec4(0.0);return;}",
     "  float down=1.0-uv.y;",
-    "  float body=smoothstep(0.015,0.72,down);",
+    "  float body=smoothstep(0.015,0.76,down);",
     "  float pool=smoothstep(0.66,0.97,down);",
-    "  float lateral=sin((uv.x-0.5)*7.0+uTime*0.23);",
-    "  float current=sin(down*12.0-uTime*0.82+lateral*1.45)+0.46*sin(down*27.0+uTime*0.57+(uv.x-0.5)*9.0);",
-    "  float cross=sin((uv.x-0.5)*18.0+down*8.0-uTime*0.61);",
-    "  vec2 flowUv=uv;",
-    "  flowUv.x+=(current*0.0092+cross*0.0038)*(0.24+0.76*body);",
-    "  flowUv.y+=cross*0.0044+sin(down*19.0-uTime*0.47+lateral)*0.0028;",
-    "  float poolAngle=(sin(uTime*0.34)+0.38*sin(down*11.0-uTime*0.71))*0.019*pool;",
-    "  flowUv=mix(flowUv,rotateAround(flowUv,vec2(0.5,0.115),poolAngle),pool);",
-    "  flowUv.x+=sin((flowUv.y-0.12)*35.0+uTime*0.76)*0.0085*pool;",
-    "  vec4 base=texture2D(uTexture,flowUv);",
-    "  float travel=0.5+0.5*sin(down*58.0-uTime*2.55+lateral*2.2);",
-    "  vec3 color=base.rgb*(0.94+0.11*travel);",
-    "  float alpha=base.a;",
+    "  vec2 fieldPoint=vec2((uv.x-0.5)*6.2,down*5.1);",
+    "  float broad=valueNoise(fieldPoint+vec2(0.0,-uTime*0.18));",
+    "  float cross=valueNoise(fieldPoint*1.73+vec2(uTime*0.075,-uTime*0.27));",
+    "  float detail=valueNoise(fieldPoint*3.07+vec2(-uTime*0.11,-uTime*0.41));",
+    "  vec2 field=vec2(broad-0.5,cross-0.5);",
+    "  float current=sin(down*15.0-uTime*0.74+broad*3.8+(uv.x-0.5)*4.2);",
+    "  vec2 materialUv=uv;",
+    "  materialUv.x+=(field.x*0.0105+current*0.0017)*(0.18+0.82*body);",
+    "  materialUv.y+=(field.y*0.0044+(detail-0.5)*0.0021)*body;",
+    "  float poolAngle=(broad-cross)*0.024*pool;",
+    "  materialUv=mix(materialUv,rotateAround(materialUv,vec2(0.5,0.115),poolAngle),pool);",
+    "  vec2 shapeUv=uv+field*vec2(0.00135,0.00075)*body;",
+    "  vec4 shape=texture2D(uTexture,shapeUv);",
+    "  vec4 material=texture2D(uTexture,materialUv);",
+    "  float travelling=0.5+0.5*sin(down*48.0-uTime*2.15+broad*6.0+cross*2.4);",
+    "  float filament=pow(travelling,5.0);",
+    "  vec3 color=mix(shape.rgb,material.rgb,0.68)*(0.94+0.055*cross+0.095*filament);",
+    "  vec2 particlePoint=vec2((uv.x+field.x*0.008)*48.0,(down-uTime*0.052)*86.0);",
+    "  vec2 particleCell=floor(particlePoint);",
+    "  vec2 particleLocal=fract(particlePoint)-0.5;",
+    "  vec2 particleOffset=vec2(hash21(particleCell+2.7),hash21(particleCell+8.1))-0.5;",
+    "  float particleSeed=hash21(particleCell+17.3);",
+    "  float particle=(1.0-smoothstep(0.0,0.105,length(particleLocal-particleOffset*0.68)))*step(0.94,particleSeed);",
+    "  particle*=smoothstep(0.025,0.24,shape.a)*(1.0-pool*0.32);",
+    "  vec3 particleColor=mix(vec3(0.57,0.76,0.78),vec3(0.98,0.78,0.40),smoothstep(0.44,0.62,uv.x));",
+    "  color+=particleColor*particle*0.22;",
     "  float edgeFade=smoothstep(0.0,0.025,uv.y)*smoothstep(0.0,0.022,1.0-uv.y);",
-    "  gl_FragColor=vec4(color,alpha*edgeFade);",
+    "  gl_FragColor=vec4(color,shape.a*edgeFade);",
     "}"
   ].join("\n");
 
@@ -161,6 +193,8 @@
     let handle=0;
     let frames=0;
     let stopped=false;
+    let elapsed=0;
+    let previous=started;
     const stop=()=>{
       if(stopped)return;
       stopped=true;
@@ -172,8 +206,10 @@
     const draw=now=>{
       if(stopped)return;
       if(!canvas.isConnected){stop();return;}
-      const {width,height}=sizeHomeFlowCanvas(canvas,.78);
-      const elapsed=Math.max(0,(Number(now)||started)-started)/1000;
+      const {width,height}=sizeHomeFlowCanvas(canvas,1.1);
+      const stamp=Number(now)||previous;
+      if(frames>0)elapsed+=Math.min(1/30,Math.max(0,(stamp-previous)/1000));
+      previous=stamp;
       gl.viewport(0,0,width,height);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(program);
