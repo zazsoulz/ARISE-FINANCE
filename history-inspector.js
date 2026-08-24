@@ -33,6 +33,15 @@
   };
   const unique=values=>[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
 
+  function historyTransaction(tx){
+    if(tx.type==="income"){
+      return `<div class="row"><div class="row-left"><strong class="positive">+ ${money(tx.amount,tx.currency)}</strong><div class="tiny muted">${esc(tx.source||"Источник не указан")} · ${formatDate(tx.date)}</div></div><div class="row-right"><div class="pill">Доход</div></div></div><div class="allocation-grid" style="margin-top:0">${(tx.allocations||[]).map(item=>`<div class="allocation"><div class="allocation-name">${esc(item.name)}</div><div class="allocation-value">${money(item.amount,tx.currency)}</div></div>`).join("")}${tx.reserve?`<div class="allocation"><div class="allocation-name">РЕЗЕРВ</div><div class="allocation-value">${money(tx.reserve,tx.currency)}</div></div>`:""}</div>`;
+    }
+    return `<div class="row"><div class="row-left"><strong class="negative">- ${money(tx.amount,tx.currency)}</strong><div class="tiny muted">${esc(tx.categoryName)} · ${esc(tx.source||"Без описания")} · ${formatDate(tx.date)}</div></div><div class="row-right"><div class="pill">Расход</div></div></div>`;
+  }
+
+  root.historyTransaction=historyTransaction;
+
   function resetFilters(){Object.assign(filters,defaults());}
   function ensureProfileScope(profile){
     if(filterProfile===null){filterProfile=profile;return false;}
@@ -175,5 +184,5 @@
     bind(page,profile);
   };
 
-  root.ARISE_HISTORY_INSPECTOR={filteredTransactions,reset:resetFilters,state:filters,ensureProfileScope};
+  root.ARISE_HISTORY_INSPECTOR={filteredTransactions,reset:resetFilters,state:filters,ensureProfileScope,historyTransaction};
 })(typeof globalThis!=="undefined"?globalThis:window);
