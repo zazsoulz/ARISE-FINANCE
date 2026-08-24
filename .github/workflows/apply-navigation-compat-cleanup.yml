@@ -1,0 +1,47 @@
+name: Apply Navigation Compat Cleanup
+
+on:
+  push:
+    branches:
+      - agent/remove-navigation-compat-source
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Apply guarded transform
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const {removeNavigationCompatSource}=require('./scripts/remove-navigation-compat-source.js');
+          const path='app-shell.html';
+          const source=fs.readFileSync(path,'utf8');
+          const cleaned=removeNavigationCompatSource(source);
+          if(cleaned===source) throw new Error('navigation compatibility source was not removed');
+          for(const name of ['bindNav','profileSwitcher','bindProfileSwitcher']){
+            if(new RegExp(`\\bfunction\\s+${name}\\s*\\(`).test(cleaned)) throw new Error(`${name} still present in app-shell`);
+          }
+          if(!cleaned.includes('function goalCard(goal){')) throw new Error('goalCard boundary was lost');
+          fs.writeFileSync(path,cleaned);
+          NODE
+      - name: Verify transformed shell
+        run: |
+          node --test tests/navigation-compat-source-cleanup.test.js tests/navigation-compat-transformed-shell-smoke.test.js
+      - name: Remove one-shot workflow and commit cleanup
+        run: |
+          git rm .github/workflows/apply-navigation-compat-cleanup.yml
+          git add app-shell.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Remove duplicate navigation compatibility source'
+          git push origin HEAD:agent/remove-navigation-compat-source
