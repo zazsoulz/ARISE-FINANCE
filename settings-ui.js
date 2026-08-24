@@ -11,6 +11,12 @@
     if(module&&typeof module.enhanceSettings==="function") module.enhanceSettings();
   }
 
+  function enhanceProductRules(){
+    const module=root.ARISE_PRODUCT_RULES;
+    if(module&&typeof module.enhanceSettings==="function") module.enhanceSettings();
+  }
+
+
   function renderSettings(){
     const profile=activeProfile();
     const page=document.getElementById("page");
@@ -107,10 +113,11 @@
     document.getElementById("importData").onchange=importData;
     document.getElementById("resetData").onclick=resetData;
 
+    enhanceProductRules();
     enhanceAccountSettings();
     enhanceProfileSettings();
   }
 
   root.renderSettings=renderSettings;
-  root.ARISE_SETTINGS_UI={renderSettings,enhanceAccountSettings,enhanceProfileSettings};
+  root.ARISE_SETTINGS_UI={renderSettings,enhanceProductRules,enhanceAccountSettings,enhanceProfileSettings};
 })(typeof globalThis!=="undefined"?globalThis:window);

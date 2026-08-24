@@ -6,6 +6,7 @@ const shell=fs.readFileSync('app-shell.html','utf8');
 const ariseV3=fs.readFileSync('arise-v3.js','utf8');
 const analyticsUi=fs.readFileSync('analytics-ui.js','utf8');
 const settingsUi=fs.readFileSync('settings-ui.js','utf8');
+const productRules=fs.readFileSync('product-rules.js','utf8');
 
 const canonical=[
   {name:'renderTopbar',source:ariseV3},{name:'renderNav',source:ariseV3},{name:'renderHome',source:ariseV3},
@@ -31,11 +32,11 @@ test('canonical renderer owners stay direct replacements through physical shell 
     const n=escaped(name);
     const direct=name==='renderSettings'?new RegExp(`root\\.${n}\\s*=\\s*${n}`):new RegExp(`root\\.${n}\\s*=\\s*function\\s*\\(`);
     assert.match(source,direct,`${name} is not a direct canonical replacement`);
+    assert.doesNotMatch(shell,new RegExp(`function\\s+${n}\\s*\\(`),`${name} returned to compatibility shell`);
   }
-  assert.doesNotMatch(shell,/function\s+renderTopbar\s*\(/,'physically retired topbar returned to compatibility shell');
 });
 
-test('cross-renderer composition stays allowed during staged retirement',()=>{
+test('cross-renderer composition stays allowed where it remains intentional',()=>{
   assert.match(analyticsUi,/const\s+oldRenderNav\s*=\s*root\.renderNav\b/,'analytics navigation compatibility composition unexpectedly changed');
   assert.doesNotMatch(analyticsUi,/oldRenderAnalytics\s*=\s*root\.renderAnalytics\b/i);
 });
@@ -43,9 +44,13 @@ test('cross-renderer composition stays allowed during staged retirement',()=>{
 test('settings composition is centralized without delegating to legacy base markup',()=>{
   const accountSettings=fs.readFileSync('account-settings.js','utf8');
   const profileLifecycle=fs.readFileSync('profile-lifecycle.js','utf8');
-  assert.match(shell,/function\s+renderSettings\s*\(/);
+  assert.doesNotMatch(shell,/function\s+renderSettings\s*\(/);
   assert.doesNotMatch(accountSettings,/root\.renderSettings\s*=/);
   assert.doesNotMatch(profileLifecycle,/root\.renderSettings\s*=/);
+  assert.doesNotMatch(productRules,/root\.renderSettings\s*=/);
+  assert.doesNotMatch(productRules,/originalRenderSettings/);
+  assert.match(productRules,/function\s+enhanceSettings\s*\(/);
+  assert.match(settingsUi,/function\s+enhanceProductRules\s*\(/);
   assert.doesNotMatch(settingsUi,/baseRenderSettings/);
   assert.match(settingsUi,/page\.innerHTML=`/);
   assert.match(settingsUi,/root\.renderSettings\s*=\s*renderSettings/);
