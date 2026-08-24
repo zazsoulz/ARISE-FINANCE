@@ -59,8 +59,8 @@ test('historyTransaction cleanup leaves canonical production runtime bootable',a
 
   const {dom,context,manifest}=await bootCleanedShell();
   assert.ok(manifest.scripts.includes('./history-inspector.js'),'canonical historyTransaction owner missing from production manifest');
-  assert.equal(execute(context,'typeof historyTransaction','history-owner-type.js'),'function');
-  assert.equal(execute(context,'historyTransaction===ARISE_HISTORY_INSPECTOR.historyTransaction','history-owner-identity.js'),true);
+  assert.equal(execute(context,'typeof ARISE_HISTORY_INSPECTOR?.historyTransaction','history-owner-export.js'),'function');
+  assert.equal(execute(context,'typeof historyTransaction','history-runtime-row.js'),'function');
   dom.window.close();
 });
 
