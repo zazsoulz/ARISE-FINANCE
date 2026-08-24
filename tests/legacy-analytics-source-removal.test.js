@@ -4,7 +4,6 @@ const fs=require('node:fs');
 const {
   ANALYTICS_MARKER,
   SETTINGS_BOUNDARY,
-  RENDER_ANALYTICS_RETIREMENT,
   removeLegacyAnalyticsSource,
   removeRenderAnalyticsRetirementEntry
 }=require('../scripts/remove-legacy-analytics-source.js');
@@ -12,17 +11,17 @@ const {
 const shell=fs.readFileSync('app-shell.html','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
-test('current shell can retire analytics without touching settings',()=>{
+test('analytics cleanup stays idempotent after Analytics and Settings are physically retired',()=>{
   const cleaned=removeLegacyAnalyticsSource(shell);
+  assert.equal(cleaned,shell);
   assert.equal(cleaned.includes(ANALYTICS_MARKER),false);
   assert.equal(/\bfunction\s+renderAnalytics\s*\(/.test(cleaned),false);
-  assert.equal(cleaned.includes(SETTINGS_BOUNDARY),true);
-  assert.equal(cleaned.includes('function renderSettings(){'),true);
+  assert.equal(/\bfunction\s+renderSettings\s*\(/.test(cleaned),false);
+  assert.match(cleaned,/function\s+categoryEditor\s*\(/);
 });
 
 test('analytics cleanup is idempotent after physical removal',()=>{
-  const once=removeLegacyAnalyticsSource(shell);
-  assert.equal(removeLegacyAnalyticsSource(once),once);
+  assert.equal(removeLegacyAnalyticsSource(shell),shell);
 });
 
 test('analytics cleanup refuses unexpected shared helpers in retired block',()=>{
@@ -35,11 +34,8 @@ test('analytics cleanup fails closed on damaged boundary',()=>{
   assert.throws(()=>removeLegacyAnalyticsSource(fixture),/SETTINGS boundary missing/);
 });
 
-test('analytics retirement registry is staged or physically retired atomically',()=>{
+test('analytics retirement registry is physically retired and cleanup remains idempotent',()=>{
   const cleaned=removeRenderAnalyticsRetirementEntry(index);
-  const shellChanged=removeLegacyAnalyticsSource(shell)!==shell;
-  const indexChanged=cleaned!==index;
-  assert.equal(shellChanged,indexChanged,'analytics shell source and retirement entry must transition atomically');
+  assert.equal(cleaned,index);
   assert.equal(cleaned.includes('"renderAnalytics"'),false);
-  assert.equal(removeRenderAnalyticsRetirementEntry(cleaned),cleaned);
 });
