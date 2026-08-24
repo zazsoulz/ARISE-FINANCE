@@ -14,8 +14,12 @@ test("home uses a continuous material flow without route rails",()=>{
   assert.match(v3Source,/function startHomeFluidFlow\(canvas\)/);
   assert.match(v3Source,/requestAnimationFrame\(draw\)/);
   assert.match(v3Source,/uniform float uTime/);
-  assert.match(v3Source,/texture2D\(uTexture,shapeUv\)/);
-  assert.match(v3Source,/texture2D\(uTexture,materialUv\)/);
+  assert.doesNotMatch(v3Source,/uniform sampler2D uTexture/);
+  assert.doesNotMatch(v3Source,/texture2D\(/);
+  assert.doesNotMatch(v3Source,/new root\.Image\(\)/);
+  assert.match(v3Source,/float travel=down-time\*0\.105/);
+  assert.match(v3Source,/for\(int strandIndex=0;strandIndex<14;strandIndex\+\+\)/);
+  assert.match(v3Source,/float radialTravel=poolRadius-time\*0\.055/);
   assert.match(v3Source,/float valueNoise\(vec2 point\)/);
   assert.match(v3Source,/vec2 particlePoint=/);
   assert.match(v3Source,/Math\.min\(1\/30,/);
@@ -26,7 +30,7 @@ test("home uses a continuous material flow without route rails",()=>{
   assert.doesNotMatch(v3Source,/class="arise-flow-source"/);
   assert.match(productCss,/ARISE CONTINUOUS HOME FLOW/);
   assert.match(productCss,/\.arise-flow-node::before\{[\s\S]*?content:none!important;[\s\S]*?display:none!important/);
-  assert.match(productCss,/--arise-flow-texture:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
+  assert.doesNotMatch(productCss,/--arise-flow-texture/);
   assert.match(v3Source,/canvas\.dataset\.flowRenderer="static2d"/);
   assert.match(v3Source,/class="v3-summary-particles"/);
   for(const kind of ["fixed","categories","reserve","goals"]){

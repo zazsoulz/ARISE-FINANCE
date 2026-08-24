@@ -27,16 +27,20 @@ test('route-following rails and particles are physically absent from home markup
 });
 
 test('one continuously rendered material surface owns home motion',()=>{
-  assert.match(source,/function startWebGLHomeFlow\(canvas,image,reducedMotion\)/);
+  assert.match(source,/function startWebGLHomeFlow\(canvas,reducedMotion\)/);
   assert.match(source,/uniform float uTime/);
-  assert.match(source,/texture2D\(uTexture,shapeUv\)/);
-  assert.match(source,/texture2D\(uTexture,materialUv\)/);
+  assert.doesNotMatch(source,/uniform sampler2D uTexture/);
+  assert.doesNotMatch(source,/texture2D\(/);
+  assert.doesNotMatch(source,/new root\.Image\(\)/);
+  assert.match(source,/float travel=down-time\*0\.105/);
+  assert.match(source,/for\(int strandIndex=0;strandIndex<14;strandIndex\+\+\)/);
+  assert.match(source,/float radialTravel=poolRadius-time\*0\.055/);
   assert.match(source,/float valueNoise\(vec2 point\)/);
   assert.match(source,/vec2 particlePoint=/);
   assert.match(source,/Math\.min\(1\/30,/);
   assert.match(source,/requestAnimationFrame\(draw\)/);
   assert.match(css,/\.arise-flow-canvas\{/);
-  assert.match(css,/--arise-flow-texture:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
+  assert.doesNotMatch(css,/--arise-flow-texture/);
 });
 
 test('fluid renderer has a safe static fallback and reduced-motion frame',()=>{

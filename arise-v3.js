@@ -54,14 +54,24 @@
     "precision mediump float;",
     "#endif",
     "varying vec2 vUv;",
-    "uniform sampler2D uTexture;",
     "uniform float uTime;",
     "uniform float uCanvasAspect;",
-    "uniform float uTextureAspect;",
+    "float hash11(float point){",
+    "  point=fract(point*0.1031);",
+    "  point*=point+33.33;",
+    "  point*=point+point;",
+    "  return fract(point);",
+    "}",
     "float hash21(vec2 point){",
     "  vec2 p=fract(point*vec2(123.34,345.45));",
     "  p+=dot(p,p+34.345);",
     "  return fract(p.x*p.y);",
+    "}",
+    "float noise1(float point){",
+    "  float cell=floor(point);",
+    "  float local=fract(point);",
+    "  local=local*local*(3.0-2.0*local);",
+    "  return mix(hash11(cell),hash11(cell+1.0),local);",
     "}",
     "float valueNoise(vec2 point){",
     "  vec2 cell=floor(point);",
@@ -73,58 +83,98 @@
     "  float d=hash21(cell+vec2(1.0,1.0));",
     "  return mix(mix(a,b,local.x),mix(c,d,local.x),local.y);",
     "}",
-    "vec2 rotateAround(vec2 point,vec2 center,float angle){",
-    "  float s=sin(angle);",
-    "  float c=cos(angle);",
-    "  vec2 p=point-center;",
-    "  return center+mat2(c,-s,s,c)*p;",
+    "float fbm(vec2 point){",
+    "  float sum=0.0;",
+    "  float amplitude=0.54;",
+    "  for(int octave=0;octave<4;octave++){",
+    "    sum+=valueNoise(point)*amplitude;",
+    "    point=mat2(1.62,-1.08,1.08,1.62)*point+vec2(7.1,3.7);",
+    "    amplitude*=0.48;",
+    "  }",
+    "  return sum;",
+    "}",
+    "float softLine(float distanceToLine,float radius){",
+    "  return 1.0-smoothstep(radius,radius*3.4,distanceToLine);",
     "}",
     "void main(){",
-    "  float drawWidth=min(0.94,uTextureAspect/uCanvasAspect);",
-    "  vec2 uv=vec2((vUv.x-0.5)/drawWidth+0.5,vUv.y);",
-    "  if(uv.x<=0.0||uv.x>=1.0||uv.y<=0.0||uv.y>=1.0){gl_FragColor=vec4(0.0);return;}",
-    "  float down=1.0-uv.y;",
-    "  float body=smoothstep(0.015,0.76,down);",
-    "  float pool=smoothstep(0.66,0.97,down);",
-    "  vec2 fieldPoint=vec2((uv.x-0.5)*6.2,down*5.1);",
-    "  float broad=valueNoise(fieldPoint+vec2(0.0,-uTime*0.18));",
-    "  float cross=valueNoise(fieldPoint*1.73+vec2(uTime*0.075,-uTime*0.27));",
-    "  float detail=valueNoise(fieldPoint*3.07+vec2(-uTime*0.11,-uTime*0.41));",
-    "  vec2 field=vec2(broad-0.5,cross-0.5);",
-    "  float current=sin(down*15.0-uTime*0.74+broad*3.8+(uv.x-0.5)*4.2);",
-    "  vec2 materialUv=uv;",
-    "  materialUv.x+=(field.x*0.0105+current*0.0017)*(0.18+0.82*body);",
-    "  materialUv.y+=(field.y*0.0044+(detail-0.5)*0.0021)*body;",
-    "  float poolAngle=(broad-cross)*0.024*pool;",
-    "  materialUv=mix(materialUv,rotateAround(materialUv,vec2(0.5,0.115),poolAngle),pool);",
-    "  vec2 shapeUv=uv+field*vec2(0.00135,0.00075)*body;",
-    "  vec4 shape=texture2D(uTexture,shapeUv);",
-    "  vec4 material=texture2D(uTexture,materialUv);",
-    "  float travelling=0.5+0.5*sin(down*48.0-uTime*2.15+broad*6.0+cross*2.4);",
-    "  float filament=pow(travelling,5.0);",
-    "  vec3 color=mix(shape.rgb,material.rgb,0.68)*(0.94+0.055*cross+0.095*filament);",
-    "  vec2 particlePoint=vec2((uv.x+field.x*0.008)*48.0,(down-uTime*0.052)*86.0);",
+    "  float down=1.0-vUv.y;",
+    "  float x=vUv.x-0.5;",
+    "  float time=uTime;",
+    "  float travel=down-time*0.105;",
+    "  float grow=smoothstep(0.015,0.76,down);",
+    "  float trunkMask=smoothstep(0.004,0.025,down)*(1.0-smoothstep(0.73,0.88,down));",
+    "  float broadWave=noise1(travel*4.7+2.4)*2.0-1.0;",
+    "  float secondaryWave=noise1(travel*10.9+11.8)*2.0-1.0;",
+    "  float center=(broadWave*0.018+secondaryWave*0.006)*grow;",
+    "  float width=mix(0.006,0.126,pow(grow,0.78));",
+    "  width*=0.88+0.22*noise1(travel*7.3+19.0);",
+    "  float normalizedX=(x-center)/max(width,0.004);",
+    "  float edgeCurrent=(noise1(travel*13.0+4.0)-0.5)*0.18;",
+    "  float envelope=(1.0-smoothstep(0.55+edgeCurrent,1.18+edgeCurrent,abs(normalizedX)))*trunkMask;",
+    "  vec2 advected=vec2(normalizedX*1.25,travel*8.2);",
+    "  float warp=fbm(advected*vec2(0.72,0.54)+vec2(0.0,7.0))-0.5;",
+    "  float sheetNoise=fbm(vec2(advected.x*1.8+warp*1.7,advected.y*1.25));",
+    "  float sheets=smoothstep(0.30,0.82,sheetNoise)*envelope;",
+    "  float strandEnergy=0.0;",
+    "  vec3 strandColor=vec3(0.0);",
+    "  for(int strandIndex=0;strandIndex<14;strandIndex++){",
+    "    float strand=float(strandIndex);",
+    "    float seed=hash11(strand*13.17+8.3);",
+    "    float side=seed*2.0-1.0;",
+    "    float strandTravel=down-time*(0.082+seed*0.055);",
+    "    float lane=side*width*(0.28+0.66*hash11(strand+2.0));",
+    "    float localCurrent=(noise1(strandTravel*(5.0+seed*3.8)+strand*5.7)-0.5)*width*(0.34+grow*0.32);",
+    "    float curl=sin(strandTravel*(18.0+seed*8.0)+strand*2.1)*width*(0.025+0.085*grow);",
+    "    float strandCenter=center+lane+localCurrent+curl;",
+    "    float radius=mix(0.0011,0.0038,grow)*(0.64+seed*0.72);",
+    "    float line=softLine(abs(x-strandCenter),radius)*trunkMask;",
+    "    float packet=0.48+0.52*pow(0.5+0.5*sin(strandTravel*(54.0+seed*22.0)+strand*4.7),3.0);",
+    "    line*=packet*(0.55+0.45*envelope);",
+    "    vec3 cool=vec3(0.38,0.69,0.76);",
+    "    vec3 ivory=vec3(0.91,0.92,0.84);",
+    "    vec3 warm=vec3(0.95,0.68,0.31);",
+    "    vec3 tone=side<0.0?mix(ivory,cool,min(1.0,-side*0.86)):mix(ivory,warm,min(1.0,side*0.86));",
+    "    strandColor+=tone*line;",
+    "    strandEnergy+=line;",
+    "  }",
+    "  float hairPhase=normalizedX*19.0+warp*7.0+travel*13.0;",
+    "  float hairs=pow(0.5+0.5*sin(hairPhase),8.0)*envelope*(0.30+0.70*sheets);",
+    "  float edgeMist=exp(-abs(abs(normalizedX)-0.92)*5.8)*trunkMask*(0.25+0.75*sheetNoise);",
+    "  vec3 leftColor=vec3(0.34,0.64,0.72);",
+    "  vec3 rightColor=vec3(0.92,0.62,0.27);",
+    "  vec3 bodyTone=mix(leftColor,rightColor,smoothstep(-0.42,0.48,normalizedX));",
+    "  vec3 color=bodyTone*(sheets*0.25+hairs*0.40+edgeMist*0.15)+strandColor*0.48;",
+    "  float trunkAlpha=min(0.92,envelope*(0.10+sheets*0.30+hairs*0.44)+strandEnergy*0.20+edgeMist*0.14);",
+    "  float poolGate=smoothstep(0.68,0.79,down)*(1.0-smoothstep(0.975,1.0,down));",
+    "  vec2 poolPoint=vec2(x/0.34,(down-0.865)/0.145);",
+    "  float poolRadius=length(poolPoint);",
+    "  float poolAngle=atan(poolPoint.y,poolPoint.x);",
+    "  float poolEdge=0.92+(valueNoise(vec2(poolAngle*2.2,1.0-time*0.12))-0.5)*0.13;",
+    "  float poolEnvelope=(1.0-smoothstep(poolEdge,poolEdge+0.24,poolRadius))*poolGate;",
+    "  float radialTravel=poolRadius-time*0.055;",
+    "  float poolWarp=fbm(vec2(poolAngle*1.8+time*0.025,radialTravel*7.5))-0.5;",
+    "  float rings=pow(0.5+0.5*sin(radialTravel*31.0+poolWarp*5.0),9.0)*poolEnvelope;",
+    "  float poolVeins=pow(0.5+0.5*sin(poolAngle*9.0+poolRadius*15.0-poolWarp*8.0-time*0.62),12.0)*poolEnvelope;",
+    "  vec3 poolTone=mix(leftColor,rightColor,smoothstep(-0.65,0.68,poolPoint.x));",
+    "  color+=poolTone*(poolEnvelope*0.10+rings*0.31+poolVeins*0.19);",
+    "  float poolAlpha=poolEnvelope*0.13+rings*0.34+poolVeins*0.17;",
+    "  vec2 particlePoint=vec2((x-center)*92.0,(down-time*0.12)*112.0);",
     "  vec2 particleCell=floor(particlePoint);",
     "  vec2 particleLocal=fract(particlePoint)-0.5;",
     "  vec2 particleOffset=vec2(hash21(particleCell+2.7),hash21(particleCell+8.1))-0.5;",
     "  float particleSeed=hash21(particleCell+17.3);",
-    "  float particle=(1.0-smoothstep(0.0,0.105,length(particleLocal-particleOffset*0.68)))*step(0.94,particleSeed);",
-    "  particle*=smoothstep(0.025,0.24,shape.a)*(1.0-pool*0.32);",
-    "  vec3 particleColor=mix(vec3(0.57,0.76,0.78),vec3(0.98,0.78,0.40),smoothstep(0.44,0.62,uv.x));",
-    "  color+=particleColor*particle*0.22;",
-    "  float edgeFade=smoothstep(0.0,0.025,uv.y)*smoothstep(0.0,0.022,1.0-uv.y);",
-    "  gl_FragColor=vec4(color,shape.a*edgeFade);",
+    "  float particle=(1.0-smoothstep(0.0,0.115,length(particleLocal-particleOffset*0.72)))*step(0.925,particleSeed);",
+    "  particle*=max(envelope*0.78,poolEnvelope*0.38);",
+    "  vec3 particleTone=mix(leftColor,rightColor,smoothstep(-0.08,0.10,x));",
+    "  color+=particleTone*particle*0.58;",
+    "  float alpha=clamp(trunkAlpha+poolAlpha+particle*0.44,0.0,0.96);",
+    "  float source=1.0-smoothstep(0.0,0.025,length(vec2(x*1.35,(down-0.012)*uCanvasAspect)));",
+    "  color+=vec3(0.97,0.84,0.55)*source*0.82;",
+    "  alpha=max(alpha,source*0.94);",
+    "  float canvasFade=smoothstep(0.0,0.014,vUv.y)*smoothstep(0.0,0.018,1.0-vUv.y);",
+    "  gl_FragColor=vec4(color,alpha*canvasFade);",
     "}"
   ].join("\n");
-
-  function parseFlowTexture(value){
-    const raw=String(value||"").trim();
-    const match=raw.match(/^url\((.*)\)$/i);
-    if(!match)return "";
-    let source=match[1].trim();
-    if((source.startsWith('"')&&source.endsWith('"'))||(source.startsWith("'")&&source.endsWith("'")))source=source.slice(1,-1);
-    try{return new URL(source,root.document?.baseURI||root.location?.href).href;}catch(_error){return source;}
-  }
 
   function compileHomeFlowShader(gl,type,source){
     const shader=gl.createShader(type);
@@ -160,34 +210,22 @@
     return {width,height};
   }
 
-  function startWebGLHomeFlow(canvas,image,reducedMotion){
+  function startWebGLHomeFlow(canvas,reducedMotion){
     const gl=canvas.getContext("webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false,powerPreference:"high-performance"})
       ||canvas.getContext("experimental-webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false});
     if(!gl)return null;
     const program=createHomeFlowProgram(gl);
     const buffer=gl.createBuffer();
-    const texture=gl.createTexture();
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
     const position=gl.getAttribLocation(program,"aPosition");
     gl.enableVertexAttribArray(position);
     gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D,texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
     const uniforms={
-      texture:gl.getUniformLocation(program,"uTexture"),
       time:gl.getUniformLocation(program,"uTime"),
-      canvasAspect:gl.getUniformLocation(program,"uCanvasAspect"),
-      textureAspect:gl.getUniformLocation(program,"uTextureAspect")
+      canvasAspect:gl.getUniformLocation(program,"uCanvasAspect")
     };
-    gl.uniform1i(uniforms.texture,0);
     gl.clearColor(0,0,0,0);
     const started=root.performance?.now?.()||Date.now();
     let handle=0;
@@ -199,7 +237,6 @@
       if(stopped)return;
       stopped=true;
       if(handle)root.cancelAnimationFrame(handle);
-      gl.deleteTexture(texture);
       gl.deleteBuffer(buffer);
       gl.deleteProgram(program);
     };
@@ -215,7 +252,6 @@
       gl.useProgram(program);
       gl.uniform1f(uniforms.time,elapsed);
       gl.uniform1f(uniforms.canvasAspect,width/height);
-      gl.uniform1f(uniforms.textureAspect,(image.naturalWidth||image.width)/(image.naturalHeight||image.height));
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       frames+=1;
       if(frames===1||frames%6===0){
@@ -234,13 +270,30 @@
     return {stop};
   }
 
-  function startCanvasHomeFlow(canvas,image,reducedMotion){
+  function startCanvasHomeFlow(canvas,reducedMotion){
     const context=canvas.getContext("2d",{alpha:true});
     if(!context)return null;
     const {width,height}=sizeHomeFlowCanvas(canvas,1);
-    const drawWidth=height*(image.naturalWidth||image.width)/(image.naturalHeight||image.height);
     context.clearRect(0,0,width,height);
-    context.drawImage(image,(width-drawWidth)/2,0,drawWidth,height);
+    context.save();
+    context.globalCompositeOperation="lighter";
+    const gradient=context.createLinearGradient(width*.5,0,width*.5,height);
+    gradient.addColorStop(0,"rgba(244,220,166,.92)");
+    gradient.addColorStop(.46,"rgba(129,186,194,.55)");
+    gradient.addColorStop(1,"rgba(218,168,83,.25)");
+    context.strokeStyle=gradient;
+    context.lineCap="round";
+    for(let index=0;index<13;index+=1){
+      const offset=(index-6)*width*.006;
+      context.globalAlpha=.12+(index%4)*.045;
+      context.lineWidth=1+(index%3)*.65;
+      context.beginPath();
+      context.moveTo(width*.5+offset*.08,height*.02);
+      context.bezierCurveTo(width*.5-offset*.45,height*.31,width*.5+offset*1.8,height*.54,width*.5+offset*3.2,height*.77);
+      context.bezierCurveTo(width*.5+offset*4.8,height*.86,width*.5+offset*8.5,height*.89,width*.5+offset*11,height*.91);
+      context.stroke();
+    }
+    context.restore();
     canvas.dataset.flowRenderer="static2d";
     canvas.dataset.flowFrames="1";
     canvas.dataset.flowTime="0.000";
@@ -250,35 +303,31 @@
   }
 
   function startHomeFluidFlow(canvas){
-    if(!canvas||typeof root.Image!=="function")return null;
-    const styles=typeof root.getComputedStyle==="function"?root.getComputedStyle(canvas):null;
-    const texture=parseFlowTexture(styles?.getPropertyValue("--arise-flow-texture"));
-    if(!texture)return null;
+    if(!canvas)return null;
     const reducedMotion=Boolean(root.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
-    const image=new root.Image();
-    image.decoding="async";
+    if(typeof root.WebGLRenderingContext!=="function"&&typeof root.CanvasRenderingContext2D!=="function"){
+      canvas.dataset.flowRenderer="static";
+      canvas.dataset.flowFrames="1";
+      canvas.dataset.flowTime="0.000";
+      return {stop(){}};
+    }
     let controller=null;
     let renderError="";
-    image.onload=()=>{
-      if(!canvas.isConnected)return;
-      try{
-        controller=startWebGLHomeFlow(canvas,image,reducedMotion);
-      }catch(error){
-        renderError=String(error?.message||error).slice(0,160);
-        canvas.dataset.flowError=renderError;
-      }
-      if(controller)return;
-      let target=canvas;
-      if(canvas.getContext("webgl")||canvas.getContext("experimental-webgl")){
-        target=canvas.cloneNode(false);
-        if(renderError)target.dataset.flowError=renderError;
-        canvas.replaceWith(target);
-      }
-      controller=startCanvasHomeFlow(target,image,reducedMotion);
-      if(!controller)target.dataset.flowRenderer="static";
-    };
-    image.onerror=()=>{canvas.dataset.flowRenderer="static";};
-    image.src=texture;
+    try{
+      controller=startWebGLHomeFlow(canvas,reducedMotion);
+    }catch(error){
+      renderError=String(error?.message||error).slice(0,160);
+      canvas.dataset.flowError=renderError;
+    }
+    if(controller)return controller;
+    let target=canvas;
+    if(canvas.getContext("webgl")||canvas.getContext("experimental-webgl")){
+      target=canvas.cloneNode(false);
+      if(renderError)target.dataset.flowError=renderError;
+      canvas.replaceWith(target);
+    }
+    controller=startCanvasHomeFlow(target,reducedMotion);
+    if(!controller)target.dataset.flowRenderer="static";
     return {stop:()=>controller?.stop()};
   }
 
