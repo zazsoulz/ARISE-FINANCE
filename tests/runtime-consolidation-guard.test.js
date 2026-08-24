@@ -18,6 +18,7 @@ const retiredRuntime=[
 
 const canonicalStyles=[
   './arise-v3.css',
+  './flow-motion.css',
   './analytics-ui.css',
   './product-ui.css'
 ];
@@ -29,7 +30,7 @@ test('retired transition-era UI layers stay out of the production loader and rep
   }
 });
 
-test('production loader keeps the consolidated three-style surface',()=>{
+test('production loader keeps the consolidated four-style surface',()=>{
   const styles=[...index.matchAll(/href=\\?"(\.\/[^"\\]+\.css)\\?"/g)].map(match=>match[1]);
   for(const style of canonicalStyles){
     assert.equal(styles.includes(style),true,`${style} missing from production loader`);
