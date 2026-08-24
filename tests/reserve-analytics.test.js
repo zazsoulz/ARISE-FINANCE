@@ -1,6 +1,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {reserveRunway,reserveProgress}=require('../reserve-analytics.js');
+const {reserveRunway,reserveProgress,reserveTarget,normalizeTargetSettings}=require('../reserve-analytics.js');
 
 test('reserve runway reports exact fractional months',()=>{
   const result=reserveRunway({reserveBalance:125000,monthlyEssentialSpend:50000});
@@ -89,4 +89,20 @@ test('reserve progress sanitizes invalid inputs',()=>{
     complete:false,
     surplus:0
   });
+});
+
+test('canonical targetBalance wins even when explicitly cleared to zero',()=>{
+  assert.equal(reserveTarget({targetBalance:0,target:300000}),0);
+  const normalized=normalizeTargetSettings({targetBalance:0,target:300000,monthlyEssentialSpend:60000});
+  assert.equal(normalized.changed,true);
+  assert.equal(normalized.targetBalance,0);
+  assert.deepEqual(normalized.settings,{targetBalance:0,monthlyEssentialSpend:60000});
+});
+
+test('legacy reserve target migrates to canonical targetBalance without changing value',()=>{
+  assert.equal(reserveTarget({target:300000}),300000);
+  const normalized=normalizeTargetSettings({target:300000,essentialCategoryIds:['rent']});
+  assert.equal(normalized.changed,true);
+  assert.equal(normalized.targetBalance,300000);
+  assert.deepEqual(normalized.settings,{targetBalance:300000,essentialCategoryIds:['rent']});
 });
