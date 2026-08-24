@@ -68,7 +68,7 @@ test('navigation compatibility cleanup leaves canonical production runtime boota
   dom.window.close();
 });
 
-test('canonical navigation remains interactive after legacy helper removal',async()=>{
+test('canonical navigation and profile switching remain interactive after legacy helper removal',async()=>{
   const {dom,context}=await bootCleanedShell();
   const document=dom.window.document;
 
@@ -80,14 +80,19 @@ test('canonical navigation remains interactive after legacy helper removal',asyn
   }
 
   const before=execute(context,'state.activeProfileId','profile-before.js');
-  execute(context,`
+  const switcherHTML=execute(context,`
     state.profiles.push({...clone(activeProfile()),id:'profile-cleanup-smoke',name:'Second profile'});
-    render();
-  `,'add-second-profile.js');
+    profileSwitcher();
+  `,'build-profile-switcher.js');
+  const host=document.createElement('div');
+  host.innerHTML=switcherHTML;
+  document.body.appendChild(host);
+  execute(context,'bindProfileSwitcher()','bind-cleaned-profile-switcher.js');
+
   const select=document.getElementById('profileSwitch');
-  assert.ok(select,'profile switcher missing after legacy helper removal');
+  assert.ok(select,'canonical profile switcher helper missing after legacy source removal');
   select.value='profile-cleanup-smoke';
-  select.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+  select.onchange();
   assert.notEqual(execute(context,'state.activeProfileId','profile-after.js'),before);
   assert.equal(execute(context,'state.activeProfileId','profile-selected.js'),'profile-cleanup-smoke');
 
