@@ -4,7 +4,6 @@ const fs=require('node:fs');
 const {
   SETTINGS_MARKER,
   CATEGORY_EDITOR_BOUNDARY,
-  RENDER_SETTINGS_RETIREMENT,
   removeLegacySettingsSource,
   removeRenderSettingsRetirementEntry
 }=require('../scripts/remove-legacy-settings-source.js');
@@ -12,8 +11,9 @@ const {
 const shell=fs.readFileSync('app-shell.html','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
-test('current shell can retire settings without touching category helpers',()=>{
+test('current shell has Settings source physically retired while category helpers remain',()=>{
   const cleaned=removeLegacySettingsSource(shell);
+  assert.equal(cleaned,shell);
   assert.equal(cleaned.includes(SETTINGS_MARKER),false);
   assert.equal(/\bfunction\s+renderSettings\s*\(/.test(cleaned),false);
   assert.equal(cleaned.includes(CATEGORY_EDITOR_BOUNDARY),true);
@@ -21,8 +21,7 @@ test('current shell can retire settings without touching category helpers',()=>{
 });
 
 test('settings cleanup is idempotent after physical removal',()=>{
-  const once=removeLegacySettingsSource(shell);
-  assert.equal(removeLegacySettingsSource(once),once);
+  assert.equal(removeLegacySettingsSource(shell),shell);
 });
 
 test('settings cleanup refuses unexpected shared helpers in retired block',()=>{
@@ -35,9 +34,7 @@ test('settings cleanup fails closed on damaged boundary',()=>{
   assert.throws(()=>removeLegacySettingsSource(fixture),/categoryEditor boundary missing/);
 });
 
-test('settings retirement registry entry is removed atomically and idempotently',()=>{
-  assert.equal(index.includes(RENDER_SETTINGS_RETIREMENT),true);
-  const cleaned=removeRenderSettingsRetirementEntry(index);
-  assert.equal(cleaned.includes('"renderSettings"'),false);
-  assert.equal(removeRenderSettingsRetirementEntry(cleaned),cleaned);
+test('settings retirement registry is already removed and cleanup remains idempotent',()=>{
+  assert.equal(index.includes('"renderSettings"'),false);
+  assert.equal(removeRenderSettingsRetirementEntry(index),index);
 });

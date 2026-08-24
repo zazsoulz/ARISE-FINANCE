@@ -410,15 +410,15 @@
     return html.replace(/Свободные деньги/g,"Нераспределено");
   };
 
-  const originalRenderSettings=root.renderSettings;
-  root.renderSettings=function(){
-    originalRenderSettings();
+  function enhanceSettings(){
     addCategoryDeleteControls();
     addReserveTargetControls();
-  };
+  }
 
   root.ARISE_PRODUCT_RULES={
     addCategoryDeleteControls,
+    addReserveTargetControls,
+    enhanceSettings,
     currentUnallocatedMoney:root.currentUnallocatedMoney,
     renderExpenseReconciliation
   };
