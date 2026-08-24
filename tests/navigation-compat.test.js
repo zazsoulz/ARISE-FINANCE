@@ -39,8 +39,8 @@ test('profile switcher renders and switches financial profiles independently of 
 test('physical nav retirement preserves shared helpers through external compatibility ownership',()=>{
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/);
   assert.doesNotMatch(shell,/function\s+renderNav\s*\(/);
-  for(const helper of ['function bindNav(){','function profileSwitcher(){','function bindProfileSwitcher(){']){
-    assert.ok(shell.includes(helper),`${helper} must remain in compatibility source until its own physical extraction cleanup`);
+  for(const name of ['bindNav','profileSwitcher','bindProfileSwitcher']){
+    assert.doesNotMatch(shell,new RegExp(`\\bfunction\\s+${name}\\s*\\(`),`${name} legacy copy must stay physically retired`);
   }
   assert.match(source,/ARISE_NAVIGATION_COMPAT/);
   for(const name of ['bindNav','profileSwitcher','bindProfileSwitcher']){

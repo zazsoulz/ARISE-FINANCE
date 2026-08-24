@@ -28,7 +28,7 @@ function boot({registered=false}={}){
   const {window}=dom; window.alert=()=>{}; window.confirm=()=>true;
   const context=dom.getInternalVMContext(); execute(context,effectiveShellScript(),'app-shell-effective.js');
   if(registered) execute(context,`state.account.registered=true; state.account.name='QA'; state.account.email='qa@example.com'; saveState();`,'seed-state.js');
-  for(const path of ['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','arise-v3.js','analytics-engine.js','analytics-ui.js','settings-ui.js','financial-bootstrap.js']) executeFile(context,path);
+  for(const path of ['financial-core.js','expense-reconciliation.js','financial-runtime.js','financial-integration.js','reserve-analytics.js','product-rules.js','navigation-compat.js','arise-v3.js','analytics-engine.js','analytics-ui.js','settings-ui.js','financial-bootstrap.js']) executeFile(context,path);
   return {dom,context};
 }
 

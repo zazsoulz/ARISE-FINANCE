@@ -34,7 +34,7 @@ function boot(){
   const context=dom.getInternalVMContext();
   execute(context,effectiveShellScript(),'app-shell-effective.js');
   execute(context,`state.account.registered=true; state.account.name='QA'; state.account.email='qa@example.com'; saveState();`,'seed-state.js');
-  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','arise-v3.js','analytics-engine.js','analytics-ui.js','settings-ui.js','financial-bootstrap.js']){
+  for(const path of ['financial-core.js','financial-runtime.js','financial-integration.js','product-rules.js','navigation-compat.js','arise-v3.js','analytics-engine.js','analytics-ui.js','settings-ui.js','financial-bootstrap.js']){
     execute(context,fs.readFileSync(path,'utf8'),path);
   }
   return {dom,context};

@@ -52,7 +52,8 @@ async function bootCleanedShell(){
 }
 
 test('navigation compatibility cleanup leaves canonical production runtime bootable',async()=>{
-  assert.notEqual(shell,originalShell,'fixture must exercise the post-cleanup shell');
+  assert.equal(shell,originalShell,'current shell must already be physically cleaned');
+  assert.equal(removeNavigationCompatSource(shell),shell,'cleanup must stay idempotent after physical removal');
   for(const name of ['bindNav','profileSwitcher','bindProfileSwitcher']){
     assert.doesNotMatch(shell,new RegExp(`\\bfunction\\s+${name}\\s*\\(`),`${name} legacy source still present`);
   }
