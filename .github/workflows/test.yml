@@ -72,6 +72,7 @@ jobs:
           node --check scripts/remove-legacy-history-source.js
           node --check scripts/remove-legacy-analytics-source.js
           node --check scripts/remove-legacy-settings-source.js
+          node --check scripts/remove-navigation-compat-source.js
       - name: Physical cleanup guards
         run: |
           node scripts/remove-legacy-nav-source.js --check
@@ -81,5 +82,6 @@ jobs:
           node scripts/remove-legacy-history-source.js --check
           node scripts/remove-legacy-analytics-source.js --check
           node scripts/remove-legacy-settings-source.js --check
+          node scripts/remove-navigation-compat-source.js --check
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
