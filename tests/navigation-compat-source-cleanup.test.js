@@ -12,16 +12,26 @@ const {
 
 const LEGACY_FUNCTIONS=['bindNav','profileSwitcher','bindProfileSwitcher'];
 
+function legacyFixture(){
+  const boundary=shell.indexOf(GOAL_CARD_MARKER);
+  assert.ok(boundary>=0,'GOAL CARD boundary missing from current shell');
+  const block=`function bindNav(){\n  return true;\n}\n\nfunction profileSwitcher(){\n  return \"\";\n}\n\nfunction bindProfileSwitcher(){\n  return true;\n}\n\n`;
+  return shell.slice(0,boundary)+block+shell.slice(boundary);
+}
+
 test('navigation compatibility source is owned by navigation-compat.js',()=>{
   for(const name of LEGACY_FUNCTIONS){
     assert.match(navigationCompat,new RegExp(`function\\s+${name}\\s*\\(`));
     assert.match(navigationCompat,new RegExp(`root\\.${name}=${name}`));
+    assert.doesNotMatch(shell,new RegExp(`\\bfunction\\s+${name}\\s*\\(`));
   }
 });
 
 test('cleanup removes only legacy navigation/profile helper block',()=>{
-  const cleaned=removeNavigationCompatSource(shell);
-  assert.notEqual(cleaned,shell);
+  const fixture=legacyFixture();
+  const cleaned=removeNavigationCompatSource(fixture);
+  assert.notEqual(cleaned,fixture);
+  assert.equal(cleaned,shell);
   for(const name of LEGACY_FUNCTIONS){
     assert.doesNotMatch(cleaned,new RegExp(`\\bfunction\\s+${name}\\s*\\(`));
   }
@@ -33,16 +43,16 @@ test('cleanup removes only legacy navigation/profile helper block',()=>{
 });
 
 test('cleanup is idempotent after physical removal',()=>{
-  const once=removeNavigationCompatSource(shell);
-  assert.equal(removeNavigationCompatSource(once),once);
+  assert.equal(removeNavigationCompatSource(shell),shell);
 });
 
 test('cleanup fails closed when an unexpected helper appears in the block',()=>{
-  const navStart=shell.indexOf(NAV_FUNCTION_BOUNDARY);
+  const fixture=legacyFixture();
+  const navStart=fixture.indexOf(NAV_FUNCTION_BOUNDARY);
   assert.ok(navStart>=0);
-  const injected=shell.slice(0,navStart+NAV_FUNCTION_BOUNDARY.length)+
+  const injected=fixture.slice(0,navStart+NAV_FUNCTION_BOUNDARY.length)+
     '\nfunction sharedUnexpectedHelper(){}\n'+
-    shell.slice(navStart+NAV_FUNCTION_BOUNDARY.length);
+    fixture.slice(navStart+NAV_FUNCTION_BOUNDARY.length);
   assert.throws(
     ()=>removeNavigationCompatSource(injected),
     /unexpected helper sharedUnexpectedHelper/
@@ -50,7 +60,8 @@ test('cleanup fails closed when an unexpected helper appears in the block',()=>{
 });
 
 test('cleanup fails closed when the next boundary is damaged',()=>{
-  const damaged=shell.replace(GOAL_CARD_MARKER,'/* damaged goal-card boundary */');
+  const fixture=legacyFixture();
+  const damaged=fixture.replace(GOAL_CARD_MARKER,'/* damaged goal-card boundary */');
   assert.throws(
     ()=>removeNavigationCompatSource(damaged),
     /GOAL CARD boundary missing/
