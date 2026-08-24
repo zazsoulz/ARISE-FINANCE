@@ -36,7 +36,7 @@ test('profile switcher renders and switches financial profiles independently of 
   assert.equal(switched,'p2');
 });
 
-test('physical nav retirement preserves shared helpers through external compatibility ownership',()=>{
+test('physical nav retirement leaves navigation-compat as the sole helper owner',()=>{
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/);
   assert.doesNotMatch(shell,/function\s+renderNav\s*\(/);
   for(const name of ['bindNav','profileSwitcher','bindProfileSwitcher']){
