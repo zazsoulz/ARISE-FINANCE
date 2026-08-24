@@ -6873,7 +6873,7 @@ body::before{
 
 /* =========================================================
    ARISE CONTINUOUS HOME FLOW
-   One continuously warped material surface; no route rails or path particles.
+   Procedurally generated moving matter; no static texture or route overlays.
 ========================================================= */
 
 .arise-flow-stage::before{
@@ -6904,7 +6904,6 @@ body::before{
 }
 
 .arise-flow-canvas{
-  --arise-flow-texture:url("./assets/arise-flow-organic-v3.webp");
   position:absolute;
   z-index:2;
   top:-6px;
@@ -6914,15 +6913,11 @@ body::before{
   display:block;
   pointer-events:none;
   contain:paint;
-  background:var(--arise-flow-texture) center / auto 100% no-repeat;
-  opacity:.82;
+  background:none;
+  opacity:.94;
   mix-blend-mode:screen;
   filter:none;
   transform:translateZ(0);
-}
-
-.arise-flow-canvas.is-running{
-  background-image:none!important;
 }
 
 .arise-flow-svg,
@@ -6949,7 +6944,7 @@ body::before{
     left:-12px;
     width:calc(100% + 24px);
     height:calc(100% + 4px);
-    opacity:.84;
+    opacity:.96;
   }
 }
 
