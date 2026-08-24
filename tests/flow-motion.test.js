@@ -26,25 +26,31 @@ test('route-following rails and particles are physically absent from home markup
   }
 });
 
-test('one continuously rendered material surface owns home motion',()=>{
-  assert.match(source,/function startWebGLHomeFlow\(canvas,reducedMotion\)/);
-  assert.match(source,/uniform float uTime/);
-  assert.doesNotMatch(source,/uniform sampler2D uTexture/);
-  assert.doesNotMatch(source,/texture2D\(/);
-  assert.doesNotMatch(source,/new root\.Image\(\)/);
-  assert.match(source,/float travel=down-time\*0\.105/);
-  assert.match(source,/for\(int strandIndex=0;strandIndex<14;strandIndex\+\+\)/);
-  assert.match(source,/float radialTravel=poolRadius-time\*0\.055/);
-  assert.match(source,/float valueNoise\(vec2 point\)/);
-  assert.match(source,/vec2 particlePoint=/);
+test('reference-preserving material advection owns home motion',()=>{
+  assert.match(source,/const HOME_FLOW_TEXTURE_ASPECT=720\/1279/);
+  assert.match(source,/uniform sampler2D uFlowTexture/);
+  assert.match(source,/function startReferenceHomeFlow\(canvas,image,reducedMotion\)/);
+  assert.match(source,/gl\.texImage2D\(gl\.TEXTURE_2D,0,gl\.RGBA,gl\.RGBA,gl\.UNSIGNED_BYTE,image\)/);
+  assert.match(source,/vec2 primaryUv=mix\(uv\+bodyWarp,poolUv,poolGate\)/);
+  assert.match(source,/vec2 layerAUv=primaryUv/);
+  assert.match(source,/vec2 layerBUv=primaryUv/);
+  assert.match(source,/vec2 layerCUv=primaryUv/);
+  assert.match(source,/mat2\(cs,-sn,sn,cs\)\*poolPoint/);
+  assert.match(source,/float travelling=/);
+  assert.match(source,/gl\.drawArrays\(gl\.TRIANGLE_STRIP,0,4\)/);
+  assert.match(source,/canvas\.dataset\.flowRenderer="reference-advection-webgl"/);
+  assert.doesNotMatch(source,/gl\.drawArrays\(gl\.LINES/);
+  assert.doesNotMatch(source,/gl\.drawArrays\(gl\.POINTS/);
+  assert.doesNotMatch(source,/startWebGLHomeFlow/);
   assert.match(source,/Math\.min\(1\/30,/);
   assert.match(source,/requestAnimationFrame\(draw\)/);
   assert.match(css,/\.arise-flow-canvas\{/);
-  assert.doesNotMatch(css,/--arise-flow-texture/);
+  assert.match(css,/--arise-flow-guide:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
 });
 
 test('fluid renderer has a safe static fallback and reduced-motion frame',()=>{
-  assert.match(source,/canvas\.dataset\.flowRenderer="static2d"/);
+  assert.match(source,/canvas\.dataset\.flowRenderer="static"/);
   assert.match(source,/if\(reducedMotion\)\{[\s\S]*?canvas\.dataset\.flowMotion="reduced"/);
+  assert.match(css,/\.arise-flow-canvas\.is-static\{[\s\S]*?background:var\(--arise-flow-guide\)/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?\.arise-flow-canvas\{[\s\S]*?transform:none!important/);
 });

@@ -38,13 +38,21 @@
     return `<circle class="arise-flow-particle ${tone}" r="${radius}"><animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto"><mpath href="#${path}"/></animateMotion></circle>`;
   }
 
+  const HOME_FLOW_TEXTURE_ASPECT=720/1279;
+
+  function parseHomeFlowGuide(value){
+    const raw=String(value||"").trim();
+    const match=raw.match(/^url\((.*)\)$/i);
+    if(!match)return "";
+    let source=match[1].trim();
+    if((source.startsWith('"')&&source.endsWith('"'))||(source.startsWith("'")&&source.endsWith("'")))source=source.slice(1,-1);
+    try{return new URL(source,root.document?.baseURI||root.location?.href).href;}catch(_error){return source;}
+  }
+
   const homeFlowVertexShader=[
     "attribute vec2 aPosition;",
     "varying vec2 vUv;",
-    "void main(){",
-    "  vUv=aPosition*.5+.5;",
-    "  gl_Position=vec4(aPosition,0.0,1.0);",
-    "}"
+    "void main(){vUv=aPosition*.5+.5;gl_Position=vec4(aPosition,0.0,1.0);}"
   ].join("\n");
 
   const homeFlowFragmentShader=[
@@ -54,24 +62,14 @@
     "precision mediump float;",
     "#endif",
     "varying vec2 vUv;",
+    "uniform sampler2D uFlowTexture;",
     "uniform float uTime;",
     "uniform float uCanvasAspect;",
-    "float hash11(float point){",
-    "  point=fract(point*0.1031);",
-    "  point*=point+33.33;",
-    "  point*=point+point;",
-    "  return fract(point);",
-    "}",
+    "uniform float uTextureAspect;",
     "float hash21(vec2 point){",
     "  vec2 p=fract(point*vec2(123.34,345.45));",
     "  p+=dot(p,p+34.345);",
     "  return fract(p.x*p.y);",
-    "}",
-    "float noise1(float point){",
-    "  float cell=floor(point);",
-    "  float local=fract(point);",
-    "  local=local*local*(3.0-2.0*local);",
-    "  return mix(hash11(cell),hash11(cell+1.0),local);",
     "}",
     "float valueNoise(vec2 point){",
     "  vec2 cell=floor(point);",
@@ -85,94 +83,82 @@
     "}",
     "float fbm(vec2 point){",
     "  float sum=0.0;",
-    "  float amplitude=0.54;",
+    "  float amplitude=0.52;",
     "  for(int octave=0;octave<4;octave++){",
     "    sum+=valueNoise(point)*amplitude;",
-    "    point=mat2(1.62,-1.08,1.08,1.62)*point+vec2(7.1,3.7);",
+    "    point=mat2(1.67,-1.12,1.12,1.67)*point+vec2(4.3,7.1);",
     "    amplitude*=0.48;",
     "  }",
     "  return sum;",
     "}",
-    "float softLine(float distanceToLine,float radius){",
-    "  return 1.0-smoothstep(radius,radius*3.4,distanceToLine);",
+    "vec4 flowSample(vec2 uv){",
+    "  if(uv.x<=0.001||uv.x>=0.999||uv.y<=0.001||uv.y>=0.999)return vec4(0.0);",
+    "  return texture2D(uFlowTexture,uv);",
     "}",
     "void main(){",
-    "  float down=1.0-vUv.y;",
-    "  float x=vUv.x-0.5;",
+    "  float displayWidth=uTextureAspect/uCanvasAspect;",
+    "  vec2 uv=vec2((vUv.x-0.5)/displayWidth+0.5,vUv.y);",
+    "  if(uv.x<=0.0||uv.x>=1.0){gl_FragColor=vec4(0.0);return;}",
+    "  float down=1.0-uv.y;",
     "  float time=uTime;",
-    "  float travel=down-time*0.105;",
-    "  float grow=smoothstep(0.015,0.76,down);",
-    "  float trunkMask=smoothstep(0.004,0.025,down)*(1.0-smoothstep(0.73,0.88,down));",
-    "  float broadWave=noise1(travel*4.7+2.4)*2.0-1.0;",
-    "  float secondaryWave=noise1(travel*10.9+11.8)*2.0-1.0;",
-    "  float center=(broadWave*0.018+secondaryWave*0.006)*grow;",
-    "  float width=mix(0.006,0.126,pow(grow,0.78));",
-    "  width*=0.88+0.22*noise1(travel*7.3+19.0);",
-    "  float normalizedX=(x-center)/max(width,0.004);",
-    "  float edgeCurrent=(noise1(travel*13.0+4.0)-0.5)*0.18;",
-    "  float envelope=(1.0-smoothstep(0.55+edgeCurrent,1.18+edgeCurrent,abs(normalizedX)))*trunkMask;",
-    "  vec2 advected=vec2(normalizedX*1.25,travel*8.2);",
-    "  float warp=fbm(advected*vec2(0.72,0.54)+vec2(0.0,7.0))-0.5;",
-    "  float sheetNoise=fbm(vec2(advected.x*1.8+warp*1.7,advected.y*1.25));",
-    "  float sheets=smoothstep(0.30,0.82,sheetNoise)*envelope;",
-    "  float strandEnergy=0.0;",
-    "  vec3 strandColor=vec3(0.0);",
-    "  for(int strandIndex=0;strandIndex<14;strandIndex++){",
-    "    float strand=float(strandIndex);",
-    "    float seed=hash11(strand*13.17+8.3);",
-    "    float side=seed*2.0-1.0;",
-    "    float strandTravel=down-time*(0.082+seed*0.055);",
-    "    float lane=side*width*(0.28+0.66*hash11(strand+2.0));",
-    "    float localCurrent=(noise1(strandTravel*(5.0+seed*3.8)+strand*5.7)-0.5)*width*(0.34+grow*0.32);",
-    "    float curl=sin(strandTravel*(18.0+seed*8.0)+strand*2.1)*width*(0.025+0.085*grow);",
-    "    float strandCenter=center+lane+localCurrent+curl;",
-    "    float radius=mix(0.0011,0.0038,grow)*(0.64+seed*0.72);",
-    "    float line=softLine(abs(x-strandCenter),radius)*trunkMask;",
-    "    float packet=0.48+0.52*pow(0.5+0.5*sin(strandTravel*(54.0+seed*22.0)+strand*4.7),3.0);",
-    "    line*=packet*(0.55+0.45*envelope);",
-    "    vec3 cool=vec3(0.38,0.69,0.76);",
-    "    vec3 ivory=vec3(0.91,0.92,0.84);",
-    "    vec3 warm=vec3(0.95,0.68,0.31);",
-    "    vec3 tone=side<0.0?mix(ivory,cool,min(1.0,-side*0.86)):mix(ivory,warm,min(1.0,side*0.86));",
-    "    strandColor+=tone*line;",
-    "    strandEnergy+=line;",
-    "  }",
-    "  float hairPhase=normalizedX*19.0+warp*7.0+travel*13.0;",
-    "  float hairs=pow(0.5+0.5*sin(hairPhase),8.0)*envelope*(0.30+0.70*sheets);",
-    "  float edgeMist=exp(-abs(abs(normalizedX)-0.92)*5.8)*trunkMask*(0.25+0.75*sheetNoise);",
-    "  vec3 leftColor=vec3(0.34,0.64,0.72);",
-    "  vec3 rightColor=vec3(0.92,0.62,0.27);",
-    "  vec3 bodyTone=mix(leftColor,rightColor,smoothstep(-0.42,0.48,normalizedX));",
-    "  vec3 color=bodyTone*(sheets*0.25+hairs*0.40+edgeMist*0.15)+strandColor*0.48;",
-    "  float trunkAlpha=min(0.92,envelope*(0.10+sheets*0.30+hairs*0.44)+strandEnergy*0.20+edgeMist*0.14);",
-    "  float poolGate=smoothstep(0.68,0.79,down)*(1.0-smoothstep(0.975,1.0,down));",
-    "  vec2 poolPoint=vec2(x/0.34,(down-0.865)/0.145);",
+    "  float sourceLock=smoothstep(0.045,0.16,down);",
+    "  float bodyGate=(1.0-smoothstep(0.77,0.91,down))*sourceLock;",
+    "  float poolGate=smoothstep(0.69,0.84,down);",
+    "  float widthGain=smoothstep(0.05,0.43,down)*(1.0-smoothstep(0.73,0.9,down));",
+    "  float broad=sin(down*8.6-time*0.72)+0.46*sin(down*18.7-time*0.43+1.8);",
+    "  float current=fbm(vec2(down*3.8-time*0.14,2.7))-0.5;",
+    "  float sway=(broad*0.0065+current*0.021)*widthGain*sourceLock;",
+    "  float localX=uv.x-0.5;",
+    "  float sheetPhase=down*23.0-time*1.08+localX*9.0;",
+    "  vec2 bodyWarp=vec2(sway+sin(sheetPhase)*0.0047*bodyGate,sin(down*13.0-time*0.63+localX*15.0)*0.0028*bodyGate);",
+    "  vec2 poolPoint=vec2((uv.x-0.5)*1.12,(down-0.865)*2.0);",
     "  float poolRadius=length(poolPoint);",
     "  float poolAngle=atan(poolPoint.y,poolPoint.x);",
-    "  float poolEdge=0.92+(valueNoise(vec2(poolAngle*2.2,1.0-time*0.12))-0.5)*0.13;",
-    "  float poolEnvelope=(1.0-smoothstep(poolEdge,poolEdge+0.24,poolRadius))*poolGate;",
-    "  float radialTravel=poolRadius-time*0.055;",
-    "  float poolWarp=fbm(vec2(poolAngle*1.8+time*0.025,radialTravel*7.5))-0.5;",
-    "  float rings=pow(0.5+0.5*sin(radialTravel*31.0+poolWarp*5.0),9.0)*poolEnvelope;",
-    "  float poolVeins=pow(0.5+0.5*sin(poolAngle*9.0+poolRadius*15.0-poolWarp*8.0-time*0.62),12.0)*poolEnvelope;",
-    "  vec3 poolTone=mix(leftColor,rightColor,smoothstep(-0.65,0.68,poolPoint.x));",
-    "  color+=poolTone*(poolEnvelope*0.10+rings*0.31+poolVeins*0.19);",
-    "  float poolAlpha=poolEnvelope*0.13+rings*0.34+poolVeins*0.17;",
-    "  vec2 particlePoint=vec2((x-center)*92.0,(down-time*0.12)*112.0);",
-    "  vec2 particleCell=floor(particlePoint);",
-    "  vec2 particleLocal=fract(particlePoint)-0.5;",
-    "  vec2 particleOffset=vec2(hash21(particleCell+2.7),hash21(particleCell+8.1))-0.5;",
-    "  float particleSeed=hash21(particleCell+17.3);",
-    "  float particle=(1.0-smoothstep(0.0,0.115,length(particleLocal-particleOffset*0.72)))*step(0.925,particleSeed);",
-    "  particle*=max(envelope*0.78,poolEnvelope*0.38);",
-    "  vec3 particleTone=mix(leftColor,rightColor,smoothstep(-0.08,0.10,x));",
-    "  color+=particleTone*particle*0.58;",
-    "  float alpha=clamp(trunkAlpha+poolAlpha+particle*0.44,0.0,0.96);",
-    "  float source=1.0-smoothstep(0.0,0.025,length(vec2(x*1.35,(down-0.012)*uCanvasAspect)));",
-    "  color+=vec3(0.97,0.84,0.55)*source*0.82;",
-    "  alpha=max(alpha,source*0.94);",
-    "  float canvasFade=smoothstep(0.0,0.014,vUv.y)*smoothstep(0.0,0.018,1.0-vUv.y);",
-    "  gl_FragColor=vec4(color,alpha*canvasFade);",
+    "  float turn=time*(0.052+0.018*smoothstep(0.0,1.0,poolRadius));",
+    "  float cs=cos(turn);",
+    "  float sn=sin(turn);",
+    "  vec2 spun=mat2(cs,-sn,sn,cs)*poolPoint;",
+    "  float ringWave=sin(poolRadius*30.0-time*1.28+poolAngle*2.0);",
+    "  spun*=1.0+ringWave*0.0065*poolGate;",
+    "  vec2 poolUv=vec2(0.5+spun.x/1.12,1.0-(0.865+spun.y/2.0));",
+    "  vec2 primaryUv=mix(uv+bodyWarp,poolUv,poolGate);",
+    "  float innerWave=sin(down*31.0-time*1.45+localX*21.0);",
+    "  vec2 layerAUv=primaryUv+vec2(innerWave*0.0038*bodyGate,-0.0042*bodyGate);",
+    "  vec2 layerBUv=primaryUv+vec2(-innerWave*0.0054*bodyGate,0.0056*bodyGate);",
+    "  vec2 layerCUv=primaryUv+vec2((current+innerWave*0.3)*0.008*bodyGate,-0.0085*bodyGate);",
+    "  vec4 base=flowSample(primaryUv);",
+    "  vec4 layerA=flowSample(layerAUv);",
+    "  vec4 layerB=flowSample(layerBUv);",
+    "  vec4 layerC=flowSample(layerCUv);",
+    "  vec4 anchor=flowSample(uv);",
+    "  float blurAlpha=(flowSample(primaryUv+vec2(0.011,0.0)).a+flowSample(primaryUv-vec2(0.011,0.0)).a+flowSample(primaryUv+vec2(0.0,0.009)).a+flowSample(primaryUv-vec2(0.0,0.009)).a)*0.25;",
+    "  float a0=base.a*0.62;",
+    "  float a1=layerA.a*0.38;",
+    "  float a2=layerB.a*0.34;",
+    "  float a3=layerC.a*0.25;",
+    "  float anchorWeight=mix(0.26,0.08,bodyGate);",
+    "  float aa=anchor.a*anchorWeight;",
+    "  float alpha=1.0-(1.0-a0)*(1.0-a1)*(1.0-a2)*(1.0-a3)*(1.0-aa);",
+    "  vec3 premul=base.rgb*a0+layerA.rgb*a1+layerB.rgb*a2+layerC.rgb*a3+anchor.rgb*aa;",
+    "  float weight=max(0.001,a0+a1+a2+a3+aa);",
+    "  vec3 color=premul/weight;",
+    "  float travelling=0.93+0.07*sin(down*74.0-time*3.2+current*11.0);",
+    "  color*=travelling;",
+    "  float halo=max(0.0,blurAlpha-alpha)*0.34+blurAlpha*0.045;",
+    "  vec3 haloTone=mix(vec3(0.36,0.66,0.72),vec3(0.95,0.69,0.34),smoothstep(0.44,0.61,uv.x));",
+    "  color+=haloTone*halo;",
+    "  alpha=clamp(alpha+halo,0.0,0.98);",
+    "  vec2 sparkPoint=vec2(uv.x*124.0,(down-time*0.045)*156.0);",
+    "  vec2 sparkCell=floor(sparkPoint);",
+    "  vec2 sparkLocal=fract(sparkPoint)-0.5;",
+    "  vec2 sparkOffset=vec2(hash21(sparkCell+2.1),hash21(sparkCell+8.7))-0.5;",
+    "  float sparkSeed=hash21(sparkCell+17.4);",
+    "  float spark=(1.0-smoothstep(0.025,0.13,length(sparkLocal-sparkOffset*0.72)))*step(0.955,sparkSeed);",
+    "  spark*=smoothstep(0.025,0.28,max(alpha,blurAlpha))*(0.35+0.65*sourceLock);",
+    "  color+=mix(vec3(0.56,0.82,0.86),vec3(1.0,0.78,0.38),step(0.51,uv.x))*spark*0.55;",
+    "  alpha=max(alpha,spark*0.5);",
+    "  float edgeFade=smoothstep(0.0,0.018,vUv.y)*smoothstep(0.0,0.018,1.0-vUv.y);",
+    "  gl_FragColor=vec4(color,alpha*edgeFade);",
     "}"
   ].join("\n");
 
@@ -201,6 +187,18 @@
     throw new Error(message);
   }
 
+  function createHomeFlowTexture(gl,image){
+    const texture=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+    return texture;
+  }
+
   function sizeHomeFlowCanvas(canvas,maxRatio=1.4){
     const ratio=Math.min(maxRatio,Math.max(1,Number(root.devicePixelRatio)||1));
     const width=Math.max(1,Math.round(canvas.clientWidth*ratio));
@@ -210,22 +208,29 @@
     return {width,height};
   }
 
-  function startWebGLHomeFlow(canvas,reducedMotion){
+  function startReferenceHomeFlow(canvas,image,reducedMotion){
     const gl=canvas.getContext("webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false,powerPreference:"high-performance"})
       ||canvas.getContext("experimental-webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false});
     if(!gl)return null;
     const program=createHomeFlowProgram(gl);
+    const texture=createHomeFlowTexture(gl,image);
     const buffer=gl.createBuffer();
-    gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+    gl.useProgram(program);
     const position=gl.getAttribLocation(program,"aPosition");
     gl.enableVertexAttribArray(position);
     gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
     const uniforms={
+      texture:gl.getUniformLocation(program,"uFlowTexture"),
       time:gl.getUniformLocation(program,"uTime"),
-      canvasAspect:gl.getUniformLocation(program,"uCanvasAspect")
+      canvasAspect:gl.getUniformLocation(program,"uCanvasAspect"),
+      textureAspect:gl.getUniformLocation(program,"uTextureAspect")
     };
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.uniform1i(uniforms.texture,0);
+    gl.uniform1f(uniforms.textureAspect,(image.naturalWidth||image.width)/(image.naturalHeight||image.height)||HOME_FLOW_TEXTURE_ASPECT);
     gl.clearColor(0,0,0,0);
     const started=root.performance?.now?.()||Date.now();
     let handle=0;
@@ -238,19 +243,20 @@
       stopped=true;
       if(handle)root.cancelAnimationFrame(handle);
       gl.deleteBuffer(buffer);
+      gl.deleteTexture(texture);
       gl.deleteProgram(program);
     };
     const draw=now=>{
       if(stopped)return;
       if(!canvas.isConnected){stop();return;}
-      const {width,height}=sizeHomeFlowCanvas(canvas,1.1);
+      const {width,height}=sizeHomeFlowCanvas(canvas,1.35);
       const stamp=Number(now)||previous;
       if(frames>0)elapsed+=Math.min(1/30,Math.max(0,(stamp-previous)/1000));
       previous=stamp;
       gl.viewport(0,0,width,height);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(program);
-      gl.uniform1f(uniforms.time,elapsed);
+      gl.uniform1f(uniforms.time,reducedMotion?1.8:elapsed);
       gl.uniform1f(uniforms.canvasAspect,width/height);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       frames+=1;
@@ -264,70 +270,36 @@
         handle=root.requestAnimationFrame(draw);
       }
     };
-    canvas.dataset.flowRenderer="webgl";
+    canvas.dataset.flowRenderer="reference-advection-webgl";
+    canvas.dataset.flowLayers="5";
     canvas.classList.add("is-running");
     draw(started);
     return {stop};
   }
 
-  function startCanvasHomeFlow(canvas,reducedMotion){
-    const context=canvas.getContext("2d",{alpha:true});
-    if(!context)return null;
-    const {width,height}=sizeHomeFlowCanvas(canvas,1);
-    context.clearRect(0,0,width,height);
-    context.save();
-    context.globalCompositeOperation="lighter";
-    const gradient=context.createLinearGradient(width*.5,0,width*.5,height);
-    gradient.addColorStop(0,"rgba(244,220,166,.92)");
-    gradient.addColorStop(.46,"rgba(129,186,194,.55)");
-    gradient.addColorStop(1,"rgba(218,168,83,.25)");
-    context.strokeStyle=gradient;
-    context.lineCap="round";
-    for(let index=0;index<13;index+=1){
-      const offset=(index-6)*width*.006;
-      context.globalAlpha=.12+(index%4)*.045;
-      context.lineWidth=1+(index%3)*.65;
-      context.beginPath();
-      context.moveTo(width*.5+offset*.08,height*.02);
-      context.bezierCurveTo(width*.5-offset*.45,height*.31,width*.5+offset*1.8,height*.54,width*.5+offset*3.2,height*.77);
-      context.bezierCurveTo(width*.5+offset*4.8,height*.86,width*.5+offset*8.5,height*.89,width*.5+offset*11,height*.91);
-      context.stroke();
-    }
-    context.restore();
-    canvas.dataset.flowRenderer="static2d";
-    canvas.dataset.flowFrames="1";
-    canvas.dataset.flowTime="0.000";
-    canvas.dataset.flowMotion=reducedMotion?"reduced":"unsupported";
-    canvas.classList.add("is-running");
-    return {stop(){}};
-  }
-
   function startHomeFluidFlow(canvas){
-    if(!canvas)return null;
+    if(!canvas||typeof root.Image!=="function")return null;
     const reducedMotion=Boolean(root.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
-    if(typeof root.WebGLRenderingContext!=="function"&&typeof root.CanvasRenderingContext2D!=="function"){
+    const styles=typeof root.getComputedStyle==="function"?root.getComputedStyle(canvas):null;
+    const source=parseHomeFlowGuide(styles?.getPropertyValue("--arise-flow-guide"));
+    if(!source)return null;
+    const image=new root.Image();
+    image.decoding="async";
+    let controller=null;
+    image.onload=()=>{
+      if(!canvas.isConnected)return;
+      try{controller=startReferenceHomeFlow(canvas,image,reducedMotion);}catch(error){canvas.dataset.flowError=String(error?.message||error).slice(0,160);}
+      if(controller)return;
       canvas.dataset.flowRenderer="static";
       canvas.dataset.flowFrames="1";
       canvas.dataset.flowTime="0.000";
-      return {stop(){}};
-    }
-    let controller=null;
-    let renderError="";
-    try{
-      controller=startWebGLHomeFlow(canvas,reducedMotion);
-    }catch(error){
-      renderError=String(error?.message||error).slice(0,160);
-      canvas.dataset.flowError=renderError;
-    }
-    if(controller)return controller;
-    let target=canvas;
-    if(canvas.getContext("webgl")||canvas.getContext("experimental-webgl")){
-      target=canvas.cloneNode(false);
-      if(renderError)target.dataset.flowError=renderError;
-      canvas.replaceWith(target);
-    }
-    controller=startCanvasHomeFlow(target,reducedMotion);
-    if(!controller)target.dataset.flowRenderer="static";
+      canvas.classList.add("is-static");
+    };
+    image.onerror=()=>{
+      canvas.dataset.flowRenderer="static";
+      canvas.classList.add("is-static");
+    };
+    image.src=source;
     return {stop:()=>controller?.stop()};
   }
 

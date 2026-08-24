@@ -6873,7 +6873,7 @@ body::before{
 
 /* =========================================================
    ARISE CONTINUOUS HOME FLOW
-   Procedurally generated moving matter; no static texture or route overlays.
+   Reference-preserving material advection; no route overlays.
 ========================================================= */
 
 .arise-flow-stage::before{
@@ -6904,6 +6904,7 @@ body::before{
 }
 
 .arise-flow-canvas{
+  --arise-flow-guide:url("./assets/arise-flow-organic-v3.webp");
   position:absolute;
   z-index:2;
   top:-6px;
@@ -6918,6 +6919,10 @@ body::before{
   mix-blend-mode:screen;
   filter:none;
   transform:translateZ(0);
+}
+
+.arise-flow-canvas.is-static{
+  background:var(--arise-flow-guide) center / auto 100% no-repeat;
 }
 
 .arise-flow-svg,
