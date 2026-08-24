@@ -1,0 +1,118 @@
+/* A1-V3 organic motion: the financial mass itself moves; no route-following particles. */
+.arise-flow-drift,
+.arise-flow-particles{
+  display:none!important;
+}
+
+.arise-flow-sheets,
+.arise-flow-contours,
+.arise-flow-hairs,
+.arise-flow-aura,
+.arise-flow-ribbon,
+.arise-flow-main,
+.arise-flow-ghost{
+  transform-box:fill-box;
+  transform-origin:center;
+  will-change:transform,opacity;
+}
+
+.arise-flow-sheets{
+  animation:ariseFlowBody 14s cubic-bezier(.45,.05,.55,.95) infinite alternate;
+}
+.arise-flow-contours{
+  animation:ariseFlowContours 17s ease-in-out -4s infinite alternate;
+}
+.arise-flow-hairs{
+  animation:ariseFlowHairs 12s ease-in-out -7s infinite alternate;
+}
+.arise-flow-aura{
+  animation:ariseFlowAura 16s ease-in-out -2s infinite alternate;
+}
+.arise-flow-ribbon{
+  animation:ariseFlowRibbon 13s ease-in-out -5s infinite alternate;
+}
+.arise-flow-ribbon.secondary{
+  animation-duration:18s;
+  animation-delay:-9s;
+}
+.arise-flow-main{
+  animation:ariseFlowCore 15s ease-in-out -3s infinite alternate;
+}
+.arise-flow-main.secondary{animation-delay:-8s;animation-duration:19s}
+.arise-flow-main.tertiary{animation-delay:-11s;animation-duration:21s}
+.arise-flow-ghost{
+  animation:ariseFlowGhost 20s ease-in-out -6s infinite alternate;
+}
+
+@keyframes ariseFlowBody{
+  0%{transform:translate3d(-2px,0,0) scaleX(.985) scaleY(1.004);opacity:.82}
+  45%{transform:translate3d(2.5px,1px,0) scaleX(1.018) scaleY(.996);opacity:.96}
+  100%{transform:translate3d(-1px,2px,0) scaleX(.994) scaleY(1.008);opacity:.86}
+}
+@keyframes ariseFlowContours{
+  0%{transform:translate3d(1px,-1px,0) scaleX(.99);opacity:.58}
+  55%{transform:translate3d(-3px,2px,0) scaleX(1.016);opacity:.78}
+  100%{transform:translate3d(2px,0,0) scaleX(.996);opacity:.64}
+}
+@keyframes ariseFlowHairs{
+  0%{transform:translate3d(-1px,0,0) skewX(-.3deg);opacity:.42}
+  50%{transform:translate3d(2px,1px,0) skewX(.45deg);opacity:.62}
+  100%{transform:translate3d(-2px,2px,0) skewX(-.15deg);opacity:.48}
+}
+@keyframes ariseFlowAura{
+  0%{transform:scaleX(.985) translateY(-1px);opacity:.45}
+  52%{transform:scaleX(1.025) translateY(2px);opacity:.7}
+  100%{transform:scaleX(.995) translateY(1px);opacity:.5}
+}
+@keyframes ariseFlowRibbon{
+  0%{transform:translate3d(-1.5px,-1px,0) scaleX(.99);opacity:.72}
+  50%{transform:translate3d(2px,1px,0) scaleX(1.014);opacity:.9}
+  100%{transform:translate3d(-1px,2px,0) scaleX(.997);opacity:.76}
+}
+@keyframes ariseFlowCore{
+  0%{transform:translateX(-1px);opacity:.66}
+  50%{transform:translateX(1.8px);opacity:.84}
+  100%{transform:translateX(-.5px);opacity:.7}
+}
+@keyframes ariseFlowGhost{
+  0%{transform:translateX(1px) scaleX(.99);opacity:.12}
+  50%{transform:translateX(-2px) scaleX(1.018);opacity:.24}
+  100%{transform:translateX(1px) scaleX(.995);opacity:.15}
+}
+
+/* Branches stay readable: only a nearly imperceptible pulse, never a travelling bead. */
+.arise-flow-branch{
+  animation:ariseBranchBreathe 10s ease-in-out infinite alternate;
+}
+@keyframes ariseBranchBreathe{
+  from{opacity:.68}
+  to{opacity:.82}
+}
+
+/* Pool remains calm and slightly alive so the stream feels continuous. */
+.arise-flow-pool,
+.arise-flow-pool-rings{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:arisePoolSettle 15s ease-in-out -5s infinite alternate;
+}
+@keyframes arisePoolSettle{
+  from{transform:scaleX(.985) scaleY(.98);opacity:.7}
+  to{transform:scaleX(1.015) scaleY(1.025);opacity:.94}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .arise-flow-sheets,
+  .arise-flow-contours,
+  .arise-flow-hairs,
+  .arise-flow-aura,
+  .arise-flow-ribbon,
+  .arise-flow-main,
+  .arise-flow-ghost,
+  .arise-flow-branch,
+  .arise-flow-pool,
+  .arise-flow-pool-rings{
+    animation:none!important;
+    transform:none!important;
+  }
+}
