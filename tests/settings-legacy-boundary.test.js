@@ -9,20 +9,13 @@ const profileLifecycle=fs.readFileSync('profile-lifecycle.js','utf8');
 const productRules=fs.readFileSync('product-rules.js','utf8');
 const settingsUi=fs.readFileSync('settings-ui.js','utf8');
 
-function retirementRegistry(){
-  const match=index.match(/const LEGACY_RENDERER_RETIREMENT=\[([\s\S]*?)\n  \];/);
-  assert.ok(match,'central retirement registry missing');
-  return match[1];
-}
-
 test('canonical settings owns markup after all primary compatibility renderers are physically retired',()=>{
   for(const name of ['renderTopbar','renderNav','renderHome','renderIncome','renderGoals','renderHistory','renderAnalytics','renderSettings']){
     assert.doesNotMatch(shell,new RegExp(`function\\s+${name}\\s*\\(`),`${name} should stay physically retired`);
   }
   assert.doesNotMatch(shell,/\bconst\s+NAV_ITEMS\s*=/,'legacy navigation model should stay physically retired');
-  const registry=retirementRegistry();
-  assert.deepEqual([...registry.matchAll(/\["(render[A-Za-z]+)"/g)].map(match=>match[1]),[]);
-  assert.match(index,/html=retireLegacyRenderers\(html\);/);
+  assert.doesNotMatch(index,/LEGACY_RENDERER_RETIREMENT/,'retirement registry should stay removed after full physical retirement');
+  assert.doesNotMatch(index,/retireLegacyRenderers/,'retirement pass should stay removed after full physical retirement');
   assert.match(settingsUi,/function renderSettings\(\)\{/);
   assert.match(settingsUi,/id="settingsCurrency"/);
   assert.match(settingsUi,/id="saveProfileSettings"/);
@@ -54,8 +47,6 @@ test('canonical settings coordinator loads after enhancers and before bootstrap-
 });
 
 test('shared compatibility helpers remain available after legacy Settings source retirement',()=>{
-  const registry=retirementRegistry();
-  assert.doesNotMatch(registry,/\["renderSettings"/);
   for(const helper of ['function categoryEditor(category){','function saveCategoriesFromUI(){','function exportData(){','function importData(event){','function resetData(){']){
     assert.equal(shell.includes(helper),true,`${helper} must remain available until helper extraction is reviewed separately`);
   }
