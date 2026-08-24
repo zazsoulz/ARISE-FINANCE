@@ -197,46 +197,95 @@
     const page=document.getElementById("page");
     page.className="arise-v3-secondary arise-v3-goals";
     page.innerHTML=`<div class="v3-page-head"><div><div class="v3-eyebrow">Все цели</div><h1>${money(total)}</h1><p>${active.length} ${active.length===1?"активная цель":"активных целей"}</p></div><button class="v3-round" id="createGoal" aria-label="Создать цель">+</button></div>
-      <section class="v3-goal-list">${active.length?active.map((goal,index)=>{const balance=safeAmount(core.goalBalance(profile,goal));const target=safeAmount(goal.target);const progress=target?Math.min(100,Math.round(balance/target*100)):0;const pace=goalPace(profile,goal);return `<article class="v3-goal" style="--i:${index};--goal-progress:${progress}%" data-goal-id="${goal.id}"><div class="v3-goal-flow" aria-hidden="true"><i></i></div><div class="v3-goal-ring" style="--p:${progress}"><span>${progress}%</span></div><div class="v3-goal-main"><strong>${escapeHTML(goal.name||"Цель")}</strong><div>${money(balance)} <span>из ${money(target)}</span></div><small class="${pace.warning?"v3-warning":""}">${escapeHTML(pace.text)}</small></div><div class="v3-goal-actions"><button data-goal-fund="${goal.id}">Пополнить</button><button data-goal-edit="${goal.id}" aria-label="Изменить цель">•••</button></div></article>`;}).join(""):`<div class="v3-empty">Пока нет целей. Создай первую — ARISE покажет, какой темп нужен для выбранного срока.</div>`}</section>
+      <section class="v3-goal-list">${active.length?active.map((goal,index)=>{const balance=safeAmount(core.goalBalance(profile,goal));const target=safeAmount(goal.target);const progress=target?Math.min(100,Math.round(balance/target*100)):0;const pace=goalPace(profile,goal);return `<article class="v3-goal" style="--i:${index};--goal-progress:${progress}%" data-goal-id="${goal.id}"><div class="v3-goal-flow" aria-hidden="true"><i></i></div><div class="v3-goal-ring" style="--p:${progress};--dot-opacity:${progress>0?1:0}"><i class="goal-ring-terminal" aria-hidden="true"></i><span>${progress}%</span></div><div class="v3-goal-main"><strong>${escapeHTML(goal.name||"Цель")}</strong><div>${money(balance)} <span>из ${money(target)}</span></div><small class="${pace.warning?"v3-warning":""}">${escapeHTML(pace.text)}</small></div><div class="v3-goal-actions"><button data-goal-fund="${goal.id}">Пополнить</button><button data-goal-edit="${goal.id}" aria-label="Изменить цель">•••</button></div></article>`;}).join(""):`<div class="v3-empty">Пока нет целей. Создай первую — ARISE покажет, какой темп нужен для выбранного срока.</div>`}</section>
       ${completed.length?`<section class="v3-section" data-completed-goals><div class="v3-section-title"><span>Достигнутые</span><b>${completed.length}</b></div>${completed.map(goal=>`<div class="v3-rule goal-completed-row" data-completed-goal-id="${escapeHTML(goal.id)}"><div><strong>${escapeHTML(goal.name)}</strong><span>${goal.completedAt?`Достигнута ${escapeHTML(formatDate(goal.completedAt))}`:"Цель достигнута"}</span></div><b>${money(goal.target)}</b></div>`).join("")}</section>`:""}`;
     document.getElementById("createGoal").onclick=()=>showGoalModal();
     page.querySelectorAll("[data-goal-fund]").forEach(button=>button.onclick=()=>showGoalFundModal(button.dataset.goalFund));
     page.querySelectorAll("[data-goal-edit]").forEach(button=>button.onclick=()=>showGoalModal(button.dataset.goalEdit));
   };
 
-  function chartPath(values,width=520,height=180){
-    const max=Math.max(1,...values); const min=Math.min(0,...values); const span=Math.max(1,max-min);
-    const points=values.map((value,index)=>{const x=values.length===1?width/2:index*(width/(values.length-1));const y=height-((value-min)/span)*(height-28)-14;return [x,y];});
-    if(!points.length) return "";
-    return points.map((point,index)=>`${index?"L":"M"}${point[0].toFixed(1)} ${point[1].toFixed(1)}`).join(" ");
+  function historyChartPoints(values,width=520,height=180,horizontalPad=0,verticalPad=14){
+    const max=Math.max(1,...values.map(safeAmount));const min=Math.min(0,...values.map(value=>Number(value)||0));const span=Math.max(1,max-min);
+    return values.map((value,index)=>{const x=values.length===1?width/2:horizontalPad+index*((width-horizontalPad*2)/(values.length-1));const y=height-verticalPad-((safeAmount(value)-min)/span)*(height-verticalPad*2);return [x,y];});
   }
 
-  function chartAreaPath(values,width=520,height=180){
-    const line=chartPath(values,width,height);
-    return line?`${line} L${width} ${height} L0 ${height} Z`:"";
+  function monotoneChartPath(points){
+    if(!points.length)return "";
+    if(points.length===1)return `M${points[0][0].toFixed(1)} ${points[0][1].toFixed(1)}`;
+    const slopes=points.slice(0,-1).map((point,index)=>(points[index+1][1]-point[1])/(points[index+1][0]-point[0]||1));
+    const tangents=points.map((_point,index)=>{
+      if(index===0)return slopes[0];
+      if(index===points.length-1)return slopes[slopes.length-1];
+      return slopes[index-1]*slopes[index]<=0?0:(slopes[index-1]+slopes[index])/2;
+    });
+    slopes.forEach((slope,index)=>{
+      if(Math.abs(slope)<1e-8){tangents[index]=0;tangents[index+1]=0;return;}
+      const a=tangents[index]/slope,b=tangents[index+1]/slope,length=Math.hypot(a,b);
+      if(length>3){const scale=3/length;tangents[index]=scale*a*slope;tangents[index+1]=scale*b*slope;}
+    });
+    return points.slice(0,-1).reduce((result,point,index)=>{const next=points[index+1],dx=next[0]-point[0];return `${result} C${(point[0]+dx/3).toFixed(1)} ${(point[1]+tangents[index]*dx/3).toFixed(1)} ${(next[0]-dx/3).toFixed(1)} ${(next[1]-tangents[index+1]*dx/3).toFixed(1)} ${next[0].toFixed(1)} ${next[1].toFixed(1)}`;},`M${points[0][0].toFixed(1)} ${points[0][1].toFixed(1)}`);
   }
 
-  function chartDots(values,width=520,height=180){
-    const max=Math.max(1,...values);const min=Math.min(0,...values);const span=Math.max(1,max-min);
-    return values.map((value,index)=>{const x=values.length===1?width/2:index*(width/(values.length-1));const y=height-((value-min)/span)*(height-28)-14;return `<circle class="v3-chart-point" style="--i:${index}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3"><title>${money(value)}</title></circle>`;}).join("");
+  function chartPath(values,width=520,height=180,horizontalPad=0,verticalPad=14){
+    return monotoneChartPath(historyChartPoints(values,width,height,horizontalPad,verticalPad));
+  }
+
+  function chartAreaPath(values,width=520,height=180,horizontalPad=0,verticalPad=14){
+    const points=historyChartPoints(values,width,height,horizontalPad,verticalPad);const line=monotoneChartPath(points);
+    return line?`${line} L${points[points.length-1][0].toFixed(1)} ${height-verticalPad} L${points[0][0].toFixed(1)} ${height-verticalPad} Z`:"";
+  }
+
+  function chartDots(values,width=520,height=180,horizontalPad=0,verticalPad=14){
+    const points=historyChartPoints(values,width,height,horizontalPad,verticalPad);
+    return points.map(([x,y],index)=>`<circle class="v3-chart-point${index===points.length-1?" is-terminal":""}" style="--i:${index}" data-chart-index="${index}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${index===points.length-1?3.8:2.7}"><title>${money(values[index])}</title></circle>`).join("");
+  }
+
+  function compactChartValue(value){
+    const amount=safeAmount(value);
+    if(amount>=1000000)return `${(amount/1000000).toLocaleString("ru-RU",{maximumFractionDigits:1})} млн`;
+    if(amount>=1000)return `${(amount/1000).toLocaleString("ru-RU",{maximumFractionDigits:0})} тыс.`;
+    return amount.toLocaleString("ru-RU",{maximumFractionDigits:0});
+  }
+
+  function historyChartGuides(values,width=520,height=180,horizontalPad=42,verticalPad=14){
+    const max=Math.max(1,...values.map(safeAmount));
+    return [.75,.5,.25].map(ratio=>{const y=height-verticalPad-ratio*(height-verticalPad*2);return `<line x1="${horizontalPad}" y1="${y.toFixed(1)}" x2="${width-horizontalPad}" y2="${y.toFixed(1)}"/>`;}).join("");
+  }
+
+  function historyTerminalGuide(values,width=520,height=180,horizontalPad=42,verticalPad=14){
+    const points=historyChartPoints(values,width,height,horizontalPad,verticalPad);if(!points.length)return "";const [x]=points[points.length-1];
+    return `<line class="v3-chart-terminal-guide" x1="${x.toFixed(1)}" y1="${verticalPad}" x2="${x.toFixed(1)}" y2="${height-verticalPad}"/>`;
+  }
+
+  function historyTrend(values,months){
+    if(values.length<2)return `<em class="v3-chart-change is-neutral">первый период</em>`;
+    const current=safeAmount(values[values.length-1]),previous=safeAmount(values[values.length-2]),difference=current-previous;
+    const direction=difference>0?"is-up":difference<0?"is-down":"is-neutral";
+    const percent=previous>0?`${Math.round(Math.abs(difference)/previous*100)}%`:difference?"новый доход":"0%";
+    const dativeMonths=["январю","февралю","марту","апрелю","маю","июню","июлю","августу","сентябрю","октябрю","ноябрю","декабрю"];
+    const monthNumber=Number(String(months[months.length-2]||"").slice(5,7));
+    const label=dativeMonths[monthNumber-1]||"прошлому месяцу";
+    return `<em class="v3-chart-change ${direction}">${difference>0?"↑":difference<0?"↓":"·"} ${percent} к ${escapeHTML(label)}</em>`;
   }
 
   root.renderHistory=function(){
     const profile=currentProfile();
     const months=allMonths(profile).slice(-6);
     const incomes=months.map(month=>safeAmount(core.monthStats(profile,month).income));
+    const historyWidth=520,historyHeight=180,historyPadX=42,historyPadY=14;
+    const historyMax=Math.max(1,...incomes);
     const data=groupMonth(profile,activeMonth);
     const txs=monthTransactions(profile,activeMonth).slice().reverse().slice(0,14);
     const page=document.getElementById("page");
     page.className="arise-v3-secondary arise-v3-history";
     page.innerHTML=`<div class="v3-page-head"><div><div class="v3-eyebrow">История</div><h1>${escapeHTML(formatMonth(activeMonth))}</h1><p>${money(data.income)} доход · ${money(data.expenses)} расходы</p></div><div class="v3-head-actions"><button id="historyIncome">+ доход</button><button id="historyExpense">− расход</button></div></div>
       ${data.uncontrolled>0?`<div class="v3-alert"><strong>${money(data.uncontrolled)} неконтролируемых средств</strong><span>Это часть расходов, которую нельзя покрыть выбранной категорией и нераспределённым остатком.</span></div>`:""}
-      <section class="v3-history-chart"><div class="v3-chart-total"><span>Доход по месяцам</span><strong>${money(incomes[incomes.length-1]||0)}</strong></div><svg viewBox="0 0 520 180" preserveAspectRatio="none" role="img" aria-label="Динамика дохода"><defs><linearGradient id="historyArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e1bd72" stop-opacity=".24"/><stop offset="1" stop-color="#e1bd72" stop-opacity="0"/></linearGradient><filter id="historyPointGlow" x="-400%" y="-400%" width="800%" height="800%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g class="v3-chart-grid"><line x1="0" y1="45" x2="520" y2="45"/><line x1="0" y1="90" x2="520" y2="90"/><line x1="0" y1="135" x2="520" y2="135"/></g><path class="v3-chart-area" d="${chartAreaPath(incomes)}"/><path class="v3-chart-glow" pathLength="1" d="${chartPath(incomes)}"/><path class="v3-chart-line" pathLength="1" d="${chartPath(incomes)}"/><g class="v3-chart-points" filter="url(#historyPointGlow)">${chartDots(incomes)}</g></svg><div class="v3-chart-months">${months.map(month=>`<span>${escapeHTML(formatMonth(month).slice(0,3))}</span>`).join("")}</div></section>
+      <section class="v3-history-chart"><div class="v3-chart-total"><div><span>Доход по месяцам</span>${historyTrend(incomes,months)}</div><strong>${money(incomes[incomes.length-1]||0)}</strong></div><div class="v3-history-plot"><div class="v3-chart-y-scale" aria-hidden="true"><span style="--y:28.9%">${compactChartValue(historyMax*.75)}</span><span style="--y:50%">${compactChartValue(historyMax*.5)}</span><span style="--y:71.1%">${compactChartValue(historyMax*.25)}</span></div><svg viewBox="0 0 ${historyWidth} ${historyHeight}" preserveAspectRatio="none" role="img" aria-label="Динамика дохода"><defs><linearGradient id="historyArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e1bd72" stop-opacity=".24"/><stop offset="1" stop-color="#e1bd72" stop-opacity="0"/></linearGradient><filter id="historyPointGlow" x="-400%" y="-400%" width="800%" height="800%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g class="v3-chart-grid">${historyChartGuides(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}</g>${historyTerminalGuide(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}<path class="v3-chart-area" d="${chartAreaPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><path class="v3-chart-glow" pathLength="1" d="${chartPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><path class="v3-chart-line" pathLength="1" d="${chartPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><g class="v3-chart-points" filter="url(#historyPointGlow)">${chartDots(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}</g></svg></div><div class="v3-chart-months">${months.map(month=>`<span>${escapeHTML(formatMonth(month).slice(0,3))}</span>`).join("")}</div></section>
       <section class="v3-breakdown">${[["Обязательное",data.fixed],["Категории",data.categories],["Резерв",data.reserve],["Цели",data.goals],["Не распределено",data.unallocated]].map(([name,value],index)=>`<div class="v3-break-row"><i class="tone-${index}"></i><span>${name}</span><strong>${money(value)}</strong><em>${index===4?"перенос":`${pct(value,data.income)}%`}</em></div>`).join("")}</section>
       <section class="v3-section"><div class="v3-section-title"><span>Операции месяца</span><b>${txs.length}</b></div><div class="v3-transactions">${txs.length?txs.map(tx=>historyTransaction(tx)).join(""):`<div class="v3-empty">Операций пока нет.</div>`}</div></section>`;
     document.getElementById("historyIncome").onclick=showIncomeModal;
     document.getElementById("historyExpense").onclick=showExpenseModal;
   };
 
-  root.ARISE_V3={groupMonth,chartPath,chartAreaPath,chartDots,categoryRuleMeta,goalPace,homeFlowScene,summaryFlowScene};
+  root.ARISE_V3={groupMonth,historyChartPoints,monotoneChartPath,chartPath,chartAreaPath,chartDots,compactChartValue,historyChartGuides,historyTrend,categoryRuleMeta,goalPace,homeFlowScene,summaryFlowScene};
 })(typeof globalThis!=="undefined"?globalThis:window);
