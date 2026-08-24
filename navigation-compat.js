@@ -17,8 +17,8 @@
     if(state.profiles.length<=1) return "";
     return `
       <div class="profile-switch">
-        <span class="small muted">Профиль</span>
-        <select id="profileSwitch">
+        <label class="small muted" for="profileSwitch">Профиль</label>
+        <select id="profileSwitch" aria-label="Финансовый профиль">
           ${state.profiles.map(p=>`
             <option value="${p.id}" ${p.id===profile.id?"selected":""}>
               ${escapeHTML(p.name)}
