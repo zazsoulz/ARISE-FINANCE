@@ -45,5 +45,5 @@ test('canonical owners for all primary screens remain in external runtime module
   assert.match(v3,/root\.renderGoals=function/);
   assert.match(productUi,/root\.renderHistory=function/);
   assert.match(analytics,/root\.renderAnalytics=function/);
-  assert.match(settings,/root\.renderSettings=function/);
+  assert.match(settings,/root\.renderSettings=renderSettings/);
 });
