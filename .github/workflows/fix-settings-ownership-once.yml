@@ -1,0 +1,64 @@
+name: Fix Settings Ownership Once
+
+on:
+  push:
+    branches:
+      - agent/apply-physical-settings-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/apply-physical-settings-cleanup
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Convert product rules Settings wrapper to enhancer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('product-rules.js')
+          s=p.read_text()
+          old='''  const originalRenderSettings=root.renderSettings;\n  root.renderSettings=function(){\n    originalRenderSettings();\n    addCategoryDeleteControls();\n    addReserveTargetControls();\n  };\n\n  root.ARISE_PRODUCT_RULES={\n    addCategoryDeleteControls,\n    currentUnallocatedMoney:root.currentUnallocatedMoney,\n    renderExpenseReconciliation\n  };'''
+          new='''  function enhanceSettings(){\n    addCategoryDeleteControls();\n    addReserveTargetControls();\n  }\n\n  root.ARISE_PRODUCT_RULES={\n    addCategoryDeleteControls,\n    addReserveTargetControls,\n    enhanceSettings,\n    currentUnallocatedMoney:root.currentUnallocatedMoney,\n    renderExpenseReconciliation\n  };'''
+          if old not in s:
+              raise SystemExit('product-rules Settings wrapper boundary not found')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('settings-ui.js')
+          s=p.read_text()
+          anchor='''  function enhanceProfileSettings(){\n    const module=root.ARISE_PROFILE_LIFECYCLE;\n    if(module&&typeof module.enhanceSettings==="function") module.enhanceSettings();\n  }\n'''
+          insertion='''  function enhanceProductRules(){\n    const module=root.ARISE_PRODUCT_RULES;\n    if(module&&typeof module.enhanceSettings==="function") module.enhanceSettings();\n  }\n\n'''
+          if anchor not in s:
+              raise SystemExit('settings-ui enhancer anchor not found')
+          s=s.replace(anchor,anchor+'\n'+insertion,1)
+          old_tail='''    enhanceAccountSettings();\n    enhanceProfileSettings();\n  }\n\n  root.renderSettings=renderSettings;\n  root.ARISE_SETTINGS_UI={renderSettings,enhanceAccountSettings,enhanceProfileSettings};'''
+          new_tail='''    enhanceProductRules();\n    enhanceAccountSettings();\n    enhanceProfileSettings();\n  }\n\n  root.renderSettings=renderSettings;\n  root.ARISE_SETTINGS_UI={renderSettings,enhanceProductRules,enhanceAccountSettings,enhanceProfileSettings};'''
+          if old_tail not in s:
+              raise SystemExit('settings-ui composition tail not found')
+          p.write_text(s.replace(old_tail,new_tail,1))
+          PY
+      - name: Verify runtime ownership contract
+        run: |
+          node --check product-rules.js
+          node --check settings-ui.js
+          if grep -q 'originalRenderSettings' product-rules.js; then
+            echo 'product-rules still captures legacy renderSettings' >&2
+            exit 1
+          fi
+          grep -q 'enhanceProductRules' settings-ui.js
+      - name: Remove one-shot workflow and commit
+        run: |
+          rm .github/workflows/fix-settings-ownership-once.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add product-rules.js settings-ui.js .github/workflows/fix-settings-ownership-once.yml
+          git commit -m 'Decouple product rules from legacy Settings renderer'
+          git push origin HEAD:agent/apply-physical-settings-cleanup
