@@ -178,13 +178,15 @@
     const profile=currentProfile();
     const data=groupMonth(profile,activeMonth);
     const raw=core.monthStats(profile,activeMonth);
+    const allocated=safeAmount(data.fixed+data.categories+data.reserve+data.goals);
+    const allocatedPercent=pct(allocated,data.income);
     const rows=(profile.categories||[]).filter(c=>c.enabled!==false).map(category=>({category,amount:safeAmount(raw.categoryAllocated?.[category.id]||0)})).sort((a,b)=>safeAmount(b.category.priority)-safeAmount(a.category.priority));
     const page=document.getElementById("page");
     page.className="arise-v3-secondary arise-v3-distribution";
-    page.innerHTML=`<div class="v3-page-head"><div><div class="v3-eyebrow">Распределение</div><h1>${money(data.income)}</h1><p>${escapeHTML(formatMonth(activeMonth))} · текущая картина</p></div><button class="v3-round" id="incomeStart" aria-label="Добавить доход">+</button></div>
-      <section class="v3-flow-summary">${summaryFlowScene()}<div class="v3-mini-source"></div><div class="v3-summary-row" style="--i:0"><span>Обязательное</span><strong>${money(data.fixed)}</strong><em>${pct(data.fixed,data.income)}%</em></div><div class="v3-summary-row" style="--i:1"><span>Категории</span><strong>${money(data.categories)}</strong><em>${pct(data.categories,data.income)}%</em></div><div class="v3-summary-row cool" style="--i:2"><span>Резерв</span><strong>${money(data.reserve)}</strong><em>${pct(data.reserve,data.income)}%</em></div><div class="v3-summary-row" style="--i:3"><span>Цели</span><strong>${money(data.goals)}</strong><em>${pct(data.goals,data.income)}%</em></div><div class="v3-summary-tail"><span>Не распределено</span><strong>${money(data.unallocated)}</strong></div></section>
-      <section class="v3-section"><div class="v3-section-title"><span>Правила месяца</span><button id="incomeSettings">Настроить</button></div><div class="v3-rule-list">${rows.length?rows.map(row=>`<div class="v3-rule"><div><strong>${escapeHTML(row.category.name||"Категория")}</strong><span>${escapeHTML(categoryRuleMeta(row.category))}</span></div><b>${money(row.amount)}</b></div>`).join(""):`<div class="v3-empty">Категорий нет. Создай свои правила распределения.</div>`}</div></section>
-      <section class="v3-section v3-soft-note"><span>Как работает процент</span><p>Если месячный лимит не указан, выбранный процент распределяется с каждого нового пополнения в рамках месяца. Например, 10% означает 10% с каждого внесённого дохода. Все предложения видны до сохранения.</p></section>`;
+    page.innerHTML=`<div class="v3-page-head"><div class="v3-page-head-copy"><div class="v3-eyebrow">Распределение</div><h1>${money(data.income)}</h1><p>${escapeHTML(formatMonth(activeMonth))} · текущая картина</p><div class="v3-head-status"><i aria-hidden="true"></i><span>${allocatedPercent}% дохода уже направлено</span></div></div><button class="v3-round" id="incomeStart" aria-label="Добавить доход">+</button></div>
+      <section class="v3-flow-summary" style="--allocated:${allocatedPercent}%" aria-label="${allocatedPercent}% дохода распределено">${summaryFlowScene()}<div class="v3-mini-source"></div><div class="v3-flow-caption"><span>Маршрут месяца</span><b>${allocatedPercent}% работает</b></div><div class="v3-summary-row" style="--i:0;--share:${pct(data.fixed,data.income)}%"><span>Обязательное</span><strong>${money(data.fixed)}</strong><em>${pct(data.fixed,data.income)}%</em></div><div class="v3-summary-row" style="--i:1;--share:${pct(data.categories,data.income)}%"><span>Категории</span><strong>${money(data.categories)}</strong><em>${pct(data.categories,data.income)}%</em></div><div class="v3-summary-row cool" style="--i:2;--share:${pct(data.reserve,data.income)}%"><span>Резерв</span><strong>${money(data.reserve)}</strong><em>${pct(data.reserve,data.income)}%</em></div><div class="v3-summary-row" style="--i:3;--share:${pct(data.goals,data.income)}%"><span>Цели</span><strong>${money(data.goals)}</strong><em>${pct(data.goals,data.income)}%</em></div><div class="v3-summary-tail"><div class="v3-summary-measure" aria-hidden="true"><i></i><b></b></div><span>Не распределено</span><strong>${money(data.unallocated)}</strong></div></section>
+      <section class="v3-section"><div class="v3-section-title"><span>Правила месяца</span><button id="incomeSettings">Настроить</button></div><div class="v3-rule-list">${rows.length?rows.map((row,index)=>`<div class="v3-rule" style="--rule-share:${pct(row.amount,data.income)}%"><i class="v3-rule-index" aria-hidden="true">${String(index+1).padStart(2,"0")}</i><div><strong>${escapeHTML(row.category.name||"Категория")}</strong><span>${escapeHTML(categoryRuleMeta(row.category))}</span><span class="v3-rule-meter" aria-hidden="true"><b></b></span></div><b>${money(row.amount)}</b></div>`).join(""):`<div class="v3-empty">Категорий нет. Создай свои правила распределения.</div>`}</div></section>
+      <details class="v3-section v3-soft-note"><summary><span>Как работает процент</span><em>О логике распределения</em><b aria-hidden="true">+</b></summary><p>Если месячный лимит не указан, выбранный процент распределяется с каждого нового пополнения в рамках месяца. Например, 10% означает 10% с каждого внесённого дохода. Все предложения видны до сохранения.</p></details>`;
     document.getElementById("incomeStart").onclick=showIncomeModal;
     document.getElementById("incomeSettings").onclick=()=>{activePage="settings";render();};
   };
@@ -194,10 +196,14 @@
     const active=(profile.goals||[]).filter(goal=>goal.status!=="completed").sort((a,b)=>safeAmount(b.priority)-safeAmount(a.priority));
     const completed=(profile.goals||[]).filter(goal=>goal.status==="completed");
     const total=active.reduce((s,goal)=>s+safeAmount(core.goalBalance(profile,goal)),0);
+    const targetTotal=active.reduce((s,goal)=>s+safeAmount(goal.target),0);
+    const totalProgress=targetTotal?Math.min(100,Math.round(total/targetTotal*100)):0;
+    const remaining=Math.max(0,targetTotal-total);
     const page=document.getElementById("page");
     page.className="arise-v3-secondary arise-v3-goals";
-    page.innerHTML=`<div class="v3-page-head"><div><div class="v3-eyebrow">Все цели</div><h1>${money(total)}</h1><p>${active.length} ${active.length===1?"активная цель":"активных целей"}</p></div><button class="v3-round" id="createGoal" aria-label="Создать цель">+</button></div>
-      <section class="v3-goal-list">${active.length?active.map((goal,index)=>{const balance=safeAmount(core.goalBalance(profile,goal));const target=safeAmount(goal.target);const progress=target?Math.min(100,Math.round(balance/target*100)):0;const pace=goalPace(profile,goal);return `<article class="v3-goal" style="--i:${index};--goal-progress:${progress}%" data-goal-id="${goal.id}"><div class="v3-goal-flow" aria-hidden="true"><i></i></div><div class="v3-goal-ring" style="--p:${progress};--dot-opacity:${progress>0?1:0}"><i class="goal-ring-terminal" aria-hidden="true"></i><span>${progress}%</span></div><div class="v3-goal-main"><strong>${escapeHTML(goal.name||"Цель")}</strong><div>${money(balance)} <span>из ${money(target)}</span></div><small class="${pace.warning?"v3-warning":""}">${escapeHTML(pace.text)}</small></div><div class="v3-goal-actions"><button data-goal-fund="${goal.id}">Пополнить</button><button data-goal-edit="${goal.id}" aria-label="Изменить цель">•••</button></div></article>`;}).join(""):`<div class="v3-empty">Пока нет целей. Создай первую — ARISE покажет, какой темп нужен для выбранного срока.</div>`}</section>
+    page.innerHTML=`<div class="v3-page-head"><div class="v3-page-head-copy"><div class="v3-eyebrow">Все цели</div><h1>${money(total)}</h1><p>${active.length} ${active.length===1?"активная цель":"активных целей"} · ${money(remaining)} до общего результата</p><div class="v3-head-status"><i aria-hidden="true"></i><span>${totalProgress}% общего пути пройдено</span></div></div><button class="v3-round" id="createGoal" aria-label="Создать цель">+</button></div>
+      ${active.length?`<section class="v3-goals-overview" style="--p:${totalProgress}%" aria-label="Общий прогресс целей ${totalProgress}%"><div class="v3-goals-overview-head"><span>Общий маршрут</span><strong>${totalProgress}%</strong></div><div class="v3-goals-horizon" aria-hidden="true"><i></i><b></b><em></em></div><div class="v3-goals-overview-stats"><div><span>Накоплено</span><strong>${money(total)}</strong></div><div><span>Общая цель</span><strong>${money(targetTotal)}</strong></div><div><span>Осталось</span><strong>${money(remaining)}</strong></div></div></section>`:""}
+      <section class="v3-goal-list">${active.length?active.map((goal,index)=>{const balance=safeAmount(core.goalBalance(profile,goal));const target=safeAmount(goal.target);const progress=target?Math.min(100,Math.round(balance/target*100)):0;const pace=goalPace(profile,goal);return `<article class="v3-goal" style="--i:${index};--goal-progress:${progress}%" data-goal-id="${goal.id}"><div class="v3-goal-flow" aria-hidden="true"><i></i></div><div class="v3-goal-ring" style="--p:${progress};--dot-opacity:${progress>0?1:0}"><i class="goal-ring-terminal" aria-hidden="true"></i><span>${progress}%</span></div><div class="v3-goal-main"><div class="v3-goal-title"><strong>${escapeHTML(goal.name||"Цель")}</strong><em class="${pace.warning?"is-warning":"is-on-track"}">${pace.warning?"нужно ускорить":"по плану"}</em></div><div>${money(balance)} <span>из ${money(target)}</span></div><div class="v3-goal-track" aria-hidden="true"><i></i><b></b></div><small class="${pace.warning?"v3-warning":""}">${escapeHTML(pace.text)}</small></div><div class="v3-goal-actions"><button data-goal-fund="${goal.id}">Пополнить</button><button data-goal-edit="${goal.id}" aria-label="Изменить цель">•••</button></div></article>`;}).join(""):`<div class="v3-empty">Пока нет целей. Создай первую — ARISE покажет, какой темп нужен для выбранного срока.</div>`}</section>
       ${completed.length?`<section class="v3-section" data-completed-goals><div class="v3-section-title"><span>Достигнутые</span><b>${completed.length}</b></div>${completed.map(goal=>`<div class="v3-rule goal-completed-row" data-completed-goal-id="${escapeHTML(goal.id)}"><div><strong>${escapeHTML(goal.name)}</strong><span>${goal.completedAt?`Достигнута ${escapeHTML(formatDate(goal.completedAt))}`:"Цель достигнута"}</span></div><b>${money(goal.target)}</b></div>`).join("")}</section>`:""}`;
     document.getElementById("createGoal").onclick=()=>showGoalModal();
     page.querySelectorAll("[data-goal-fund]").forEach(button=>button.onclick=()=>showGoalFundModal(button.dataset.goalFund));
@@ -235,9 +241,22 @@
     return line?`${line} L${points[points.length-1][0].toFixed(1)} ${height-verticalPad} L${points[0][0].toFixed(1)} ${height-verticalPad} Z`:"";
   }
 
-  function chartDots(values,width=520,height=180,horizontalPad=0,verticalPad=14){
+  function chartDots(values,width=520,height=180,horizontalPad=0,verticalPad=14,months=[]){
     const points=historyChartPoints(values,width,height,horizontalPad,verticalPad);
-    return points.map(([x,y],index)=>`<circle class="v3-chart-point${index===points.length-1?" is-terminal":""}" style="--i:${index}" data-chart-index="${index}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${index===points.length-1?3.8:2.7}"><title>${money(values[index])}</title></circle>`).join("");
+    return points.map(([x,y],index)=>`<circle class="v3-chart-point${index===points.length-1?" is-terminal is-active":""}" style="--i:${index}" data-chart-index="${index}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${index===points.length-1?3.8:2.7}"><title>${months[index]?`${escapeHTML(formatMonth(months[index]))}: `:""}${money(values[index])}</title></circle>`).join("");
+  }
+
+  function historyChartHits(values,months,width=520,height=180,horizontalPad=42){
+    if(!values.length)return "";
+    const usable=width-horizontalPad*2;
+    const step=values.length>1?usable/(values.length-1):usable;
+    return values.map((value,index)=>{
+      const center=values.length===1?width/2:horizontalPad+index*step;
+      const left=index===0?horizontalPad:center-step/2;
+      const right=index===values.length-1?width-horizontalPad:center+step/2;
+      const label=months[index]?formatMonth(months[index]):`Период ${index+1}`;
+      return `<rect class="v3-chart-hit" tabindex="0" role="button" x="${left.toFixed(1)}" y="0" width="${Math.max(1,right-left).toFixed(1)}" height="${height}" data-chart-index="${index}" data-chart-value="${safeAmount(value)}" data-chart-label="${escapeHTML(label)}" aria-label="${escapeHTML(label)}: ${money(value)}"/>`;
+    }).join("");
   }
 
   function compactChartValue(value){
@@ -268,6 +287,31 @@
     return `<em class="v3-chart-change ${direction}">${difference>0?"↑":difference<0?"↓":"·"} ${percent} к ${escapeHTML(label)}</em>`;
   }
 
+  function bindHistoryChart(scope){
+    const plot=scope&&scope.querySelector(".v3-history-plot");
+    if(!plot)return;
+    const hits=[...plot.querySelectorAll(".v3-chart-hit")];
+    const points=[...plot.querySelectorAll(".v3-chart-point")];
+    const guide=plot.querySelector(".v3-chart-terminal-guide");
+    const period=scope.querySelector("[data-history-period]");
+    const value=scope.querySelector("[data-history-value]");
+    const activate=index=>{
+      const hit=hits[index],point=points[index];
+      if(!hit||!point)return;
+      points.forEach(item=>item.classList.remove("is-active"));
+      point.classList.add("is-active");
+      if(guide){guide.setAttribute("x1",point.getAttribute("cx"));guide.setAttribute("x2",point.getAttribute("cx"));}
+      if(period)period.textContent=hit.dataset.chartLabel||"";
+      if(value)value.textContent=money(hit.dataset.chartValue||0);
+    };
+    hits.forEach((hit,index)=>{
+      hit.addEventListener("pointerenter",()=>activate(index));
+      hit.addEventListener("focus",()=>activate(index));
+      hit.addEventListener("click",()=>activate(index));
+    });
+    activate(Math.max(0,hits.length-1));
+  }
+
   root.renderHistory=function(){
     const profile=currentProfile();
     const months=allMonths(profile).slice(-6);
@@ -276,16 +320,18 @@
     const historyMax=Math.max(1,...incomes);
     const data=groupMonth(profile,activeMonth);
     const txs=monthTransactions(profile,activeMonth).slice().reverse().slice(0,14);
+    const latestMonth=months[months.length-1]||activeMonth;
     const page=document.getElementById("page");
     page.className="arise-v3-secondary arise-v3-history";
-    page.innerHTML=`<div class="v3-page-head"><div><div class="v3-eyebrow">История</div><h1>${escapeHTML(formatMonth(activeMonth))}</h1><p>${money(data.income)} доход · ${money(data.expenses)} расходы</p></div><div class="v3-head-actions"><button id="historyIncome">+ доход</button><button id="historyExpense">− расход</button></div></div>
+    page.innerHTML=`<div class="v3-page-head"><div class="v3-page-head-copy"><div class="v3-eyebrow">История</div><h1>${escapeHTML(formatMonth(activeMonth))}</h1><p>${money(data.income)} доход · ${money(data.expenses)} расходы</p><div class="v3-head-status"><i aria-hidden="true"></i><span>${months.length} ${months.length===1?"месяц":"месяцев"} в текущем диапазоне</span></div></div><div class="v3-head-actions"><button id="historyIncome">+ доход</button><button id="historyExpense">− расход</button></div></div>
       ${data.uncontrolled>0?`<div class="v3-alert"><strong>${money(data.uncontrolled)} неконтролируемых средств</strong><span>Это часть расходов, которую нельзя покрыть выбранной категорией и нераспределённым остатком.</span></div>`:""}
-      <section class="v3-history-chart"><div class="v3-chart-total"><div><span>Доход по месяцам</span>${historyTrend(incomes,months)}</div><strong>${money(incomes[incomes.length-1]||0)}</strong></div><div class="v3-history-plot"><div class="v3-chart-y-scale" aria-hidden="true"><span style="--y:28.9%">${compactChartValue(historyMax*.75)}</span><span style="--y:50%">${compactChartValue(historyMax*.5)}</span><span style="--y:71.1%">${compactChartValue(historyMax*.25)}</span></div><svg viewBox="0 0 ${historyWidth} ${historyHeight}" preserveAspectRatio="none" role="img" aria-label="Динамика дохода"><defs><linearGradient id="historyArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e1bd72" stop-opacity=".24"/><stop offset="1" stop-color="#e1bd72" stop-opacity="0"/></linearGradient><filter id="historyPointGlow" x="-400%" y="-400%" width="800%" height="800%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g class="v3-chart-grid">${historyChartGuides(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}</g>${historyTerminalGuide(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}<path class="v3-chart-area" d="${chartAreaPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><path class="v3-chart-glow" pathLength="1" d="${chartPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><path class="v3-chart-line" pathLength="1" d="${chartPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><g class="v3-chart-points" filter="url(#historyPointGlow)">${chartDots(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}</g></svg></div><div class="v3-chart-months">${months.map(month=>`<span>${escapeHTML(formatMonth(month).slice(0,3))}</span>`).join("")}</div></section>
-      <section class="v3-breakdown">${[["Обязательное",data.fixed],["Категории",data.categories],["Резерв",data.reserve],["Цели",data.goals],["Не распределено",data.unallocated]].map(([name,value],index)=>`<div class="v3-break-row"><i class="tone-${index}"></i><span>${name}</span><strong>${money(value)}</strong><em>${index===4?"перенос":`${pct(value,data.income)}%`}</em></div>`).join("")}</section>
+      <section class="v3-history-chart"><div class="v3-chart-total"><div><span>Доход по месяцам</span>${historyTrend(incomes,months)}</div><div class="v3-chart-current" aria-live="polite"><small data-history-period>${escapeHTML(formatMonth(latestMonth))}</small><strong data-history-value>${money(incomes[incomes.length-1]||0)}</strong></div></div><div class="v3-history-plot"><div class="v3-chart-y-scale" aria-hidden="true"><span style="--y:28.9%">${compactChartValue(historyMax*.75)}</span><span style="--y:50%">${compactChartValue(historyMax*.5)}</span><span style="--y:71.1%">${compactChartValue(historyMax*.25)}</span></div><svg viewBox="0 0 ${historyWidth} ${historyHeight}" preserveAspectRatio="none" role="img" aria-label="Динамика дохода"><defs><linearGradient id="historyArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e1bd72" stop-opacity=".2"/><stop offset="1" stop-color="#e1bd72" stop-opacity="0"/></linearGradient><filter id="historyPointGlow" x="-400%" y="-400%" width="800%" height="800%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g class="v3-chart-grid">${historyChartGuides(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}</g>${historyTerminalGuide(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}<path class="v3-chart-area" d="${chartAreaPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><path class="v3-chart-glow" pathLength="1" d="${chartPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><path class="v3-chart-line" pathLength="1" d="${chartPath(incomes,historyWidth,historyHeight,historyPadX,historyPadY)}"/><g class="v3-chart-points" filter="url(#historyPointGlow)">${chartDots(incomes,historyWidth,historyHeight,historyPadX,historyPadY,months)}</g><g class="v3-chart-hits">${historyChartHits(incomes,months,historyWidth,historyHeight,historyPadX)}</g></svg></div><div class="v3-chart-months">${months.map(month=>`<span>${escapeHTML(formatMonth(month).slice(0,3))}</span>`).join("")}</div></section>
+      <div class="v3-breakdown-head"><span>Структура текущего месяца</span><b>${money(data.income)}</b></div><section class="v3-breakdown">${[["Обязательное",data.fixed],["Категории",data.categories],["Резерв",data.reserve],["Цели",data.goals],["Не распределено",data.unallocated]].map(([name,value],index)=>`<div class="v3-break-row" style="--share:${pct(value,data.income)}%"><i class="v3-break-signal tone-${index}" aria-hidden="true"><b></b></i><span>${name}</span><strong>${money(value)}</strong><em>${index===4?"перенос":`${pct(value,data.income)}%`}</em></div>`).join("")}</section>
       <section class="v3-section"><div class="v3-section-title"><span>Операции месяца</span><b>${txs.length}</b></div><div class="v3-transactions">${txs.length?txs.map(tx=>historyTransaction(tx)).join(""):`<div class="v3-empty">Операций пока нет.</div>`}</div></section>`;
     document.getElementById("historyIncome").onclick=showIncomeModal;
     document.getElementById("historyExpense").onclick=showExpenseModal;
+    bindHistoryChart(page);
   };
 
-  root.ARISE_V3={groupMonth,historyChartPoints,monotoneChartPath,chartPath,chartAreaPath,chartDots,compactChartValue,historyChartGuides,historyTrend,categoryRuleMeta,goalPace,homeFlowScene,summaryFlowScene};
+  root.ARISE_V3={groupMonth,historyChartPoints,monotoneChartPath,chartPath,chartAreaPath,chartDots,historyChartHits,compactChartValue,historyChartGuides,historyTrend,bindHistoryChart,categoryRuleMeta,goalPace,homeFlowScene,summaryFlowScene};
 })(typeof globalThis!=="undefined"?globalThis:window);

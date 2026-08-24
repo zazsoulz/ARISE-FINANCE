@@ -50,8 +50,20 @@ test('financial pulse uses a shared vertical scale instead of normalizing each s
 test('financial pulse uses monotone curves, measured rails and an explicit terminal state',()=>{
   const {ctx,dom}=boot();ctx.renderAnalytics();
   assert.match(ctx.ARISE_ANALYTICS_UI.path([100,180,140,220]),/ C/);
+  assert.ok(dom.window.document.querySelector('.analytics-kpi-band'));
+  assert.ok(dom.window.document.querySelector('.analytics-chart-readout'));
   assert.equal(dom.window.document.querySelectorAll('.analytics-y-scale span').length,3);
   assert.equal(dom.window.document.querySelectorAll('.analytics-pulse .is-terminal').length,2);
   assert.equal(dom.window.document.querySelectorAll('.analytics-terminal-guide').length,1);
   assert.match(dom.window.document.querySelector('.kpi-expense').getAttribute('style'),/--kpi-ratio:/);
+});
+
+test('financial pulse readout follows keyboard-selected periods',()=>{
+  const {ctx,dom}=boot();ctx.renderAnalytics();
+  const hits=dom.window.document.querySelectorAll('.analytics-chart-hit');
+  assert.equal(hits.length,2);
+  hits[0].dispatchEvent(new dom.window.Event('focus'));
+  assert.equal(dom.window.document.querySelector('[data-pulse-period]').textContent,'2026-07');
+  assert.equal(dom.window.document.querySelector('[data-pulse-income]').textContent,'100000 ₽');
+  assert.equal(dom.window.document.querySelectorAll('.analytics-pulse .is-active').length,2);
 });

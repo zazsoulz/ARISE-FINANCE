@@ -82,7 +82,7 @@
 
   root.renderNav=function(){
     const items=[['home','Главная','home'],['income','Распределение','income'],['goals','Цели','goals'],['history','История','history'],['analytics','Аналитика','analytics']];
-    return `<nav class="nav product-nav" aria-label="Основная навигация">${items.map(([id,label,glyph])=>`<button type="button" class="product-nav-item ${activePage===id?'active':''}" data-page="${id}" aria-label="${label}">${icon(glyph,17)}<span>${label}</span></button>`).join('')}</nav>`;
+    return `<nav class="nav product-nav" aria-label="Основная навигация">${items.map(([id,label,glyph])=>`<button type="button" class="product-nav-item ${activePage===id?'active':''}" data-page="${id}" aria-label="${label}" ${activePage===id?'aria-current="page"':''}>${icon(glyph,17)}<span>${label}</span></button>`).join('')}</nav>`;
   };
 
   root.renderTopbar=function(){
@@ -282,10 +282,11 @@
       card.classList.add("settings-card",`settings-${tone}`);
       card.style.setProperty("--settings-i",String(index));
       card.id=`settingsSection${tone[0].toUpperCase()}${tone.slice(1)}`;
+      card.dataset.settingsNumber=String(index+1).padStart(2,"0");
       const cell=card.closest(".c12,.c8,.c7,.c6,.c5,.c4,.c3");
       if(cell)cell.classList.add("settings-cell",`settings-cell-${tone}`);
       if(!card.querySelector(".settings-card-mark")){
-        card.insertAdjacentHTML("afterbegin",`<span class="settings-card-mark" aria-hidden="true">${typeof icon==="function"?icon(glyph,18):""}</span>`);
+        card.insertAdjacentHTML("afterbegin",`<span class="settings-card-mark" aria-hidden="true"><em>${String(index+1).padStart(2,"0")}</em>${typeof icon==="function"?icon(glyph,18):""}</span>`);
       }
       const title=card.querySelector(".title")?.textContent?.trim()||tone;
       navigation.push({id:card.id,title,glyph});
@@ -323,7 +324,7 @@
       if(page){
         page.classList.add("arise-settings");
         if(!page.querySelector(".arise-settings-head")){
-          page.insertAdjacentHTML("afterbegin",'<div class="v3-page-head arise-settings-head"><div><div class="v3-eyebrow">Профиль и приложение</div><h1>Настройки</h1><p>Личные данные, правила и синхронизация</p></div></div>');
+          page.insertAdjacentHTML("afterbegin",'<div class="v3-page-head arise-settings-head"><div class="v3-page-head-copy"><div class="v3-eyebrow">Профиль и приложение</div><h1>Настройки</h1><p>Личные данные, правила и синхронизация</p><div class="v3-head-status"><i aria-hidden="true"></i><span>Шесть независимых уровней контроля</span></div></div></div>');
         }
       }
       bind(document);

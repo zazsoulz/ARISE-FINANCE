@@ -38,15 +38,31 @@ test("history, goals and reserve use the calibrated data-visualization language"
   assert.match(v3Source,/class="v3-chart-change/);
   assert.match(v3Source,/class="goal-ring-terminal"/);
   assert.match(productCss,/ARISE DATA & TYPE CALIBRATION/);
-  assert.match(productCss,/--arise-weight-number:275/);
+  assert.match(productCss,/--arise-weight-number:325/);
   assert.match(productCss,/\.analytics-terminal-guide,/);
   assert.match(productCss,/\.analytics-reserve-center small/);
+});
+
+test("secondary screens use one measurable route instead of decorative card polish",()=>{
+  for(const token of [
+    "v3-head-status",
+    "v3-summary-measure",
+    "v3-goals-overview",
+    "v3-goal-track",
+    "v3-break-signal",
+    "analytics-kpi-band",
+    "analytics-chart-readout"
+  ])assert.ok(v3Source.includes(token)||analyticsSource.includes(token)||productCss.includes(`.${token}`),`${token} is missing`);
+  assert.match(v3Source,/function bindHistoryChart\(scope\)/);
+  assert.match(analyticsSource,/function bindPulseChart\(scope\)/);
+  assert.match(analyticsSource,/class="analytics-chart-hit"/);
 });
 
 test("auth and settings use the same product-level visual vocabulary",()=>{
   assert.match(authSource,/class="login-visual"/);
   assert.match(authSource,/class="login-flow-particles"/);
   assert.match(authSource,/class="login-shell"/);
+  assert.match(authSource,/class="login-assurance"/);
   assert.match(productSource,/function decorateSettings\(page\)/);
   assert.match(productSource,/\["#canonicalAccountName","profile","account"\]/);
   assert.match(productSource,/settings-card-mark/);

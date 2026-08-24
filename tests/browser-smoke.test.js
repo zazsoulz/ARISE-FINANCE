@@ -46,9 +46,9 @@ test('registered user boots into A1-V3 financial flow',()=>{
 
 test('A1-V3 distribution goals and history screens render',()=>{
   const {dom,context}=boot({registered:true}); const document=dom.window.document;
-  execute(context,`activePage='income'; render();`,'distribution-screen.js'); assert.ok(document.querySelector('.arise-v3-distribution')); assert.ok(document.getElementById('incomeStart')); assert.ok(document.getElementById('incomeSettings'));
+  execute(context,`activePage='income'; render();`,'distribution-screen.js'); assert.ok(document.querySelector('.arise-v3-distribution')); assert.ok(document.querySelector('.v3-summary-measure')); assert.ok(document.getElementById('incomeStart')); assert.ok(document.getElementById('incomeSettings'));
   execute(context,`activePage='goals'; render();`,'goals-screen.js'); assert.ok(document.querySelector('.arise-v3-goals')); assert.ok(document.getElementById('createGoal'));
-  execute(context,`activePage='history'; render();`,'history-screen.js'); assert.ok(document.querySelector('.arise-v3-history')); assert.ok(document.querySelector('.v3-history-chart')); assert.ok(document.getElementById('historyIncome')); assert.ok(document.getElementById('historyExpense'));
+  execute(context,`activePage='history'; render();`,'history-screen.js'); assert.ok(document.querySelector('.arise-v3-history')); assert.ok(document.querySelector('.v3-history-chart')); assert.ok(document.querySelector('.v3-chart-current')); assert.ok(document.querySelector('.v3-breakdown-head')); assert.ok(document.getElementById('historyIncome')); assert.ok(document.getElementById('historyExpense'));
   dom.window.close();
 });
 

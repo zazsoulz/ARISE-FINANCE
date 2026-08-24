@@ -55,12 +55,24 @@
     const line=monotonePath(points);
     return line?`${line} L${points[points.length-1][0].toFixed(1)} ${height-verticalPad} L${points[0][0].toFixed(1)} ${height-verticalPad} Z`:"";
   }
-  function dots(values,klass,width=720,height=200,pad=20,maxScale=null,verticalPad=pad){
+  function dots(values,klass,width=720,height=200,pad=20,maxScale=null,verticalPad=pad,labels=[]){
     if(!values.length)return "";
     const points=chartPoints(values,width,height,pad,maxScale,verticalPad);
     return points.map(([x,y],index)=>{
       const terminal=index===points.length-1;
-      return `<circle class="${klass}${terminal?" is-terminal":""}" data-chart-index="${index}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${terminal?4.4:3.2}"><title>${money(values[index])}</title></circle>`;
+      return `<circle class="${klass}${terminal?" is-terminal is-active":""}" data-chart-index="${index}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${terminal?4.4:3.2}"><title>${labels[index]?`${escapeHTML(labels[index])}: `:""}${money(values[index])}</title></circle>`;
+    }).join("");
+  }
+  function chartHits(rows,width=720,height=200,horizontalPad=48){
+    if(!rows.length)return "";
+    const usable=width-horizontalPad*2;
+    const step=rows.length>1?usable/(rows.length-1):usable;
+    return rows.map((row,index)=>{
+      const center=rows.length===1?width/2:horizontalPad+index*step;
+      const left=index===0?horizontalPad:center-step/2;
+      const right=index===rows.length-1?width-horizontalPad:center+step/2;
+      const label=monthLabel(row.month);
+      return `<rect class="analytics-chart-hit" tabindex="0" role="button" x="${left.toFixed(1)}" y="0" width="${Math.max(1,right-left).toFixed(1)}" height="${height}" data-chart-index="${index}" data-chart-label="${escapeHTML(label)}" data-chart-income="${safe(row.income)}" data-chart-expense="${safe(row.expenses)}" aria-label="${escapeHTML(label)}: доход ${money(row.income)}, расходы ${money(row.expenses)}"/>`;
     }).join("");
   }
   function chartGuides(maxScale,width=720,height=200,horizontalPad=48,verticalPad=20){
@@ -106,6 +118,35 @@
     return `<div class="analytics-source">${rows.slice(0,6).map(row=>`<div class="analytics-source-row"><strong>${escapeHTML(row.name)}</strong><div class="analytics-source-track"><div class="analytics-source-fill" style="width:${Math.max(3,row.share*100).toFixed(1)}%"></div></div><em>${money(row.value)} · ${Math.round(row.share*100)}%</em></div>`).join("")}</div>`;
   }
 
+  function bindPulseChart(scope){
+    const pulse=scope&&scope.querySelector(".analytics-pulse");
+    if(!pulse)return;
+    const hits=[...pulse.querySelectorAll(".analytics-chart-hit")];
+    const incomePoints=[...pulse.querySelectorAll(".point-income")];
+    const expensePoints=[...pulse.querySelectorAll(".point-expense")];
+    const guide=pulse.querySelector(".analytics-terminal-guide");
+    const period=scope.querySelector("[data-pulse-period]");
+    const income=scope.querySelector("[data-pulse-income]");
+    const expense=scope.querySelector("[data-pulse-expense]");
+    const activate=index=>{
+      const hit=hits[index],incomePoint=incomePoints[index],expensePoint=expensePoints[index];
+      if(!hit||!incomePoint||!expensePoint)return;
+      [...incomePoints,...expensePoints].forEach(point=>point.classList.remove("is-active"));
+      incomePoint.classList.add("is-active");
+      expensePoint.classList.add("is-active");
+      if(guide){guide.setAttribute("x1",incomePoint.getAttribute("cx"));guide.setAttribute("x2",incomePoint.getAttribute("cx"));}
+      if(period)period.textContent=hit.dataset.chartLabel||"";
+      if(income)income.textContent=money(hit.dataset.chartIncome||0);
+      if(expense)expense.textContent=money(hit.dataset.chartExpense||0);
+    };
+    hits.forEach((hit,index)=>{
+      hit.addEventListener("pointerenter",()=>activate(index));
+      hit.addEventListener("focus",()=>activate(index));
+      hit.addEventListener("click",()=>activate(index));
+    });
+    activate(Math.max(0,hits.length-1));
+  }
+
   root.renderNav=function(){
     const base=typeof oldRenderNav==="function"?oldRenderNav():"";
     if(base&&base.includes('data-page="analytics"'))return base;
@@ -129,6 +170,9 @@
     const incomes=series.map(row=>row.income),expenses=series.map(row=>row.expenses);
     const pulseMax=Math.max(1,...incomes.map(safe),...expenses.map(safe));
     const pulseWidth=720,pulseHeight=200,pulsePadX=48,pulsePadY=20;
+    const pulseLabels=series.map(row=>monthLabel(row.month));
+    const latestPulse=series[series.length-1]||{month:currentMonth,income:current.income,expenses:current.expenses};
+    const controlledPercent=current.expenses>0?Math.max(0,100-pct(current.uncontrolled,current.expenses)):100;
     const runway=averageExpenseRunway(profile);
     const reserveBalance=core.reserveBalance(profile);
     const reserveTarget=safe(profile.settings&&profile.settings.reserve&&profile.settings.reserve.target);
@@ -136,14 +180,16 @@
     const page=document.getElementById("page");
     page.className="arise-v3-secondary";
     page.innerHTML=`<main class="arise-analytics">
-      <header class="analytics-head"><div><div class="v3-eyebrow">Финансовая аналитика</div><h1>${money(current.income)}</h1><p>Доход за ${escapeHTML(monthLabel(currentMonth))} · все показатели рассчитаны из реальных операций</p></div><select class="analytics-month-select" id="analyticsMonth">${(months.length?months:[activeMonth]).slice().reverse().map(key=>`<option value="${key}" ${key===currentMonth?"selected":""}>${escapeHTML(monthLabel(key))}</option>`).join("")}</select></header>
+      <header class="analytics-head"><div class="v3-page-head-copy"><div class="v3-eyebrow">Финансовая аналитика</div><h1>${money(current.income)}</h1><p>Доход за ${escapeHTML(monthLabel(currentMonth))} · показатели рассчитаны из реальных операций</p><div class="v3-head-status"><i aria-hidden="true"></i><span>${controlledPercent}% расходов объяснено системой</span></div></div><select class="analytics-month-select" id="analyticsMonth">${(months.length?months:[activeMonth]).slice().reverse().map(key=>`<option value="${key}" ${key===currentMonth?"selected":""}>${escapeHTML(monthLabel(key))}</option>`).join("")}</select></header>
       <div class="analytics-grid">
-        <section class="analytics-card analytics-kpi third kpi-income" style="--i:0;--kpi-ratio:${(safe(current.income)/kpiBase*100).toFixed(1)}%"><div class="analytics-kpi-aura" aria-hidden="true"></div><div class="analytics-label">Доход</div><div class="analytics-value">${money(current.income)}</div>${comparison?deltaBadge(comparison.income):`<span class="analytics-delta neutral">первый месяц данных</span>`}<div class="analytics-kpi-rail" aria-hidden="true"><i></i></div></section>
-        <section class="analytics-card analytics-kpi third kpi-expense" style="--i:1;--kpi-ratio:${(safe(current.expenses)/kpiBase*100).toFixed(1)}%"><div class="analytics-kpi-aura" aria-hidden="true"></div><div class="analytics-label">Расходы</div><div class="analytics-value">${money(current.expenses)}</div>${comparison?deltaBadge(comparison.expenses,{inverse:true}):`<span class="analytics-delta neutral">первый месяц данных</span>`}<div class="analytics-kpi-rail" aria-hidden="true"><i></i></div></section>
-        <section class="analytics-card analytics-kpi third kpi-free" style="--i:2;--kpi-ratio:${(safe(current.freeEnd)/kpiBase*100).toFixed(1)}%"><div class="analytics-kpi-aura" aria-hidden="true"></div><div class="analytics-label">Не распределено</div><div class="analytics-value">${money(current.freeEnd)}</div>${comparison?deltaBadge(comparison.free):`<span class="analytics-delta neutral">остаток месяца</span>`}<div class="analytics-kpi-rail" aria-hidden="true"><i></i></div></section>
+        <section class="analytics-kpi-band" aria-label="Ключевые показатели месяца">
+          <article class="analytics-card analytics-kpi third kpi-income" style="--i:0;--kpi-ratio:${(safe(current.income)/kpiBase*100).toFixed(1)}%"><div class="analytics-kpi-aura" aria-hidden="true"></div><div class="analytics-label">Доход</div><div class="analytics-value">${money(current.income)}</div><div class="analytics-kpi-context">${comparison?deltaBadge(comparison.income):`<span class="analytics-delta neutral">первый месяц данных</span>`}<small>100% потока</small></div><div class="analytics-kpi-rail" aria-hidden="true"><i></i></div></article>
+          <article class="analytics-card analytics-kpi third kpi-expense" style="--i:1;--kpi-ratio:${(safe(current.expenses)/kpiBase*100).toFixed(1)}%"><div class="analytics-kpi-aura" aria-hidden="true"></div><div class="analytics-label">Расходы</div><div class="analytics-value">${money(current.expenses)}</div><div class="analytics-kpi-context">${comparison?deltaBadge(comparison.expenses,{inverse:true}):`<span class="analytics-delta neutral">первый месяц данных</span>`}<small>${pct(current.expenses,current.income)}% дохода</small></div><div class="analytics-kpi-rail" aria-hidden="true"><i></i></div></article>
+          <article class="analytics-card analytics-kpi third kpi-free" style="--i:2;--kpi-ratio:${(safe(current.freeEnd)/kpiBase*100).toFixed(1)}%"><div class="analytics-kpi-aura" aria-hidden="true"></div><div class="analytics-label">Не распределено</div><div class="analytics-value">${money(current.freeEnd)}</div><div class="analytics-kpi-context">${comparison?deltaBadge(comparison.free):`<span class="analytics-delta neutral">остаток месяца</span>`}<small>${pct(current.freeEnd,current.income)}% дохода</small></div><div class="analytics-kpi-rail" aria-hidden="true"><i></i></div></article>
+        </section>
 
-        <section class="analytics-card analytics-pulse-card" style="--i:3"><div class="analytics-section-title"><div><div class="analytics-label">Financial pulse</div><h2>Доход и расходы по месяцам</h2></div><span>${series.length} мес.</span></div>
-          <div class="analytics-pulse"><div class="analytics-y-scale" aria-hidden="true"><span style="--y:30%">${compactScale(pulseMax*.75)}</span><span style="--y:50%">${compactScale(pulseMax*.5)}</span><span style="--y:70%">${compactScale(pulseMax*.25)}</span></div><svg viewBox="0 0 ${pulseWidth} ${pulseHeight}" preserveAspectRatio="none" role="img" aria-label="Динамика доходов и расходов"><defs><linearGradient id="analyticsIncomeArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d9b66d" stop-opacity=".22"/><stop offset="1" stop-color="#d9b66d" stop-opacity="0"/></linearGradient><linearGradient id="analyticsExpenseArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9baec8" stop-opacity=".13"/><stop offset="1" stop-color="#9baec8" stop-opacity="0"/></linearGradient><filter id="analyticsPointGlow" x="-400%" y="-400%" width="800%" height="800%"><feGaussianBlur stdDeviation="1.7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${chartGuides(pulseMax,pulseWidth,pulseHeight,pulsePadX,pulsePadY)}${terminalGuide(incomes,pulseWidth,pulseHeight,pulsePadX,pulsePadY,pulseMax)}<path class="analytics-area income-area" d="${area(incomes,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><path class="analytics-area expense-area" d="${area(expenses,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><path class="income" pathLength="1" d="${path(incomes,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><path class="expense" pathLength="1" d="${path(expenses,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><g filter="url(#analyticsPointGlow)">${dots(incomes,"point-income",pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}${dots(expenses,"point-expense",pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}</g></svg></div>
+        <section class="analytics-card analytics-pulse-card" style="--i:3"><div class="analytics-pulse-head"><div class="analytics-section-title"><div><div class="analytics-label">Financial pulse</div><h2>Доход и расходы по месяцам</h2></div><span>${series.length} мес.</span></div><div class="analytics-chart-readout" aria-live="polite"><span data-pulse-period>${escapeHTML(monthLabel(latestPulse.month))}</span><div><b><i class="income" aria-hidden="true"></i><small>Доход</small><strong data-pulse-income>${money(latestPulse.income)}</strong></b><b><i class="expense" aria-hidden="true"></i><small>Расходы</small><strong data-pulse-expense>${money(latestPulse.expenses)}</strong></b></div></div></div>
+          <div class="analytics-pulse"><div class="analytics-y-scale" aria-hidden="true"><span style="--y:30%">${compactScale(pulseMax*.75)}</span><span style="--y:50%">${compactScale(pulseMax*.5)}</span><span style="--y:70%">${compactScale(pulseMax*.25)}</span></div><svg viewBox="0 0 ${pulseWidth} ${pulseHeight}" preserveAspectRatio="none" role="img" aria-label="Динамика доходов и расходов"><defs><linearGradient id="analyticsIncomeArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d9b66d" stop-opacity=".18"/><stop offset="1" stop-color="#d9b66d" stop-opacity="0"/></linearGradient><linearGradient id="analyticsExpenseArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9baec8" stop-opacity=".1"/><stop offset="1" stop-color="#9baec8" stop-opacity="0"/></linearGradient><filter id="analyticsPointGlow" x="-400%" y="-400%" width="800%" height="800%"><feGaussianBlur stdDeviation="1.7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${chartGuides(pulseMax,pulseWidth,pulseHeight,pulsePadX,pulsePadY)}${terminalGuide(incomes,pulseWidth,pulseHeight,pulsePadX,pulsePadY,pulseMax)}<path class="analytics-area income-area" d="${area(incomes,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><path class="analytics-area expense-area" d="${area(expenses,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><path class="income" pathLength="1" d="${path(incomes,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><path class="expense" pathLength="1" d="${path(expenses,pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY)}"/><g filter="url(#analyticsPointGlow)">${dots(incomes,"point-income",pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY,pulseLabels)}${dots(expenses,"point-expense",pulseWidth,pulseHeight,pulsePadX,pulseMax,pulsePadY,pulseLabels)}</g><g class="analytics-chart-hits">${chartHits(series,pulseWidth,pulseHeight,pulsePadX)}</g></svg></div>
           <div class="analytics-month-labels" style="--months:${Math.max(1,series.length)}">${series.map(row=>`<span>${escapeHTML(monthLabel(row.month).slice(0,3))}</span>`).join("")}</div><div class="pulse-legend"><span>Доход</span><span>Расходы</span></div>
         </section>
 
@@ -156,9 +202,10 @@
     </main>`;
     const select=document.getElementById("analyticsMonth");
     if(select)select.onchange=()=>{selectedAnalyticsMonth=select.value;root.renderAnalytics();};
+    bindPulseChart(page);
   };
 
-  root.ARISE_ANALYTICS_UI={deltaBadge,chartPoints,monotonePath,path,area,dots,chartGuides,compactScale,averageExpenseRunway,getSelectedMonth:()=>selectedAnalyticsMonth};
+  root.ARISE_ANALYTICS_UI={deltaBadge,chartPoints,monotonePath,path,area,dots,chartHits,chartGuides,compactScale,averageExpenseRunway,bindPulseChart,getSelectedMonth:()=>selectedAnalyticsMonth};
 })(typeof globalThis!=="undefined"?globalThis:window);
 
 (function(root){
