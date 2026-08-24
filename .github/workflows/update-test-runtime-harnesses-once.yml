@@ -1,0 +1,65 @@
+name: Update Test Runtime Harnesses Once
+
+on:
+  push:
+    branches:
+      - agent/apply-physical-settings-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/apply-physical-settings-cleanup
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Align manual harnesses with canonical Settings owner
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          replacements={
+            'tests/browser-smoke.test.js':(
+              "'analytics-engine.js','analytics-ui.js','financial-bootstrap.js'",
+              "'analytics-engine.js','analytics-ui.js','settings-ui.js','financial-bootstrap.js'"
+            ),
+            'tests/history-inspector.test.js':(
+              "'analytics-engine.js','analytics-ui.js','history-inspector.js','financial-bootstrap.js'",
+              "'analytics-engine.js','analytics-ui.js','history-inspector.js','settings-ui.js','financial-bootstrap.js'"
+            ),
+            'tests/profile-isolation.test.js':(
+              "'arise-v3.js','analytics-engine.js','analytics-ui.js','financial-bootstrap.js'",
+              "'arise-v3.js','analytics-engine.js','analytics-ui.js','settings-ui.js','financial-bootstrap.js'"
+            ),
+            'tests/reserve-settings.test.js':(
+              "'arise-v3.js','analytics-engine.js','analytics-ui.js','financial-bootstrap.js'",
+              "'arise-v3.js','analytics-engine.js','analytics-ui.js','settings-ui.js','financial-bootstrap.js'"
+            ),
+            'tests/primary-actions-smoke.test.js':(
+              "'history-inspector.js','analytics-ui.js','expense-edit-ui.js','product-ui.js','reserve-lifecycle-ui.js'",
+              "'history-inspector.js','analytics-ui.js','expense-edit-ui.js','product-ui.js','reserve-lifecycle-ui.js',\n    'account-settings.js','profile-lifecycle.js','settings-ui.js'"
+            )
+          }
+          for name,(old,new) in replacements.items():
+              p=Path(name); s=p.read_text()
+              if old not in s:
+                  raise SystemExit(f'{name}: runtime list anchor not found')
+              p.write_text(s.replace(old,new,1))
+          PY
+      - name: Verify harness syntax
+        run: |
+          for f in tests/browser-smoke.test.js tests/history-inspector.test.js tests/profile-isolation.test.js tests/reserve-settings.test.js tests/primary-actions-smoke.test.js; do node --check "$f"; grep -q "settings-ui.js" "$f"; done
+      - name: Remove one-shot workflow and commit
+        run: |
+          rm .github/workflows/update-test-runtime-harnesses-once.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tests/browser-smoke.test.js tests/history-inspector.test.js tests/profile-isolation.test.js tests/reserve-settings.test.js tests/primary-actions-smoke.test.js .github/workflows/update-test-runtime-harnesses-once.yml
+          git commit -m 'Align headless Settings runtime harnesses'
+          git push origin HEAD:agent/apply-physical-settings-cleanup
