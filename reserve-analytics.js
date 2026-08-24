@@ -6,6 +6,7 @@
   "use strict";
 
   const amount=value=>Number.isFinite(Number(value))?Math.max(0,Math.round(Number(value))):0;
+  const owns=(object,key)=>!!object&&Object.prototype.hasOwnProperty.call(object,key);
 
   function reserveRunway({reserveBalance,monthlyEssentialSpend}={}){
     const balance=amount(reserveBalance);
@@ -66,5 +67,29 @@
     };
   }
 
-  return {reserveRunway,reserveProgress};
+  function reserveTarget(settings={}){
+    const source=settings&&typeof settings==="object"?settings:{};
+    return amount(owns(source,"targetBalance")?source.targetBalance:source.target);
+  }
+
+  function normalizeTargetSettings(settings={}){
+    const source=settings&&typeof settings==="object"?settings:{};
+    const next={...source};
+    let changed=false;
+
+    if(owns(source,"targetBalance")){
+      if(owns(source,"target")){
+        delete next.target;
+        changed=true;
+      }
+    }else if(owns(source,"target")){
+      next.targetBalance=amount(source.target);
+      delete next.target;
+      changed=true;
+    }
+
+    return {settings:next,targetBalance:reserveTarget(next),changed};
+  }
+
+  return {reserveRunway,reserveProgress,reserveTarget,normalizeTargetSettings};
 });
