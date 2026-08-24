@@ -1,6 +1,6 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `818b196bd5eb458e531ff434a639b7019de4ad97` (2026-08-24).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `673e2b5448f0c0ef911e6a4c86fc260328b8358e` (2026-08-24).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
@@ -32,6 +32,7 @@ The highest-value remaining work is now operational beta verification, final sha
 ## Reserve
 - ✅ Reserve is separate from categories and ledger-backed.
 - ✅ Contribution settings, target/progress and deterministic runway analytics exist.
+- ✅ `targetBalance` is the canonical reserve target, including an explicit zero; legacy `reserve.target` migrates one-way after remote hydration without creating a semantic sync mutation.
 - ✅ Reserve deposits and withdrawals are transaction-backed.
 - ✅ Reserve-to-goal funding preserves money conservation and transfer semantics through sync.
 - ✅ Runway uses explicit user-controlled essential-spend inputs: manual monthly amount or selected essential categories.
@@ -156,7 +157,7 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ Standalone preview is assembled from the canonical runtime manifest rather than a divergent loader.
 - ✅ Canonical screen ownership is external to the compatibility shell for Topbar, Navigation, Home, Income, Goals, History, Analytics and Settings.
 - ✅ Legacy `renderTopbar`, `NAV_ITEMS + renderNav`, `renderHome`, `renderIncome`, `renderGoals`, `renderHistory + historyMonthBlock`, `renderAnalytics` and `renderSettings` have all been physically removed from `app-shell.html`.
-- ✅ The primary-screen retirement registry is now empty; future renderer retirement remains fail-closed if a new staged entry is ever introduced.
+- ✅ The primary-screen retirement registry is gone now that no retired primary screen renderer remains in the compatibility shell.
 - ✅ Product/category Settings decoration no longer wraps a legacy renderer and is composed explicitly through canonical `settings-ui.js` enhancers.
 - ✅ Shared navigation/profile-switch helpers live in `navigation-compat.js`.
 - ✅ Physical cleanup scripts are fail-closed and are executed by CI in read-only guard mode.
