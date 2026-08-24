@@ -110,6 +110,7 @@
         <div class="kicker" style="margin-top:22px">АККАУНТ</div>
         <h1 class="title" id="authTitle" style="font-size:30px">Войти в ARISE</h1>
         <div class="sub" style="margin-top:9px">Аккаунт хранит только твою личную информацию. Финансовые профили живут отдельно внутри него.</div>
+        <div class="login-assurance"><i aria-hidden="true"></i><span>Локальная копия данных</span><b aria-hidden="true"></b><span>Защищённая синхронизация</span></div>
         <div class="form" style="margin-top:22px">
           <div class="field full" id="authNameField" style="display:none"><label>Имя</label><input id="authName" autocomplete="name" placeholder="Имя"></div>
           <div class="field full"><label>Почта</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com"></div>
