@@ -8,19 +8,19 @@ const analytics=fs.readFileSync('analytics-ui.js','utf8');
 const css=fs.readFileSync('product-ui.css','utf8');
 
 test('active primary navigation exposes aria-current',()=>{
-  assert.match(product,/aria-current=\\"page\\"/);
+  assert.match(product,/aria-current="page"/);
 });
 
 test('history and analytics chart interaction zones stay keyboard reachable',()=>{
-  assert.match(v3,/class=\\"v3-chart-hit\\" tabindex=\\"0\\" role=\\"button\\"/);
-  assert.match(analytics,/class=\\"analytics-chart-hit\\" tabindex=\\"0\\" role=\\"button\\"/);
-  assert.match(v3,/addEventListener\(\\"focus\\"/);
-  assert.match(analytics,/addEventListener\(\\"focus\\"/);
+  assert.match(v3,/class="v3-chart-hit" tabindex="0" role="button"/);
+  assert.match(analytics,/class="analytics-chart-hit" tabindex="0" role="button"/);
+  assert.match(v3,/addEventListener\("focus"/);
+  assert.match(analytics,/addEventListener\("focus"/);
 });
 
 test('chart live readouts remain announced without making the SVG itself stateful',()=>{
-  assert.match(v3,/class=\\"v3-chart-current\\" aria-live=\\"polite\\"/);
-  assert.match(analytics,/class=\\"analytics-chart-readout\\" aria-live=\\"polite\\"/);
+  assert.match(v3,/class="v3-chart-current" aria-live="polite"/);
+  assert.match(analytics,/class="analytics-chart-readout" aria-live="polite"/);
 });
 
 test('visual interaction layer retains reduced-motion coverage',()=>{
