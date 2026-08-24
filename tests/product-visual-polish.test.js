@@ -8,13 +8,23 @@ const analyticsSource=fs.readFileSync("analytics-ui.js","utf8");
 const authSource=fs.readFileSync("auth-ui.js","utf8");
 const productSource=fs.readFileSync("product-ui.js","utf8");
 
-test("home and distribution share the organic animated flow language",()=>{
+test("home uses a continuous material flow without route rails",()=>{
   assert.match(v3Source,/function homeFlowScene\(\)/);
-  assert.match(v3Source,/class="arise-flow-sheets"/);
-  assert.match(v3Source,/class="arise-flow-contours"/);
-  assert.match(v3Source,/class="arise-flow-particles"/);
+  assert.match(v3Source,/class="arise-flow-canvas"/);
+  assert.match(v3Source,/function startHomeFluidFlow\(canvas\)/);
+  assert.match(v3Source,/requestAnimationFrame\(draw\)/);
+  assert.match(v3Source,/uniform float uTime/);
+  assert.match(v3Source,/texture2D\(uTexture,flowUv\)/);
+  assert.doesNotMatch(v3Source,/class="arise-flow-svg"/);
+  assert.doesNotMatch(v3Source,/class="arise-flow-branch"/);
+  assert.doesNotMatch(v3Source,/class="arise-flow-drift"/);
+  assert.doesNotMatch(v3Source,/class="arise-flow-particles"/);
+  assert.doesNotMatch(v3Source,/class="arise-flow-source"/);
+  assert.match(productCss,/ARISE CONTINUOUS HOME FLOW/);
+  assert.match(productCss,/\.arise-flow-node::before\{[\s\S]*?content:none!important;[\s\S]*?display:none!important/);
+  assert.match(productCss,/--arise-flow-texture:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
+  assert.match(v3Source,/canvas\.dataset\.flowRenderer="static2d"/);
   assert.match(v3Source,/class="v3-summary-particles"/);
-  assert.ok((v3Source.match(/animateMotion/g)||[]).length>=2,"flow scenes must include moving particles");
   for(const kind of ["fixed","categories","reserve","goals"]){
     assert.ok(v3Source.includes(`kind:"${kind}"`),`${kind} flow destination is missing`);
   }

@@ -6870,3 +6870,91 @@ body::before{
     transform:none!important;
   }
 }
+
+/* =========================================================
+   ARISE CONTINUOUS HOME FLOW
+   One continuously warped material surface; no route rails or path particles.
+========================================================= */
+
+.arise-flow-stage::before{
+  z-index:0!important;
+  inset:4% 16% 5%!important;
+  opacity:.78!important;
+  background:
+    radial-gradient(ellipse at 45% 38%,rgba(171,210,210,.09),transparent 48%),
+    radial-gradient(ellipse at 56% 76%,rgba(223,189,117,.11),transparent 47%)!important;
+  filter:blur(19px)!important;
+  mix-blend-mode:screen;
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+  animation:none!important;
+}
+
+.arise-flow-stage::after{
+  z-index:1!important;
+  inset:8% 12% 4%!important;
+  opacity:.52!important;
+  background:
+    radial-gradient(ellipse at 50% 35%,rgba(170,205,207,.035),transparent 48%),
+    radial-gradient(ellipse at 50% 88%,rgba(220,185,111,.05),transparent 45%)!important;
+  filter:blur(11px)!important;
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+  animation:none!important;
+}
+
+.arise-flow-canvas{
+  --arise-flow-texture:url("./assets/arise-flow-organic-v3.webp");
+  position:absolute;
+  z-index:2;
+  top:-6px;
+  left:-2px;
+  width:calc(100% + 4px);
+  height:calc(100% + 6px);
+  display:block;
+  pointer-events:none;
+  contain:paint;
+  background:var(--arise-flow-texture) center / auto 100% no-repeat;
+  opacity:.82;
+  mix-blend-mode:screen;
+  filter:none;
+  transform:translateZ(0);
+}
+
+.arise-flow-canvas.is-running{
+  background-image:none!important;
+}
+
+.arise-flow-svg,
+.arise-flow-source{
+  display:none!important;
+}
+
+.arise-flow-node::before{
+  content:none!important;
+  display:none!important;
+}
+
+.arise-flow-node.left{
+  padding-right:4px!important;
+}
+
+.arise-flow-node.right{
+  padding-left:4px!important;
+}
+
+@media(max-width:520px){
+  .arise-flow-canvas{
+    top:-4px;
+    left:-12px;
+    width:calc(100% + 24px);
+    height:calc(100% + 4px);
+    opacity:.84;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .arise-flow-canvas{
+    transform:none!important;
+  }
+}
