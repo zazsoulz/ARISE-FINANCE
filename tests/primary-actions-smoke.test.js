@@ -60,6 +60,25 @@ test('home quick income and expense actions open the real transaction sheets',()
   dom.window.close();
 });
 
+test('home financial-flow nodes and CTA all route to live destination screens',()=>{
+  const cases=[
+    ['.arise-flow-node.fixed','income','.arise-v3-distribution'],
+    ['.arise-flow-node.categories','income','.arise-v3-distribution'],
+    ['.arise-flow-node.reserve','settings','#settingsProfileName'],
+    ['.arise-flow-node.goals','goals','.arise-v3-goals'],
+    ['#homeIncome','income','.arise-v3-distribution']
+  ];
+  for(const [selector,expectedPage,expectedSurface] of cases){
+    const {dom,ctx,document}=boot();
+    const action=document.querySelector(selector);
+    assert.ok(action,`${selector} is missing from the home financial flow`);
+    action.click();
+    assert.equal(run(ctx,'activePage','read-home-flow-active-page.js'),expectedPage,`${selector} routed to the wrong page`);
+    assert.ok(document.querySelector(expectedSurface),`${selector} did not render ${expectedSurface}`);
+    dom.window.close();
+  }
+});
+
 test('history primary income and expense actions remain live after product UI decoration',()=>{
   const {dom,ctx,document}=boot();
   run(ctx,`activePage='history'; render();`,'history.js');
