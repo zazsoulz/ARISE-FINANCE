@@ -43,9 +43,9 @@
   const HOME_FLOW_LANDING_STREAMS=32;
   const HOME_FLOW_POOL_RINGS=28;
   const HOME_FLOW_POOL_SPIRALS=44;
-  const HOME_FLOW_BODY_PARTICLES=5200;
-  const HOME_FLOW_LANDING_PARTICLES=800;
-  const HOME_FLOW_POOL_PARTICLES=2000;
+  const HOME_FLOW_BODY_PARTICLES=3600;
+  const HOME_FLOW_LANDING_PARTICLES=600;
+  const HOME_FLOW_POOL_PARTICLES=1400;
 
   function createHomeFlowRandom(seed=0x41a1f10){
     let state=seed>>>0;
@@ -156,7 +156,7 @@
     "  float progress=aFlow.x;",
     "  vec3 center=flowPosition(progress);",
     "  vec2 normal;",
-    "  if(aStyle.w<0.5&&aStyle.y<0.006){",
+    "  if(aStyle.w<0.5){",
     "    normal=vec2(1.0,0.0);",
     "  }else if(aStyle.w<2.5){",
     "    vec2 radialPx=normalize(vec2((center.x-0.5)*uCanvasAspect,center.y-0.906)+vec2(0.00001));",
@@ -240,22 +240,17 @@
     "  if(uMaterialPass<0.5){",
     "    float surfacePulse=0.83+0.17*sin(vProgress*(14.0+vSeed*4.0)-uTime*(0.68+vSeed*0.16)+vSeed*17.0);",
     "    float surfaceCore=vKind<0.5?mix(1.46,1.0,smoothstep(0.02,0.32,abs(vLane))):1.0;",
-    "    alpha=vAlpha*(0.39+interior*1.08)*surfacePulse*surfaceCore*depthLight*coreRelief*life*regionGain*uOpacity;",
-    "    color*=0.84+0.25*interior;",
-    "  }else if(uMaterialPass<1.5){",
     "    float caustic=0.70+0.30*pow(0.5+0.5*sin(vProgress*(33.0+vSeed*13.0)-uTime*(0.64+vSeed*0.24)+vSeed*29.0),3.0);",
     "    float rimRegion=vKind<0.5?1.0:(vKind<2.5?0.76:0.54);",
     "    float bandCenter=sin(vProgress*(5.2+vSeed*2.6)-uTime*(0.78+vSeed*0.18)+vSeed*19.0)*0.38;",
     "    float foldBand=1.0-smoothstep(0.045,0.17,abs(vEdge-bandCenter));",
-    "    alpha=vAlpha*(rim*1.05*rimRegion+foldBand*0.28+interior*0.10)*caustic*depthLight*coreRelief*life*regionGain*uOpacity;",
-    "    color*=1.12+rim*0.28;",
-    "  }else if(uMaterialPass<2.5){",
+    "    float surface=(0.36+interior*0.98)*surfacePulse*surfaceCore;",
+    "    float edgeLight=(rim*0.78*rimRegion+foldBand*0.22)*caustic;",
+    "    alpha=vAlpha*(surface+edgeLight)*depthLight*coreRelief*life*regionGain*uOpacity;",
+    "    color*=0.86+interior*0.20+rim*0.24+foldBand*0.08;",
+    "  }else{",
     "    alpha=vAlpha*filament*packet*micro*depthLight*coreRelief*life*regionGain*uOpacity;",
     "    color*=0.83+packet*0.28;",
-    "  }else{",
-    "    float halo=pow(max(0.0,1.0-absEdge),0.72);",
-    "    alpha=vAlpha*halo*(0.42+0.18*packet)*depthLight*coreRelief*life*regionGain*uOpacity;",
-    "    color*=0.62+0.16*packet;",
     "  }",
     "  gl_FragColor=vec4(color,alpha);",
     "}"
@@ -568,23 +563,14 @@
       gl.uniform1f(ribbonUniforms.time,time);
       gl.uniform1f(ribbonUniforms.canvasAspect,width/height);
       bindHomeFlowAttributes(gl,ribbonProgram,veilBuffer,"aFlow","aStyle");
-      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
-      gl.uniform1f(ribbonUniforms.materialPass,3);
-      gl.uniform1f(ribbonUniforms.widthScale,1.56);
-      gl.uniform1f(ribbonUniforms.opacity,.32);
-      gl.drawArrays(gl.TRIANGLES,0,veilData.length/8);
       gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
       gl.uniform1f(ribbonUniforms.materialPass,0);
-      gl.uniform1f(ribbonUniforms.widthScale,1.12);
-      gl.uniform1f(ribbonUniforms.opacity,.96);
+      gl.uniform1f(ribbonUniforms.widthScale,1.18);
+      gl.uniform1f(ribbonUniforms.opacity,1);
       gl.drawArrays(gl.TRIANGLES,0,veilData.length/8);
       gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
-      gl.uniform1f(ribbonUniforms.materialPass,1);
-      gl.uniform1f(ribbonUniforms.widthScale,1.12);
-      gl.uniform1f(ribbonUniforms.opacity,.70);
-      gl.drawArrays(gl.TRIANGLES,0,veilData.length/8);
       bindHomeFlowAttributes(gl,ribbonProgram,detailBuffer,"aFlow","aStyle");
-      gl.uniform1f(ribbonUniforms.materialPass,2);
+      gl.uniform1f(ribbonUniforms.materialPass,1);
       gl.uniform1f(ribbonUniforms.widthScale,1);
       gl.uniform1f(ribbonUniforms.opacity,.34);
       gl.drawArrays(gl.TRIANGLES,0,detailData.length/8);

@@ -18,7 +18,9 @@ test("home uses a continuous material flow without route rails",()=>{
   assert.match(v3Source,/const HOME_FLOW_LANDING_STREAMS=32/);
   assert.match(v3Source,/const HOME_FLOW_POOL_RINGS=28/);
   assert.match(v3Source,/const HOME_FLOW_POOL_SPIRALS=44/);
-  assert.match(v3Source,/const HOME_FLOW_LANDING_PARTICLES=800/);
+  assert.match(v3Source,/const HOME_FLOW_BODY_PARTICLES=3600/);
+  assert.match(v3Source,/const HOME_FLOW_LANDING_PARTICLES=600/);
+  assert.match(v3Source,/const HOME_FLOW_POOL_PARTICLES=1400/);
   assert.match(v3Source,/function createHomeFlowRibbonGeometry\(\)/);
   assert.match(v3Source,/function createHomeFlowParticleGeometry\(\)/);
   assert.match(v3Source,/function startProcedural3DHomeFlow\(canvas,reducedMotion\)/);

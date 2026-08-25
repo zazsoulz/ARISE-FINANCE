@@ -32,7 +32,9 @@ test('standalone GPU ribbon field owns home motion',()=>{
   assert.match(source,/const HOME_FLOW_LANDING_STREAMS=32/);
   assert.match(source,/const HOME_FLOW_POOL_RINGS=28/);
   assert.match(source,/const HOME_FLOW_POOL_SPIRALS=44/);
-  assert.match(source,/const HOME_FLOW_LANDING_PARTICLES=800/);
+  assert.match(source,/const HOME_FLOW_BODY_PARTICLES=3600/);
+  assert.match(source,/const HOME_FLOW_LANDING_PARTICLES=600/);
+  assert.match(source,/const HOME_FLOW_POOL_PARTICLES=1400/);
   assert.match(source,/function createHomeFlowRibbonGeometry\(\)/);
   assert.match(source,/function createHomeFlowParticleGeometry\(\)/);
   assert.match(source,/function startProcedural3DHomeFlow\(canvas,reducedMotion\)/);
