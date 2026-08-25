@@ -38,11 +38,11 @@
     return `<circle class="arise-flow-particle ${tone}" r="${radius}"><animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto"><mpath href="#${path}"/></animateMotion></circle>`;
   }
 
-  const HOME_FLOW_BODY_SHEETS=32;
-  const HOME_FLOW_BODY_FILAMENTS=100;
-  const HOME_FLOW_LANDING_STREAMS=28;
-  const HOME_FLOW_POOL_RINGS=34;
-  const HOME_FLOW_POOL_SPIRALS=34;
+  const HOME_FLOW_BODY_SHEETS=56;
+  const HOME_FLOW_BODY_FILAMENTS=64;
+  const HOME_FLOW_LANDING_STREAMS=32;
+  const HOME_FLOW_POOL_RINGS=28;
+  const HOME_FLOW_POOL_SPIRALS=44;
   const HOME_FLOW_BODY_PARTICLES=5200;
   const HOME_FLOW_LANDING_PARTICLES=800;
   const HOME_FLOW_POOL_PARTICLES=2000;
@@ -86,28 +86,28 @@
     "  float family=floor(seed*5.0);",
     "  float familyPhase=family*(TAU/5.0);",
     "  float sourceGate=smoothstep(0.0,0.082,t);",
-    "  float landingGate=1.0-0.91*smoothstep(0.875,1.0,t);",
-    "  float shoulder=flowBell(t,0.23,0.17)*0.106;",
-    "  float middle=flowBell(t,0.51,0.275)*0.190;",
-    "  float weight=flowBell(t,0.735,0.205)*0.155;",
-    "  float envelope=(shoulder+middle+weight)*sourceGate*landingGate+0.0045;",
-    "  float centerline=(-flowBell(t,0.19,0.13)*0.025+flowBell(t,0.48,0.19)*0.033-flowBell(t,0.76,0.14)*0.021)*sin(PI*t);",
-    "  centerline+=(sin(t*4.7-uTime*0.18)+0.42*sin(t*9.2+uTime*0.11+1.7))*0.0075*sin(PI*t);",
-    "  float spin=t*(4.35+family*0.09)-uTime*(0.12+family*0.012+depth*0.012)+familyPhase+depth*0.42;",
-    "  spin+=sin(t*5.4-uTime*0.16+familyPhase)*0.24;",
-    "  float breathing=0.83+0.17*sin(t*10.8-uTime*(0.28+seed*0.13)+familyPhase);",
-    "  float radial=lane*envelope*breathing;",
-    "  float depthRadius=depth*envelope*0.43;",
-    "  float eddyUpper=flowBell(t,0.34,0.15)*sin((t-0.34)*8.8-uTime*0.52+familyPhase)*envelope*0.33;",
-    "  float eddyLower=flowBell(t,0.68,0.19)*sin((t-0.68)*7.1-uTime*0.39+familyPhase*1.37)*envelope*0.27;",
-    "  float crossX=radial*cos(spin)+depthRadius*sin(spin);",
-    "  crossX+=(eddyUpper+eddyLower)*(0.28+0.72*abs(lane));",
-    "  crossX+=flowBell(t,0.57,0.23)*envelope*0.08*sin(familyPhase*1.7+depth*2.4);",
-    "  float crossZ=radial*sin(spin)*0.78-depthRadius*cos(spin);",
-    "  crossZ+=eddyUpper*0.47*sin(familyPhase+1.2)-eddyLower*0.34;",
-    "  float x=0.5+centerline+crossX+crossZ*0.038;",
-    "  float y=0.026+t*0.838+sin(t*17.0-uTime*(0.48+seed*0.16)+familyPhase)*envelope*0.010*(0.35+abs(lane));",
-    "  y+=(eddyUpper*sin(familyPhase+0.8)-eddyLower*cos(familyPhase*1.2))*0.62*(0.25+0.75*abs(lane));",
+    "  float landingGate=1.0-0.76*smoothstep(0.865,1.0,t);",
+    "  float shoulder=flowBell(t,0.245,0.205)*0.125;",
+    "  float middle=flowBell(t,0.49,0.275)*0.184;",
+    "  float lower=flowBell(t,0.72,0.225)*0.178;",
+    "  float envelope=(shoulder+middle+lower)*sourceGate*landingGate+0.0038;",
+    "  float centerline=(-flowBell(t,0.22,0.16)*0.018+flowBell(t,0.49,0.21)*0.027-flowBell(t,0.73,0.17)*0.018)*sin(PI*t);",
+    "  centerline+=(sin(t*3.7-uTime*0.13)+0.34*sin(t*7.2+uTime*0.08+1.7))*0.0065*sin(PI*t);",
+    "  float laneAbs=abs(lane);",
+    "  float side=sign(lane+0.0001);",
+    "  float phase=t*(6.05+family*0.16)+lane*1.34+familyPhase*0.22-uTime*(0.22+family*0.012+seed*0.035);",
+    "  float fold=sin(phase)+0.36*sin(phase*1.87+familyPhase*0.42+depth*0.7);",
+    "  float sideGain=side<0.0?0.88+0.25*flowBell(t,0.60,0.30):0.86+0.20*flowBell(t,0.43,0.22)+0.20*flowBell(t,0.74,0.19);",
+    "  float crossX=lane*envelope*(0.61+0.35*laneAbs)*sideGain;",
+    "  crossX+=envelope*fold*(0.14+0.18*laneAbs);",
+    "  crossX+=envelope*(0.07+0.12*(1.0-laneAbs))*sin(t*PI*2.2+familyPhase*0.72-uTime*0.30)*sin(PI*t);",
+    "  crossX+=side*flowBell(t,0.34,0.19)*envelope*0.085*sin(familyPhase*0.52+1.1);",
+    "  crossX+=flowBell(t,0.69,0.22)*envelope*(0.08+0.12*laneAbs)*sin(t*7.0+familyPhase*0.31-uTime*0.18+lane);",
+    "  crossX+=depth*envelope*0.055*sin(t*5.3+familyPhase*0.18+1.4);",
+    "  float crossZ=depth*envelope*0.42+envelope*(0.055+0.085*laneAbs)*sin(phase*0.83+depth*1.7);",
+    "  float x=0.5+centerline+crossX+crossZ*0.032;",
+    "  float verticalFold=sin(t*5.45+familyPhase*0.26+lane*1.8-uTime*0.15)+0.32*sin(t*10.1+seed*8.0+uTime*0.09);",
+    "  float y=0.026+t*0.838+verticalFold*envelope*(0.018+0.026*laneAbs);",
     "  float z=crossZ;",
     "  return vec3(x,y,z);",
     "}",
@@ -139,7 +139,8 @@
     "    angle=progress*TAU*(1.35+seed*0.92)+seed*TAU-uTime*(angularSpeed+0.017);",
     "    radius=0.016+pow(progress,0.82)*radiusSeed*0.455;",
     "  }",
-    "  radius+=sin(angle*3.0-uTime*0.38+seed*11.0)*0.0038*(0.25+radiusSeed*0.75);",
+    "  radius+=sin(angle*3.0-uTime*0.38+seed*11.0)*0.0062*(0.25+radiusSeed*0.75);",
+    "  radius+=sin(angle*2.0+uTime*0.14+seed*7.0)*0.0085*radiusSeed;",
     "  float x=0.5+cos(angle)*radius;",
     "  float y=0.906+sin(angle)*radius*0.118+sin(angle*5.0+uTime*0.25+seed*6.0)*0.0015;",
     "  float z=depth*0.024+sin(angle*2.0+seed*4.0)*0.006;",
@@ -155,7 +156,7 @@
     "  float progress=aFlow.x;",
     "  vec3 center=flowPosition(progress);",
     "  vec2 normal;",
-    "  if(aStyle.w<0.5){",
+    "  if(aStyle.w<0.5&&aStyle.y<0.006){",
     "    normal=vec2(1.0,0.0);",
     "  }else if(aStyle.w<2.5){",
     "    vec2 radialPx=normalize(vec2((center.x-0.5)*uCanvasAspect,center.y-0.906)+vec2(0.00001));",
@@ -166,8 +167,19 @@
     "    vec2 tangentPx=normalize(vec2((after.x-before.x)*uCanvasAspect,after.y-before.y)+vec2(0.00001));",
     "    normal=vec2(-tangentPx.y/uCanvasAspect,tangentPx.x);",
     "  }",
+    "  float widthProfile=1.0;",
+    "  if(aStyle.w<0.5){",
+    "    float sourceTaper=0.16+0.84*smoothstep(0.0,0.12,progress);",
+    "    float lowerTaper=1.0-0.58*smoothstep(0.84,1.0,progress);",
+    "    float foldBreath=0.88+0.12*sin(progress*8.4-uTime*(0.18+aFlow.w*0.08)+aFlow.w*17.0);",
+    "    widthProfile=sourceTaper*lowerTaper*foldBreath;",
+    "  }else if(aStyle.w<2.5){",
+    "    widthProfile=0.82+0.18*sin(progress*TAU*2.0-uTime*0.16+aFlow.w*19.0);",
+    "  }else{",
+    "    widthProfile=(0.28+0.72*smoothstep(0.0,0.13,progress))*(1.0-0.24*smoothstep(0.9,1.0,progress));",
+    "  }",
     "  float perspective=clamp(1.0+center.z*1.8,0.72,1.24);",
-    "  center.xy+=normal*aFlow.y*aStyle.y*uWidthScale*perspective;",
+    "  center.xy+=normal*aFlow.y*aStyle.y*uWidthScale*perspective*widthProfile;",
     "  gl_Position=vec4(center.x*2.0-1.0,1.0-center.y*2.0,center.z,1.0);",
     "  vEdge=aFlow.y;",
     "  vProgress=progress;",
@@ -189,6 +201,7 @@
     "#endif",
     "uniform float uTime;",
     "uniform float uOpacity;",
+    "uniform float uMaterialPass;",
     "varying float vEdge;",
     "varying float vProgress;",
     "varying float vSeed;",
@@ -199,27 +212,51 @@
     "varying float vDepth;",
     "varying float vLane;",
     "void main(){",
-    "  float sheet=smoothstep(0.004,0.012,vWidth);",
-    "  float edge=pow(max(0.0,1.0-abs(vEdge)),mix(2.35,0.72,sheet));",
+    "  float absEdge=abs(vEdge);",
+    "  float interior=1.0-smoothstep(0.68,1.0,absEdge);",
+    "  float rim=smoothstep(0.46,0.74,absEdge)*(1.0-smoothstep(0.84,1.0,absEdge));",
+    "  float filament=pow(max(0.0,1.0-absEdge),1.45);",
     "  float bodyPacket=0.54+0.46*pow(0.5+0.5*sin(vProgress*(74.0+vSeed*38.0)-uTime*(1.55+vSeed*1.35+abs(vDepth)*0.32)+vSeed*31.0),5.0);",
     "  float poolPacket=0.61+0.39*pow(0.5+0.5*sin(vProgress*(56.0+vSeed*29.0)-uTime*(0.82+vSeed*0.68)+vSeed*27.0),5.0);",
     "  float landingPacket=0.58+0.42*pow(0.5+0.5*sin(vProgress*(65.0+vSeed*22.0)-uTime*(1.12+vSeed*0.54)+vSeed*21.0),4.0);",
     "  float packet=vKind<0.5?bodyPacket:(vKind<2.5?poolPacket:landingPacket);",
-    "  float micro=0.78+0.22*sin(vProgress*(188.0+vSeed*91.0)-uTime*(2.0+vSeed*1.65)+vSeed*53.0);",
-    "  float bodyStart=0.008+fract(vSeed*17.31)*0.048;",
-    "  float bodyEnd=0.91+fract(vSeed*31.73)*0.085;",
-    "  float bodyLife=smoothstep(bodyStart,bodyStart+0.035,vProgress)*(1.0-smoothstep(bodyEnd-0.04,bodyEnd,vProgress));",
+    "  float micro=0.88+0.12*sin(vProgress*(132.0+vSeed*57.0)-uTime*(1.42+vSeed*0.86)+vSeed*53.0);",
+    "  float bodyStart=0.002+fract(vSeed*17.31)*0.020;",
+    "  float bodyEnd=0.965+fract(vSeed*31.73)*0.032;",
+    "  float bodyLife=smoothstep(bodyStart,bodyStart+0.024,vProgress)*(1.0-smoothstep(bodyEnd-0.028,bodyEnd,vProgress));",
     "  float landingLife=smoothstep(0.0,0.055,vProgress)*(1.0-smoothstep(0.94,1.0,vProgress));",
-    "  float life=vKind<0.5?bodyLife:(vKind>2.5?landingLife:1.0);",
-    "  vec3 cool=vec3(0.22,0.71,0.80);",
-    "  vec3 neutral=vec3(0.78,0.82,0.77);",
-    "  vec3 warm=vec3(1.0,0.68,0.25);",
+    "  float spiralLife=smoothstep(0.0,0.035,vProgress)*(1.0-smoothstep(0.94,1.0,vProgress));",
+    "  float poolLife=vKind<1.5?1.0:spiralLife;",
+    "  float life=vKind<0.5?bodyLife:(vKind>2.5?landingLife:poolLife);",
+    "  vec3 cool=vec3(0.46,0.78,0.86);",
+    "  vec3 neutral=vec3(0.94,0.92,0.84);",
+    "  vec3 warm=vec3(1.0,0.75,0.35);",
     "  vec3 color=vTone<0.5?mix(neutral,cool,min(1.0,(0.5-vTone)*2.15)):mix(neutral,warm,min(1.0,(vTone-0.5)*2.15));",
-    "  float depthLight=clamp(0.68+vDepth*2.35,0.38,1.08);",
-    "  float coreRelief=mix(0.73+0.27*smoothstep(0.08,0.72,abs(vLane)),1.0,step(0.5,vKind));",
-    "  float regionGain=vKind<0.5?1.0:(vKind<2.5?1.42:1.18);",
-    "  float alpha=vAlpha*edge*mix(packet,0.78+packet*0.22,sheet)*mix(micro,1.0,sheet)*depthLight*coreRelief*life*regionGain*uOpacity;",
-    "  color*=mix(1.06,0.94,sheet)*(0.79+packet*0.23);",
+    "  color*=mix(1.0,1.13,vTone);",
+    "  float depthLight=clamp(0.76+vDepth*1.70,0.55,1.12);",
+    "  float coreRelief=mix(mix(1.16,0.84,smoothstep(0.04,0.78,abs(vLane))),1.0,step(0.5,vKind));",
+    "  float regionGain=vKind<0.5?1.12:(vKind<2.5?1.58:1.30);",
+    "  float alpha;",
+    "  if(uMaterialPass<0.5){",
+    "    float surfacePulse=0.83+0.17*sin(vProgress*(14.0+vSeed*4.0)-uTime*(0.68+vSeed*0.16)+vSeed*17.0);",
+    "    float surfaceCore=vKind<0.5?mix(1.46,1.0,smoothstep(0.02,0.32,abs(vLane))):1.0;",
+    "    alpha=vAlpha*(0.39+interior*1.08)*surfacePulse*surfaceCore*depthLight*coreRelief*life*regionGain*uOpacity;",
+    "    color*=0.84+0.25*interior;",
+    "  }else if(uMaterialPass<1.5){",
+    "    float caustic=0.70+0.30*pow(0.5+0.5*sin(vProgress*(33.0+vSeed*13.0)-uTime*(0.64+vSeed*0.24)+vSeed*29.0),3.0);",
+    "    float rimRegion=vKind<0.5?1.0:(vKind<2.5?0.76:0.54);",
+    "    float bandCenter=sin(vProgress*(5.2+vSeed*2.6)-uTime*(0.78+vSeed*0.18)+vSeed*19.0)*0.38;",
+    "    float foldBand=1.0-smoothstep(0.045,0.17,abs(vEdge-bandCenter));",
+    "    alpha=vAlpha*(rim*1.05*rimRegion+foldBand*0.28+interior*0.10)*caustic*depthLight*coreRelief*life*regionGain*uOpacity;",
+    "    color*=1.12+rim*0.28;",
+    "  }else if(uMaterialPass<2.5){",
+    "    alpha=vAlpha*filament*packet*micro*depthLight*coreRelief*life*regionGain*uOpacity;",
+    "    color*=0.83+packet*0.28;",
+    "  }else{",
+    "    float halo=pow(max(0.0,1.0-absEdge),0.72);",
+    "    alpha=vAlpha*halo*(0.42+0.18*packet)*depthLight*coreRelief*life*regionGain*uOpacity;",
+    "    color*=0.62+0.16*packet;",
+    "  }",
     "  gl_FragColor=vec4(color,alpha);",
     "}"
   ].join("\n");
@@ -248,28 +285,28 @@
     "  float family=floor(seed*5.0);",
     "  float familyPhase=family*(TAU/5.0);",
     "  float sourceGate=smoothstep(0.0,0.082,t);",
-    "  float landingGate=1.0-0.91*smoothstep(0.875,1.0,t);",
-    "  float shoulder=flowBell(t,0.23,0.17)*0.106;",
-    "  float middle=flowBell(t,0.51,0.275)*0.190;",
-    "  float weight=flowBell(t,0.735,0.205)*0.155;",
-    "  float envelope=(shoulder+middle+weight)*sourceGate*landingGate+0.0045;",
-    "  float centerline=(-flowBell(t,0.19,0.13)*0.025+flowBell(t,0.48,0.19)*0.033-flowBell(t,0.76,0.14)*0.021)*sin(PI*t);",
-    "  centerline+=(sin(t*4.7-uTime*0.18)+0.42*sin(t*9.2+uTime*0.11+1.7))*0.0075*sin(PI*t);",
-    "  float spin=t*(4.35+family*0.09)-uTime*(0.12+family*0.012+depth*0.012)+familyPhase+depth*0.42;",
-    "  spin+=sin(t*5.4-uTime*0.16+familyPhase)*0.24;",
-    "  float breathing=0.83+0.17*sin(t*10.8-uTime*(0.28+seed*0.13)+familyPhase);",
-    "  float radial=lane*envelope*breathing;",
-    "  float depthRadius=depth*envelope*0.43;",
-    "  float eddyUpper=flowBell(t,0.34,0.15)*sin((t-0.34)*8.8-uTime*0.52+familyPhase)*envelope*0.33;",
-    "  float eddyLower=flowBell(t,0.68,0.19)*sin((t-0.68)*7.1-uTime*0.39+familyPhase*1.37)*envelope*0.27;",
-    "  float crossX=radial*cos(spin)+depthRadius*sin(spin);",
-    "  crossX+=(eddyUpper+eddyLower)*(0.28+0.72*abs(lane));",
-    "  crossX+=flowBell(t,0.57,0.23)*envelope*0.08*sin(familyPhase*1.7+depth*2.4);",
-    "  float crossZ=radial*sin(spin)*0.78-depthRadius*cos(spin);",
-    "  crossZ+=eddyUpper*0.47*sin(familyPhase+1.2)-eddyLower*0.34;",
-    "  float x=0.5+centerline+crossX+crossZ*0.038;",
-    "  float y=0.026+t*0.838+sin(t*17.0-uTime*(0.48+seed*0.16)+familyPhase)*envelope*0.010*(0.35+abs(lane));",
-    "  y+=(eddyUpper*sin(familyPhase+0.8)-eddyLower*cos(familyPhase*1.2))*0.62*(0.25+0.75*abs(lane));",
+    "  float landingGate=1.0-0.76*smoothstep(0.865,1.0,t);",
+    "  float shoulder=flowBell(t,0.245,0.205)*0.125;",
+    "  float middle=flowBell(t,0.49,0.275)*0.184;",
+    "  float lower=flowBell(t,0.72,0.225)*0.178;",
+    "  float envelope=(shoulder+middle+lower)*sourceGate*landingGate+0.0038;",
+    "  float centerline=(-flowBell(t,0.22,0.16)*0.018+flowBell(t,0.49,0.21)*0.027-flowBell(t,0.73,0.17)*0.018)*sin(PI*t);",
+    "  centerline+=(sin(t*3.7-uTime*0.13)+0.34*sin(t*7.2+uTime*0.08+1.7))*0.0065*sin(PI*t);",
+    "  float laneAbs=abs(lane);",
+    "  float side=sign(lane+0.0001);",
+    "  float phase=t*(6.05+family*0.16)+lane*1.34+familyPhase*0.22-uTime*(0.22+family*0.012+seed*0.035);",
+    "  float fold=sin(phase)+0.36*sin(phase*1.87+familyPhase*0.42+depth*0.7);",
+    "  float sideGain=side<0.0?0.88+0.25*flowBell(t,0.60,0.30):0.86+0.20*flowBell(t,0.43,0.22)+0.20*flowBell(t,0.74,0.19);",
+    "  float crossX=lane*envelope*(0.61+0.35*laneAbs)*sideGain;",
+    "  crossX+=envelope*fold*(0.14+0.18*laneAbs);",
+    "  crossX+=envelope*(0.07+0.12*(1.0-laneAbs))*sin(t*PI*2.2+familyPhase*0.72-uTime*0.30)*sin(PI*t);",
+    "  crossX+=side*flowBell(t,0.34,0.19)*envelope*0.085*sin(familyPhase*0.52+1.1);",
+    "  crossX+=flowBell(t,0.69,0.22)*envelope*(0.08+0.12*laneAbs)*sin(t*7.0+familyPhase*0.31-uTime*0.18+lane);",
+    "  crossX+=depth*envelope*0.055*sin(t*5.3+familyPhase*0.18+1.4);",
+    "  float crossZ=depth*envelope*0.42+envelope*(0.055+0.085*laneAbs)*sin(phase*0.83+depth*1.7);",
+    "  float x=0.5+centerline+crossX+crossZ*0.032;",
+    "  float verticalFold=sin(t*5.45+familyPhase*0.26+lane*1.8-uTime*0.15)+0.32*sin(t*10.1+seed*8.0+uTime*0.09);",
+    "  float y=0.026+t*0.838+verticalFold*envelope*(0.018+0.026*laneAbs);",
     "  float z=crossZ;",
     "  return vec3(x,y,z);",
     "}",
@@ -301,17 +338,20 @@
     "  }else if(kind<2.5){",
     "    float angle=aParticle.x*TAU+aParticle.w*TAU+uTime*(0.046+aParticle.w*0.051);",
     "    float radius=0.024+aParticle.y*0.455;",
-    "    radius+=sin(angle*3.0-uTime*0.38+aParticle.w*11.0)*0.0038*(0.25+aParticle.y*0.75);",
+    "    radius+=sin(angle*3.0-uTime*0.38+aParticle.w*11.0)*0.0062*(0.25+aParticle.y*0.75);",
+    "    radius+=sin(angle*2.0+uTime*0.14+aParticle.w*7.0)*0.0085*aParticle.y;",
     "    position=vec3(0.5+cos(angle)*radius,0.906+sin(angle)*radius*0.118,aParticle.z*0.022);",
-    "  }else{",
+    "  }else if(kind<3.5){",
     "    float progress=fract(aParticle.x+uTime*(0.025+aParticle.w*0.026));",
     "    position=landingPosition(progress,aParticle.y,aParticle.z,aParticle.w);",
+    "  }else{",
+    "    position=vec3(0.5+sin(uTime*0.17)*0.006,0.878+sin(uTime*0.13+1.4)*0.002,0.07);",
     "  }",
     "  gl_Position=vec4(position.x*2.0-1.0,1.0-position.y*2.0,position.z,1.0);",
     "  gl_PointSize=aParticleStyle.x*uPixelRatio*(kind>0.5&&kind<1.5?1.0:clamp(1.0+position.z*4.0,0.72,1.32));",
     "  vTone=clamp(smoothstep(0.385,0.615,position.x+sin(aParticle.w*31.0+aParticle.z*3.0)*0.021)+(aParticle.w-0.5)*0.08,0.0,1.0);",
     "  vAlpha=aParticleStyle.y;",
-    "  vSource=step(0.5,kind)*(1.0-step(1.5,kind));",
+    "  vSource=kind>3.5?2.0:step(0.5,kind)*(1.0-step(1.5,kind));",
     "}"
   ].join("\n");
 
@@ -328,9 +368,9 @@
     "  vec3 warm=vec3(1.0,0.69,0.25);",
     "  vec3 color=vTone<0.5?mix(neutral,cool,(0.5-vTone)*2.0):mix(neutral,warm,(vTone-0.5)*2.0);",
     "  if(vSource>0.5){",
-    "    float core=1.0-smoothstep(0.0,0.18,radius);",
-    "    color=mix(vec3(0.94,0.61,0.22),vec3(0.93,0.91,0.79),core);",
-    "    soft=pow(soft,1.3);",
+    "    float core=1.0-smoothstep(vSource>1.5?0.0:0.08,vSource>1.5?0.16:0.25,radius);",
+    "    color=vSource>1.5?mix(vec3(0.48,0.69,0.68),vec3(0.96,0.78,0.45),0.5+0.5*gl_PointCoord.x):mix(vec3(0.94,0.61,0.22),vec3(0.96,0.94,0.86),core);",
+    "    soft=max(pow(soft,vSource>1.5?1.65:0.82),core);",
     "  }",
     "  gl_FragColor=vec4(color,vAlpha*soft);",
     "}"
@@ -372,39 +412,57 @@
 
   function createHomeFlowRibbonGeometry(){
     const random=createHomeFlowRandom();
-    const vertices=[];
+    const veils=[];
+    const details=[];
+    let veilRibbons=0;
+    let detailRibbons=0;
+    const addVeil=(segments,lane,seed,depth,width,alpha,kind)=>{
+      appendHomeFlowRibbon(veils,segments,lane,seed,depth,width,alpha,kind);
+      veilRibbons+=1;
+    };
+    const addDetail=(segments,lane,seed,depth,width,alpha,kind)=>{
+      appendHomeFlowRibbon(details,segments,lane,seed,depth,width,alpha,kind);
+      detailRibbons+=1;
+    };
     for(let index=0;index<HOME_FLOW_BODY_SHEETS;index+=1){
-      const raw=random()*2-1;
-      const hero=index<12;
-      const core=index>=12&&index<20;
-      const lane=core?raw*.18:Math.sign(raw||1)*Math.pow(Math.abs(raw),hero?.56:.67);
-      const width=hero?.024+random()*.032:(core?.010+random()*.014:.0065+random()*.0135);
-      const alpha=hero?.27+random()*.16:(core?.28+random()*.13:.12+random()*.085);
-      appendHomeFlowRibbon(vertices,56,lane,random(),random()*2-1,width,alpha,0);
+      const hero=index<28;
+      const core=index>=28&&index<44;
+      const pair=hero?Math.floor(index/2):Math.floor((index-44)/2);
+      const side=index%2===0?-1:1;
+      const lane=hero?side*(.18+pair/13*.75):(core?((index-28)/15*2-1)*.18:side*(.28+pair/5*.55));
+      const inner=core&&Math.abs(lane)<.08;
+      const seed=(index*.61803398875+.071)%1;
+      const depth=core?Math.sin(index*2.17)*.24:Math.sin(index*2.39996323)*.88;
+      const width=hero?.028+(pair%5)*.0048:(inner?.024+((index-28)%3)*.0045:(core?.016+((index-28)%4)*.0038:.020+(pair%4)*.0042));
+      const alpha=hero?.15+(pair%3)*.025:(inner?.29+((index-28)%3)*.025:(core?.20+((index-28)%3)*.028:.15+(pair%3)*.022));
+      addVeil(62,lane,seed,depth,width,alpha,0);
     }
     for(let index=0;index<HOME_FLOW_BODY_FILAMENTS;index+=1){
-      const core=index<18;
+      const core=index<20;
       const raw=random()*2-1;
       const lane=core?raw*.18:Math.sign(raw||1)*Math.pow(Math.abs(raw),.73);
       const depth=core?(random()*2-1)*.28:random()*2-1;
-      appendHomeFlowRibbon(vertices,56,lane,random(),depth,core?.0011+random()*.0026:.0007+random()*.0017,core?.38+random()*.22:.42+random()*.30,0);
+      addDetail(58,lane,random(),depth,core?.0009+random()*.0018:.0005+random()*.00125,core?.30+random()*.18:.23+random()*.18,0);
     }
     for(let index=0;index<HOME_FLOW_LANDING_STREAMS;index+=1){
-      const core=index<8;
-      const broad=!core&&index%11===0;
-      const reach=core?random()*.16:.14+Math.pow(random(),.72)*.86;
-      appendHomeFlowRibbon(vertices,62,reach,random(),random()*2-1,core?.004+random()*.009:(broad?.021+random()*.028:.0007+random()*.0017),core?.46+random()*.22:(broad?.32+random()*.18:.44+random()*.31),3);
+      const core=index<14;
+      const broad=!core&&index%6===0;
+      const reach=core?.015+index/13*.13:.14+Math.pow(random(),.72)*.86;
+      if(core||broad)addVeil(64,reach,random(),core?(random()*2-1)*.42:random()*2-1,core?.008+random()*.008:.016+random()*.018,core?.31+random()*.11:.20+random()*.08,3);
+      else addDetail(64,reach,random(),random()*2-1,.0006+random()*.0015,.31+random()*.22,3);
     }
     for(let index=0;index<HOME_FLOW_POOL_RINGS;index+=1){
       const radius=(index+1)/(HOME_FLOW_POOL_RINGS+2);
-      const broad=index%9===0;
-      appendHomeFlowRibbon(vertices,64,radius,random(),random()*2-1,broad?.018+random()*.025:.00065+random()*.0018,broad?.31+random()*.18:.42+random()*.32,1);
+      const broad=index%4===0;
+      if(broad)addVeil(68,radius,random(),random()*2-1,.018+random()*.023,.20+random()*.10,1);
+      else addDetail(68,radius,random(),random()*2-1,.00055+random()*.00155,.30+random()*.24,1);
     }
     for(let index=0;index<HOME_FLOW_POOL_SPIRALS;index+=1){
-      const broad=index%11===0;
-      appendHomeFlowRibbon(vertices,72,.42+random()*.58,random(),random()*2-1,broad?.018+random()*.026:.00065+random()*.0018,broad?.31+random()*.18:.41+random()*.32,2);
+      const broad=index%4===0;
+      if(broad)addVeil(76,.42+random()*.58,random(),random()*2-1,.018+random()*.024,.20+random()*.10,2);
+      else addDetail(76,.42+random()*.58,random(),random()*2-1,.00055+random()*.00155,.29+random()*.24,2);
     }
-    return new Float32Array(vertices);
+    return {veilData:new Float32Array(veils),detailData:new Float32Array(details),veilRibbons,detailRibbons};
   }
 
   function createHomeFlowParticleGeometry(){
@@ -413,16 +471,20 @@
     for(let index=0;index<HOME_FLOW_BODY_PARTICLES;index+=1){
       const raw=random()*2-1;
       const lane=Math.sign(raw||1)*Math.pow(Math.abs(raw),.73);
-      particles.push(random(),lane,random()*2-1,random(),.76+random()*1.72,.11+random()*.31,0,0);
+      const sparkle=random()>.925;
+      particles.push(random(),lane,random()*2-1,random(),sparkle?1.25+random()*1.25:.50+random()*.72,sparkle?.18+random()*.18:.035+random()*.075,0,0);
     }
     for(let index=0;index<HOME_FLOW_LANDING_PARTICLES;index+=1){
       const core=index<160;
-      particles.push(random(),core?random()*.18:.10+Math.pow(random(),.72)*.90,random()*2-1,random(),.74+random()*1.58,core?.16+random()*.28:.10+random()*.28,3,0);
+      const sparkle=random()>.91;
+      particles.push(random(),core?random()*.18:.10+Math.pow(random(),.72)*.90,random()*2-1,random(),sparkle?1.25+random()*1.2:.52+random()*.72,sparkle?.19+random()*.18:(core?.055+random()*.09:.04+random()*.08),3,0);
     }
     for(let index=0;index<HOME_FLOW_POOL_PARTICLES;index+=1){
-      particles.push(random(),Math.pow(random(),.62),random()*2-1,random(),.72+random()*1.5,.09+random()*.27,2,0);
+      const sparkle=random()>.92;
+      particles.push(random(),Math.pow(random(),.62),random()*2-1,random(),sparkle?1.2+random()*1.2:.50+random()*.70,sparkle?.18+random()*.17:.038+random()*.078,2,0);
     }
-    particles.push(0,0,0,0,22,.72,1,0);
+    particles.push(0,0,0,0,44,.88,1,0);
+    particles.push(0,0,0,.5,68,.16,4,0);
     return new Float32Array(particles);
   }
 
@@ -452,11 +514,14 @@
     if(!gl)return null;
     const ribbonProgram=createHomeFlowProgram(gl,homeFlowRibbonVertexShader,homeFlowRibbonFragmentShader);
     const particleProgram=createHomeFlowProgram(gl,homeFlowParticleVertexShader,homeFlowParticleFragmentShader);
-    const ribbonData=createHomeFlowRibbonGeometry();
+    const {veilData,detailData,veilRibbons,detailRibbons}=createHomeFlowRibbonGeometry();
     const particleData=createHomeFlowParticleGeometry();
-    const ribbonBuffer=gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER,ribbonBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER,ribbonData,gl.STATIC_DRAW);
+    const veilBuffer=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,veilBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,veilData,gl.STATIC_DRAW);
+    const detailBuffer=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,detailBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,detailData,gl.STATIC_DRAW);
     const particleBuffer=gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER,particleBuffer);
     gl.bufferData(gl.ARRAY_BUFFER,particleData,gl.STATIC_DRAW);
@@ -464,7 +529,8 @@
       time:gl.getUniformLocation(ribbonProgram,"uTime"),
       canvasAspect:gl.getUniformLocation(ribbonProgram,"uCanvasAspect"),
       widthScale:gl.getUniformLocation(ribbonProgram,"uWidthScale"),
-      opacity:gl.getUniformLocation(ribbonProgram,"uOpacity")
+      opacity:gl.getUniformLocation(ribbonProgram,"uOpacity"),
+      materialPass:gl.getUniformLocation(ribbonProgram,"uMaterialPass")
     };
     const particleUniforms={
       time:gl.getUniformLocation(particleProgram,"uTime"),
@@ -481,7 +547,8 @@
       if(stopped)return;
       stopped=true;
       if(handle)root.cancelAnimationFrame(handle);
-      gl.deleteBuffer(ribbonBuffer);
+      gl.deleteBuffer(veilBuffer);
+      gl.deleteBuffer(detailBuffer);
       gl.deleteBuffer(particleBuffer);
       gl.deleteProgram(ribbonProgram);
       gl.deleteProgram(particleProgram);
@@ -496,15 +563,31 @@
       gl.viewport(0,0,width,height);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
       const time=reducedMotion?2.4:elapsed;
       gl.useProgram(ribbonProgram);
-      bindHomeFlowAttributes(gl,ribbonProgram,ribbonBuffer,"aFlow","aStyle");
       gl.uniform1f(ribbonUniforms.time,time);
       gl.uniform1f(ribbonUniforms.canvasAspect,width/height);
-      gl.uniform1f(ribbonUniforms.widthScale,1.18);
-      gl.uniform1f(ribbonUniforms.opacity,1);
-      gl.drawArrays(gl.TRIANGLES,0,ribbonData.length/8);
+      bindHomeFlowAttributes(gl,ribbonProgram,veilBuffer,"aFlow","aStyle");
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+      gl.uniform1f(ribbonUniforms.materialPass,3);
+      gl.uniform1f(ribbonUniforms.widthScale,1.56);
+      gl.uniform1f(ribbonUniforms.opacity,.32);
+      gl.drawArrays(gl.TRIANGLES,0,veilData.length/8);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+      gl.uniform1f(ribbonUniforms.materialPass,0);
+      gl.uniform1f(ribbonUniforms.widthScale,1.12);
+      gl.uniform1f(ribbonUniforms.opacity,.96);
+      gl.drawArrays(gl.TRIANGLES,0,veilData.length/8);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+      gl.uniform1f(ribbonUniforms.materialPass,1);
+      gl.uniform1f(ribbonUniforms.widthScale,1.12);
+      gl.uniform1f(ribbonUniforms.opacity,.70);
+      gl.drawArrays(gl.TRIANGLES,0,veilData.length/8);
+      bindHomeFlowAttributes(gl,ribbonProgram,detailBuffer,"aFlow","aStyle");
+      gl.uniform1f(ribbonUniforms.materialPass,2);
+      gl.uniform1f(ribbonUniforms.widthScale,1);
+      gl.uniform1f(ribbonUniforms.opacity,.34);
+      gl.drawArrays(gl.TRIANGLES,0,detailData.length/8);
       gl.useProgram(particleProgram);
       bindHomeFlowAttributes(gl,particleProgram,particleBuffer,"aParticle","aParticleStyle");
       gl.uniform1f(particleUniforms.time,time);
@@ -523,6 +606,8 @@
     };
     canvas.dataset.flowRenderer="procedural-3d-webgl";
     canvas.dataset.flowRibbons=String(HOME_FLOW_BODY_SHEETS+HOME_FLOW_BODY_FILAMENTS+HOME_FLOW_LANDING_STREAMS+HOME_FLOW_POOL_RINGS+HOME_FLOW_POOL_SPIRALS);
+    canvas.dataset.flowVeils=String(veilRibbons);
+    canvas.dataset.flowDetails=String(detailRibbons);
     canvas.dataset.flowParticles=String(HOME_FLOW_BODY_PARTICLES+HOME_FLOW_LANDING_PARTICLES+HOME_FLOW_POOL_PARTICLES);
     canvas.classList.add("is-running");
     draw(started);

@@ -27,10 +27,11 @@ test('route-following rails and particles are physically absent from home markup
 });
 
 test('standalone GPU ribbon field owns home motion',()=>{
-  assert.match(source,/const HOME_FLOW_BODY_SHEETS=32/);
-  assert.match(source,/const HOME_FLOW_BODY_FILAMENTS=100/);
-  assert.match(source,/const HOME_FLOW_LANDING_STREAMS=28/);
-  assert.match(source,/const HOME_FLOW_POOL_RINGS=34/);
+  assert.match(source,/const HOME_FLOW_BODY_SHEETS=56/);
+  assert.match(source,/const HOME_FLOW_BODY_FILAMENTS=64/);
+  assert.match(source,/const HOME_FLOW_LANDING_STREAMS=32/);
+  assert.match(source,/const HOME_FLOW_POOL_RINGS=28/);
+  assert.match(source,/const HOME_FLOW_POOL_SPIRALS=44/);
   assert.match(source,/const HOME_FLOW_LANDING_PARTICLES=800/);
   assert.match(source,/function createHomeFlowRibbonGeometry\(\)/);
   assert.match(source,/function createHomeFlowParticleGeometry\(\)/);
@@ -40,7 +41,11 @@ test('standalone GPU ribbon field owns home motion',()=>{
   assert.match(source,/vec3 poolPosition\(float progress,float radiusSeed,float depth,float seed,float kind\)/);
   assert.match(source,/float y=0\.906\+sin\(angle\)\*radius\*0\.118/);
   assert.match(source,/float endY=0\.906\+sin\(angle\)\*radius\*0\.118/);
-  assert.match(source,/gl\.drawArrays\(gl\.TRIANGLES,0,ribbonData\.length\/8\)/);
+  assert.match(source,/return \{veilData:new Float32Array\(veils\),detailData:new Float32Array\(details\),veilRibbons,detailRibbons\}/);
+  assert.match(source,/materialPass:gl\.getUniformLocation\(ribbonProgram,"uMaterialPass"\)/);
+  assert.match(source,/gl\.drawArrays\(gl\.TRIANGLES,0,veilData\.length\/8\)/);
+  assert.match(source,/gl\.drawArrays\(gl\.TRIANGLES,0,detailData\.length\/8\)/);
+  assert.match(source,/gl\.blendFunc\(gl\.SRC_ALPHA,gl\.ONE_MINUS_SRC_ALPHA\)/);
   assert.match(source,/gl\.drawArrays\(gl\.POINTS,0,particleData\.length\/8\)/);
   assert.match(source,/canvas\.dataset\.flowRenderer="procedural-3d-webgl"/);
   assert.doesNotMatch(source,/sampler2D/);
