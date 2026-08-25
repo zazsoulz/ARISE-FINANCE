@@ -27,15 +27,19 @@ test('route-following rails and particles are physically absent from home markup
 });
 
 test('standalone GPU ribbon field owns home motion',()=>{
-  assert.match(source,/const HOME_FLOW_BODY_SHEETS=64/);
-  assert.match(source,/const HOME_FLOW_BODY_FILAMENTS=220/);
-  assert.match(source,/const HOME_FLOW_POOL_RINGS=68/);
+  assert.match(source,/const HOME_FLOW_BODY_SHEETS=32/);
+  assert.match(source,/const HOME_FLOW_BODY_FILAMENTS=100/);
+  assert.match(source,/const HOME_FLOW_LANDING_STREAMS=28/);
+  assert.match(source,/const HOME_FLOW_POOL_RINGS=34/);
+  assert.match(source,/const HOME_FLOW_LANDING_PARTICLES=800/);
   assert.match(source,/function createHomeFlowRibbonGeometry\(\)/);
   assert.match(source,/function createHomeFlowParticleGeometry\(\)/);
   assert.match(source,/function startProcedural3DHomeFlow\(canvas,reducedMotion\)/);
   assert.match(source,/vec3 bodyPosition\(float progress,float lane,float depth,float seed\)/);
+  assert.match(source,/vec3 landingPosition\(float progress,float reachSeed,float depth,float seed\)/);
   assert.match(source,/vec3 poolPosition\(float progress,float radiusSeed,float depth,float seed,float kind\)/);
-  assert.match(source,/float y=0\.895\+sin\(angle\)\*radius\*0\.155/);
+  assert.match(source,/float y=0\.906\+sin\(angle\)\*radius\*0\.118/);
+  assert.match(source,/float endY=0\.906\+sin\(angle\)\*radius\*0\.118/);
   assert.match(source,/gl\.drawArrays\(gl\.TRIANGLES,0,ribbonData\.length\/8\)/);
   assert.match(source,/gl\.drawArrays\(gl\.POINTS,0,particleData\.length\/8\)/);
   assert.match(source,/canvas\.dataset\.flowRenderer="procedural-3d-webgl"/);
@@ -48,6 +52,8 @@ test('standalone GPU ribbon field owns home motion',()=>{
   assert.match(source,/requestAnimationFrame\(draw\)/);
   assert.match(css,/\.arise-flow-canvas\{/);
   assert.match(css,/--arise-flow-guide:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
+  assert.match(css,/\.arise-remainder::before,[\s\S]*?\.arise-remainder::after\{[\s\S]*?content:none!important/);
+  assert.match(css,/@media\(max-width:520px\) and \(max-height:860px\)\{[\s\S]*?\.arise-flow-stage\{[\s\S]*?height:500px!important/);
 });
 
 test('fluid renderer has a safe static fallback and reduced-motion frame',()=>{

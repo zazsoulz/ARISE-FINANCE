@@ -38,12 +38,14 @@
     return `<circle class="arise-flow-particle ${tone}" r="${radius}"><animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto"><mpath href="#${path}"/></animateMotion></circle>`;
   }
 
-  const HOME_FLOW_BODY_SHEETS=64;
-  const HOME_FLOW_BODY_FILAMENTS=220;
-  const HOME_FLOW_POOL_RINGS=68;
-  const HOME_FLOW_POOL_SPIRALS=64;
-  const HOME_FLOW_BODY_PARTICLES=5600;
-  const HOME_FLOW_POOL_PARTICLES=2400;
+  const HOME_FLOW_BODY_SHEETS=32;
+  const HOME_FLOW_BODY_FILAMENTS=100;
+  const HOME_FLOW_LANDING_STREAMS=28;
+  const HOME_FLOW_POOL_RINGS=34;
+  const HOME_FLOW_POOL_SPIRALS=34;
+  const HOME_FLOW_BODY_PARTICLES=5200;
+  const HOME_FLOW_LANDING_PARTICLES=800;
+  const HOME_FLOW_POOL_PARTICLES=2000;
 
   function createHomeFlowRandom(seed=0x41a1f10){
     let state=seed>>>0;
@@ -72,67 +74,110 @@
     "varying float vKind;",
     "varying float vWidth;",
     "varying float vDepth;",
+    "varying float vLane;",
     "const float PI=3.14159265359;",
     "const float TAU=6.28318530718;",
+    "float flowBell(float value,float center,float width){",
+    "  float weight=clamp(1.0-abs(value-center)/(width*1.65),0.0,1.0);",
+    "  return weight*weight*(3.0-2.0*weight);",
+    "}",
     "vec3 bodyPosition(float progress,float lane,float depth,float seed){",
     "  float t=clamp(progress,0.0,1.0);",
-    "  float topGate=smoothstep(0.0,0.075,t);",
-    "  float upper=exp(-pow((t-0.38)/0.245,2.0))*0.175;",
-    "  float lower=exp(-pow((t-0.67)/0.22,2.0))*0.185;",
-    "  float envelope=mix(0.0025,upper+lower,topGate);",
-    "  envelope*=1.0-smoothstep(0.86,1.0,t);",
-    "  envelope+=0.0015;",
-    "  float globalSway=(sin(t*5.1-uTime*0.31)*0.019+sin(t*11.7+uTime*0.18+1.4)*0.008)*sin(PI*t);",
-    "  float twist=t*4.85-uTime*0.17+sin(t*3.2-uTime*0.11)*0.34+(seed-0.5)*1.55;",
-    "  float breathing=0.82+0.18*sin(t*16.0-uTime*0.74+seed*9.0);",
-    "  float laneShape=lane*(0.78+0.22*sin(t*9.0-uTime*0.37+seed*17.0))+sin(t*13.0-uTime*0.29+seed*23.0)*abs(lane)*0.11;",
-    "  float crossX=laneShape*cos(twist)*breathing+depth*sin(twist)*0.38;",
-    "  float crossZ=laneShape*sin(twist)*breathing-depth*cos(twist)*0.38;",
-    "  float x=0.5+globalSway+crossX*envelope;",
-    "  float y=0.026+t*0.802+sin(t*19.0-uTime*0.82+seed*7.0)*envelope*0.022;",
-    "  float z=crossZ*envelope;",
-    "  x+=z*0.055;",
+    "  float family=floor(seed*5.0);",
+    "  float familyPhase=family*(TAU/5.0);",
+    "  float sourceGate=smoothstep(0.0,0.082,t);",
+    "  float landingGate=1.0-0.91*smoothstep(0.875,1.0,t);",
+    "  float shoulder=flowBell(t,0.23,0.17)*0.106;",
+    "  float middle=flowBell(t,0.51,0.275)*0.190;",
+    "  float weight=flowBell(t,0.735,0.205)*0.155;",
+    "  float envelope=(shoulder+middle+weight)*sourceGate*landingGate+0.0045;",
+    "  float centerline=(-flowBell(t,0.19,0.13)*0.025+flowBell(t,0.48,0.19)*0.033-flowBell(t,0.76,0.14)*0.021)*sin(PI*t);",
+    "  centerline+=(sin(t*4.7-uTime*0.18)+0.42*sin(t*9.2+uTime*0.11+1.7))*0.0075*sin(PI*t);",
+    "  float spin=t*(4.35+family*0.09)-uTime*(0.12+family*0.012+depth*0.012)+familyPhase+depth*0.42;",
+    "  spin+=sin(t*5.4-uTime*0.16+familyPhase)*0.24;",
+    "  float breathing=0.83+0.17*sin(t*10.8-uTime*(0.28+seed*0.13)+familyPhase);",
+    "  float radial=lane*envelope*breathing;",
+    "  float depthRadius=depth*envelope*0.43;",
+    "  float eddyUpper=flowBell(t,0.34,0.15)*sin((t-0.34)*8.8-uTime*0.52+familyPhase)*envelope*0.33;",
+    "  float eddyLower=flowBell(t,0.68,0.19)*sin((t-0.68)*7.1-uTime*0.39+familyPhase*1.37)*envelope*0.27;",
+    "  float crossX=radial*cos(spin)+depthRadius*sin(spin);",
+    "  crossX+=(eddyUpper+eddyLower)*(0.28+0.72*abs(lane));",
+    "  crossX+=flowBell(t,0.57,0.23)*envelope*0.08*sin(familyPhase*1.7+depth*2.4);",
+    "  float crossZ=radial*sin(spin)*0.78-depthRadius*cos(spin);",
+    "  crossZ+=eddyUpper*0.47*sin(familyPhase+1.2)-eddyLower*0.34;",
+    "  float x=0.5+centerline+crossX+crossZ*0.038;",
+    "  float y=0.026+t*0.838+sin(t*17.0-uTime*(0.48+seed*0.16)+familyPhase)*envelope*0.010*(0.35+abs(lane));",
+    "  y+=(eddyUpper*sin(familyPhase+0.8)-eddyLower*cos(familyPhase*1.2))*0.62*(0.25+0.75*abs(lane));",
+    "  float z=crossZ;",
+    "  return vec3(x,y,z);",
+    "}",
+    "vec3 landingPosition(float progress,float reachSeed,float depth,float seed){",
+    "  float t=clamp(progress,0.0,1.0);",
+    "  float entry=0.69+fract(seed*6.73)*0.18;",
+    "  float entryLane=cos(seed*TAU)*(0.08+reachSeed*0.82);",
+    "  vec3 start=bodyPosition(entry,entryLane,depth*0.72,seed);",
+    "  float angle=seed*TAU+(seed-0.5)*0.72+t*(0.72+reachSeed*0.92)-uTime*(0.052+depth*0.012);",
+    "  float radius=0.028+reachSeed*0.425;",
+    "  float endX=0.5+cos(angle)*radius;",
+    "  float endY=0.906+sin(angle)*radius*0.118;",
+    "  float ease=smoothstep(0.0,1.0,t);",
+    "  float x=mix(start.x,endX,ease)+sin(PI*t)*sin(seed*19.0+uTime*0.17)*0.014;",
+    "  float y=mix(start.y,endY,ease)+sin(PI*t)*(0.018+reachSeed*0.016);",
+    "  float endZ=depth*0.029+sin(angle*2.0+seed*5.0)*0.007;",
+    "  float z=mix(start.z,endZ,ease);",
+    "  x+=z*0.038;",
     "  return vec3(x,y,z);",
     "}",
     "vec3 poolPosition(float progress,float radiusSeed,float depth,float seed,float kind){",
-    "  float angularSpeed=0.045+0.024*(depth*0.5+0.5);",
+    "  float angularSpeed=0.032+0.019*(depth*0.5+0.5);",
     "  float angle;",
     "  float radius;",
     "  if(kind<1.5){",
-    "    angle=progress*TAU+seed*TAU+uTime*angularSpeed;",
-    "    radius=0.025+radiusSeed*0.45;",
+    "    angle=progress*TAU+seed*0.38+uTime*angularSpeed*sign(depth+0.0001);",
+    "    radius=0.024+radiusSeed*0.455;",
     "  }else{",
-    "    angle=progress*TAU*1.82+seed*TAU+uTime*(angularSpeed+0.028);",
-    "    radius=0.018+progress*radiusSeed*0.45;",
+    "    angle=progress*TAU*(1.35+seed*0.92)+seed*TAU-uTime*(angularSpeed+0.017);",
+    "    radius=0.016+pow(progress,0.82)*radiusSeed*0.455;",
     "  }",
-    "  radius+=sin(angle*3.0-uTime*0.52+seed*11.0)*0.0045*(0.25+radiusSeed*0.75);",
+    "  radius+=sin(angle*3.0-uTime*0.38+seed*11.0)*0.0038*(0.25+radiusSeed*0.75);",
     "  float x=0.5+cos(angle)*radius;",
-    "  float y=0.895+sin(angle)*radius*0.155+sin(angle*5.0+uTime*0.31+seed*6.0)*0.0018;",
-    "  float z=depth*0.026+sin(angle*2.0+seed*4.0)*0.008;",
-    "  x+=z*0.055;",
+    "  float y=0.906+sin(angle)*radius*0.118+sin(angle*5.0+uTime*0.25+seed*6.0)*0.0015;",
+    "  float z=depth*0.024+sin(angle*2.0+seed*4.0)*0.006;",
+    "  x+=z*0.038;",
     "  return vec3(x,y,z);",
     "}",
     "vec3 flowPosition(float progress){",
-    "  return aStyle.w<0.5?bodyPosition(progress,aFlow.z,aStyle.x,aFlow.w):poolPosition(progress,aFlow.z,aStyle.x,aFlow.w,aStyle.w);",
+    "  if(aStyle.w<0.5)return bodyPosition(progress,aFlow.z,aStyle.x,aFlow.w);",
+    "  if(aStyle.w<2.5)return poolPosition(progress,aFlow.z,aStyle.x,aFlow.w,aStyle.w);",
+    "  return landingPosition(progress,aFlow.z,aStyle.x,aFlow.w);",
     "}",
     "void main(){",
     "  float progress=aFlow.x;",
     "  vec3 center=flowPosition(progress);",
-    "  vec3 before=flowPosition(max(0.0,progress-0.0025));",
-    "  vec3 after=flowPosition(min(1.0,progress+0.0025));",
-    "  vec2 tangentPx=normalize(vec2((after.x-before.x)*uCanvasAspect,after.y-before.y)+vec2(0.00001));",
-    "  vec2 normal=vec2(-tangentPx.y/uCanvasAspect,tangentPx.x);",
+    "  vec2 normal;",
+    "  if(aStyle.w<0.5){",
+    "    normal=vec2(1.0,0.0);",
+    "  }else if(aStyle.w<2.5){",
+    "    vec2 radialPx=normalize(vec2((center.x-0.5)*uCanvasAspect,center.y-0.906)+vec2(0.00001));",
+    "    normal=vec2(radialPx.x/uCanvasAspect,radialPx.y);",
+    "  }else{",
+    "    vec3 before=flowPosition(max(0.0,progress-0.0025));",
+    "    vec3 after=flowPosition(min(1.0,progress+0.0025));",
+    "    vec2 tangentPx=normalize(vec2((after.x-before.x)*uCanvasAspect,after.y-before.y)+vec2(0.00001));",
+    "    normal=vec2(-tangentPx.y/uCanvasAspect,tangentPx.x);",
+    "  }",
     "  float perspective=clamp(1.0+center.z*1.8,0.72,1.24);",
     "  center.xy+=normal*aFlow.y*aStyle.y*uWidthScale*perspective;",
     "  gl_Position=vec4(center.x*2.0-1.0,1.0-center.y*2.0,center.z,1.0);",
     "  vEdge=aFlow.y;",
     "  vProgress=progress;",
     "  vSeed=aFlow.w;",
-    "  vTone=smoothstep(0.43,0.57,center.x);",
+    "  vTone=clamp(smoothstep(0.385,0.615,center.x+sin(aFlow.w*31.0+aStyle.x*3.0)*0.021)+(aFlow.w-0.5)*0.08,0.0,1.0);",
     "  vAlpha=aStyle.z;",
     "  vKind=aStyle.w;",
     "  vWidth=aStyle.y;",
     "  vDepth=center.z;",
+    "  vLane=aFlow.z;",
     "}"
   ].join("\n");
 
@@ -152,20 +197,29 @@
     "varying float vKind;",
     "varying float vWidth;",
     "varying float vDepth;",
+    "varying float vLane;",
     "void main(){",
     "  float sheet=smoothstep(0.004,0.012,vWidth);",
-    "  float edge=pow(max(0.0,1.0-abs(vEdge)),mix(2.2,0.56,sheet));",
-    "  float bodyPacket=0.66+0.34*pow(0.5+0.5*sin(vProgress*96.0-uTime*(2.25+vSeed*0.9)+vSeed*31.0),4.0);",
-    "  float poolPacket=0.68+0.32*pow(0.5+0.5*sin(vProgress*78.0-uTime*(1.15+vSeed*0.45)+vSeed*27.0),5.0);",
-    "  float packet=mix(bodyPacket,poolPacket,step(0.5,vKind));",
-    "  float micro=0.82+0.18*sin(vProgress*241.0-uTime*3.1+vSeed*53.0);",
-    "  vec3 cool=vec3(0.36,0.76,0.86);",
-    "  vec3 ivory=vec3(0.91,0.94,0.88);",
-    "  vec3 warm=vec3(1.0,0.72,0.30);",
-    "  vec3 color=vTone<0.5?mix(ivory,cool,min(1.0,(0.5-vTone)*2.25)):mix(ivory,warm,min(1.0,(vTone-0.5)*2.25));",
-    "  float depthLight=clamp(0.82+vDepth*3.1,0.48,1.18);",
-    "  float alpha=vAlpha*edge*mix(packet,0.82+packet*0.18,sheet)*mix(micro,1.0,sheet)*depthLight*uOpacity;",
-    "  color*=mix(1.18,1.02,sheet)*(0.84+packet*0.24);",
+    "  float edge=pow(max(0.0,1.0-abs(vEdge)),mix(2.35,0.72,sheet));",
+    "  float bodyPacket=0.54+0.46*pow(0.5+0.5*sin(vProgress*(74.0+vSeed*38.0)-uTime*(1.55+vSeed*1.35+abs(vDepth)*0.32)+vSeed*31.0),5.0);",
+    "  float poolPacket=0.61+0.39*pow(0.5+0.5*sin(vProgress*(56.0+vSeed*29.0)-uTime*(0.82+vSeed*0.68)+vSeed*27.0),5.0);",
+    "  float landingPacket=0.58+0.42*pow(0.5+0.5*sin(vProgress*(65.0+vSeed*22.0)-uTime*(1.12+vSeed*0.54)+vSeed*21.0),4.0);",
+    "  float packet=vKind<0.5?bodyPacket:(vKind<2.5?poolPacket:landingPacket);",
+    "  float micro=0.78+0.22*sin(vProgress*(188.0+vSeed*91.0)-uTime*(2.0+vSeed*1.65)+vSeed*53.0);",
+    "  float bodyStart=0.008+fract(vSeed*17.31)*0.048;",
+    "  float bodyEnd=0.91+fract(vSeed*31.73)*0.085;",
+    "  float bodyLife=smoothstep(bodyStart,bodyStart+0.035,vProgress)*(1.0-smoothstep(bodyEnd-0.04,bodyEnd,vProgress));",
+    "  float landingLife=smoothstep(0.0,0.055,vProgress)*(1.0-smoothstep(0.94,1.0,vProgress));",
+    "  float life=vKind<0.5?bodyLife:(vKind>2.5?landingLife:1.0);",
+    "  vec3 cool=vec3(0.22,0.71,0.80);",
+    "  vec3 neutral=vec3(0.78,0.82,0.77);",
+    "  vec3 warm=vec3(1.0,0.68,0.25);",
+    "  vec3 color=vTone<0.5?mix(neutral,cool,min(1.0,(0.5-vTone)*2.15)):mix(neutral,warm,min(1.0,(vTone-0.5)*2.15));",
+    "  float depthLight=clamp(0.68+vDepth*2.35,0.38,1.08);",
+    "  float coreRelief=mix(0.73+0.27*smoothstep(0.08,0.72,abs(vLane)),1.0,step(0.5,vKind));",
+    "  float regionGain=vKind<0.5?1.0:(vKind<2.5?1.42:1.18);",
+    "  float alpha=vAlpha*edge*mix(packet,0.78+packet*0.22,sheet)*mix(micro,1.0,sheet)*depthLight*coreRelief*life*regionGain*uOpacity;",
+    "  color*=mix(1.06,0.94,sheet)*(0.79+packet*0.23);",
     "  gl_FragColor=vec4(color,alpha);",
     "}"
   ].join("\n");
@@ -185,46 +239,79 @@
     "varying float vSource;",
     "const float PI=3.14159265359;",
     "const float TAU=6.28318530718;",
+    "float flowBell(float value,float center,float width){",
+    "  float weight=clamp(1.0-abs(value-center)/(width*1.65),0.0,1.0);",
+    "  return weight*weight*(3.0-2.0*weight);",
+    "}",
     "vec3 bodyPosition(float progress,float lane,float depth,float seed){",
     "  float t=clamp(progress,0.0,1.0);",
-    "  float topGate=smoothstep(0.0,0.075,t);",
-    "  float upper=exp(-pow((t-0.38)/0.245,2.0))*0.175;",
-    "  float lower=exp(-pow((t-0.67)/0.22,2.0))*0.185;",
-    "  float envelope=mix(0.0025,upper+lower,topGate);",
-    "  envelope*=1.0-smoothstep(0.86,1.0,t);",
-    "  envelope+=0.0015;",
-    "  float globalSway=(sin(t*5.1-uTime*0.31)*0.019+sin(t*11.7+uTime*0.18+1.4)*0.008)*sin(PI*t);",
-    "  float twist=t*4.85-uTime*0.17+sin(t*3.2-uTime*0.11)*0.34+(seed-0.5)*1.55;",
-    "  float breathing=0.82+0.18*sin(t*16.0-uTime*0.74+seed*9.0);",
-    "  float laneShape=lane*(0.78+0.22*sin(t*9.0-uTime*0.37+seed*17.0))+sin(t*13.0-uTime*0.29+seed*23.0)*abs(lane)*0.11;",
-    "  float crossX=laneShape*cos(twist)*breathing+depth*sin(twist)*0.38;",
-    "  float crossZ=laneShape*sin(twist)*breathing-depth*cos(twist)*0.38;",
-    "  float x=0.5+globalSway+crossX*envelope;",
-    "  float y=0.026+t*0.802+sin(t*19.0-uTime*0.82+seed*7.0)*envelope*0.022;",
-    "  float z=crossZ*envelope;",
-    "  x+=z*0.055;",
+    "  float family=floor(seed*5.0);",
+    "  float familyPhase=family*(TAU/5.0);",
+    "  float sourceGate=smoothstep(0.0,0.082,t);",
+    "  float landingGate=1.0-0.91*smoothstep(0.875,1.0,t);",
+    "  float shoulder=flowBell(t,0.23,0.17)*0.106;",
+    "  float middle=flowBell(t,0.51,0.275)*0.190;",
+    "  float weight=flowBell(t,0.735,0.205)*0.155;",
+    "  float envelope=(shoulder+middle+weight)*sourceGate*landingGate+0.0045;",
+    "  float centerline=(-flowBell(t,0.19,0.13)*0.025+flowBell(t,0.48,0.19)*0.033-flowBell(t,0.76,0.14)*0.021)*sin(PI*t);",
+    "  centerline+=(sin(t*4.7-uTime*0.18)+0.42*sin(t*9.2+uTime*0.11+1.7))*0.0075*sin(PI*t);",
+    "  float spin=t*(4.35+family*0.09)-uTime*(0.12+family*0.012+depth*0.012)+familyPhase+depth*0.42;",
+    "  spin+=sin(t*5.4-uTime*0.16+familyPhase)*0.24;",
+    "  float breathing=0.83+0.17*sin(t*10.8-uTime*(0.28+seed*0.13)+familyPhase);",
+    "  float radial=lane*envelope*breathing;",
+    "  float depthRadius=depth*envelope*0.43;",
+    "  float eddyUpper=flowBell(t,0.34,0.15)*sin((t-0.34)*8.8-uTime*0.52+familyPhase)*envelope*0.33;",
+    "  float eddyLower=flowBell(t,0.68,0.19)*sin((t-0.68)*7.1-uTime*0.39+familyPhase*1.37)*envelope*0.27;",
+    "  float crossX=radial*cos(spin)+depthRadius*sin(spin);",
+    "  crossX+=(eddyUpper+eddyLower)*(0.28+0.72*abs(lane));",
+    "  crossX+=flowBell(t,0.57,0.23)*envelope*0.08*sin(familyPhase*1.7+depth*2.4);",
+    "  float crossZ=radial*sin(spin)*0.78-depthRadius*cos(spin);",
+    "  crossZ+=eddyUpper*0.47*sin(familyPhase+1.2)-eddyLower*0.34;",
+    "  float x=0.5+centerline+crossX+crossZ*0.038;",
+    "  float y=0.026+t*0.838+sin(t*17.0-uTime*(0.48+seed*0.16)+familyPhase)*envelope*0.010*(0.35+abs(lane));",
+    "  y+=(eddyUpper*sin(familyPhase+0.8)-eddyLower*cos(familyPhase*1.2))*0.62*(0.25+0.75*abs(lane));",
+    "  float z=crossZ;",
+    "  return vec3(x,y,z);",
+    "}",
+    "vec3 landingPosition(float progress,float reachSeed,float depth,float seed){",
+    "  float t=clamp(progress,0.0,1.0);",
+    "  float entry=0.69+fract(seed*6.73)*0.18;",
+    "  float entryLane=cos(seed*TAU)*(0.08+reachSeed*0.82);",
+    "  vec3 start=bodyPosition(entry,entryLane,depth*0.72,seed);",
+    "  float angle=seed*TAU+(seed-0.5)*0.72+t*(0.72+reachSeed*0.92)-uTime*(0.052+depth*0.012);",
+    "  float radius=0.028+reachSeed*0.425;",
+    "  float endX=0.5+cos(angle)*radius;",
+    "  float endY=0.906+sin(angle)*radius*0.118;",
+    "  float ease=smoothstep(0.0,1.0,t);",
+    "  float x=mix(start.x,endX,ease)+sin(PI*t)*sin(seed*19.0+uTime*0.17)*0.014;",
+    "  float y=mix(start.y,endY,ease)+sin(PI*t)*(0.018+reachSeed*0.016);",
+    "  float endZ=depth*0.029+sin(angle*2.0+seed*5.0)*0.007;",
+    "  float z=mix(start.z,endZ,ease);",
+    "  x+=z*0.038;",
     "  return vec3(x,y,z);",
     "}",
     "void main(){",
     "  float kind=aParticleStyle.z;",
     "  vec3 position;",
     "  if(kind<0.5){",
-    "    float progress=fract(aParticle.x+uTime*(0.026+aParticle.w*0.018));",
+    "    float progress=fract(aParticle.x+uTime*(0.019+aParticle.w*0.031+abs(aParticle.z)*0.004));",
     "    position=bodyPosition(progress,aParticle.y,aParticle.z,aParticle.w);",
     "  }else if(kind<1.5){",
     "    position=vec3(0.5,0.026,0.08);",
     "  }else if(kind<2.5){",
-    "    float angle=aParticle.x*TAU+uTime*(0.075+aParticle.w*0.045);",
-    "    float radius=0.025+aParticle.y*0.45;",
-    "    position=vec3(0.5+cos(angle)*radius,0.895+sin(angle)*radius*0.155,aParticle.z*0.02);",
+    "    float angle=aParticle.x*TAU+aParticle.w*TAU+uTime*(0.046+aParticle.w*0.051);",
+    "    float radius=0.024+aParticle.y*0.455;",
+    "    radius+=sin(angle*3.0-uTime*0.38+aParticle.w*11.0)*0.0038*(0.25+aParticle.y*0.75);",
+    "    position=vec3(0.5+cos(angle)*radius,0.906+sin(angle)*radius*0.118,aParticle.z*0.022);",
     "  }else{",
-    "    position=vec3(0.5,0.828,0.07);",
+    "    float progress=fract(aParticle.x+uTime*(0.025+aParticle.w*0.026));",
+    "    position=landingPosition(progress,aParticle.y,aParticle.z,aParticle.w);",
     "  }",
     "  gl_Position=vec4(position.x*2.0-1.0,1.0-position.y*2.0,position.z,1.0);",
     "  gl_PointSize=aParticleStyle.x*uPixelRatio*(kind>0.5&&kind<1.5?1.0:clamp(1.0+position.z*4.0,0.72,1.32));",
-    "  vTone=smoothstep(0.43,0.57,position.x);",
+    "  vTone=clamp(smoothstep(0.385,0.615,position.x+sin(aParticle.w*31.0+aParticle.z*3.0)*0.021)+(aParticle.w-0.5)*0.08,0.0,1.0);",
     "  vAlpha=aParticleStyle.y;",
-    "  vSource=max(step(0.5,kind)*(1.0-step(1.5,kind)),step(2.5,kind));",
+    "  vSource=step(0.5,kind)*(1.0-step(1.5,kind));",
     "}"
   ].join("\n");
 
@@ -236,12 +323,13 @@
     "void main(){",
     "  float radius=length(gl_PointCoord-0.5);",
     "  float soft=1.0-smoothstep(0.08,0.5,radius);",
-    "  vec3 cool=vec3(0.43,0.76,0.82);",
-    "  vec3 warm=vec3(1.0,0.73,0.31);",
-    "  vec3 color=mix(cool,warm,vTone);",
+    "  vec3 cool=vec3(0.28,0.73,0.80);",
+    "  vec3 neutral=vec3(0.78,0.82,0.77);",
+    "  vec3 warm=vec3(1.0,0.69,0.25);",
+    "  vec3 color=vTone<0.5?mix(neutral,cool,(0.5-vTone)*2.0):mix(neutral,warm,(vTone-0.5)*2.0);",
     "  if(vSource>0.5){",
     "    float core=1.0-smoothstep(0.0,0.18,radius);",
-    "    color=mix(vec3(1.0,0.69,0.24),vec3(1.0,1.0,0.94),core);",
+    "    color=mix(vec3(0.94,0.61,0.22),vec3(0.93,0.91,0.79),core);",
     "    soft=pow(soft,1.3);",
     "  }",
     "  gl_FragColor=vec4(color,vAlpha*soft);",
@@ -287,24 +375,34 @@
     const vertices=[];
     for(let index=0;index<HOME_FLOW_BODY_SHEETS;index+=1){
       const raw=random()*2-1;
-      const lane=Math.sign(raw||1)*Math.pow(Math.abs(raw),.72);
-      appendHomeFlowRibbon(vertices,82,lane,random(),random()*2-1,.006+random()*.01,.12+random()*.08,0);
+      const hero=index<12;
+      const core=index>=12&&index<20;
+      const lane=core?raw*.18:Math.sign(raw||1)*Math.pow(Math.abs(raw),hero?.56:.67);
+      const width=hero?.024+random()*.032:(core?.010+random()*.014:.0065+random()*.0135);
+      const alpha=hero?.27+random()*.16:(core?.28+random()*.13:.12+random()*.085);
+      appendHomeFlowRibbon(vertices,56,lane,random(),random()*2-1,width,alpha,0);
     }
     for(let index=0;index<HOME_FLOW_BODY_FILAMENTS;index+=1){
-      const core=index<20;
+      const core=index<18;
       const raw=random()*2-1;
-      const lane=core?raw*.14:Math.sign(raw||1)*Math.pow(Math.abs(raw),.78);
-      const depth=core?(random()*2-1)*.22:random()*2-1;
-      appendHomeFlowRibbon(vertices,90,lane,random(),depth,core?.001+random()*.0025:.0007+random()*.0016,core?.32+random()*.18:.34+random()*.22,0);
+      const lane=core?raw*.18:Math.sign(raw||1)*Math.pow(Math.abs(raw),.73);
+      const depth=core?(random()*2-1)*.28:random()*2-1;
+      appendHomeFlowRibbon(vertices,56,lane,random(),depth,core?.0011+random()*.0026:.0007+random()*.0017,core?.38+random()*.22:.42+random()*.30,0);
+    }
+    for(let index=0;index<HOME_FLOW_LANDING_STREAMS;index+=1){
+      const core=index<8;
+      const broad=!core&&index%11===0;
+      const reach=core?random()*.16:.14+Math.pow(random(),.72)*.86;
+      appendHomeFlowRibbon(vertices,62,reach,random(),random()*2-1,core?.004+random()*.009:(broad?.021+random()*.028:.0007+random()*.0017),core?.46+random()*.22:(broad?.32+random()*.18:.44+random()*.31),3);
     }
     for(let index=0;index<HOME_FLOW_POOL_RINGS;index+=1){
       const radius=(index+1)/(HOME_FLOW_POOL_RINGS+2);
       const broad=index%9===0;
-      appendHomeFlowRibbon(vertices,102,radius,random(),random()*2-1,broad?.006+random()*.008:.00065+random()*.0019,broad?.15+random()*.1:.3+random()*.34,1);
+      appendHomeFlowRibbon(vertices,64,radius,random(),random()*2-1,broad?.018+random()*.025:.00065+random()*.0018,broad?.31+random()*.18:.42+random()*.32,1);
     }
     for(let index=0;index<HOME_FLOW_POOL_SPIRALS;index+=1){
       const broad=index%11===0;
-      appendHomeFlowRibbon(vertices,118,.48+random()*.52,random(),random()*2-1,broad?.005+random()*.008:.00065+random()*.0019,broad?.14+random()*.11:.28+random()*.34,2);
+      appendHomeFlowRibbon(vertices,72,.42+random()*.58,random(),random()*2-1,broad?.018+random()*.026:.00065+random()*.0018,broad?.31+random()*.18:.41+random()*.32,2);
     }
     return new Float32Array(vertices);
   }
@@ -314,14 +412,17 @@
     const particles=[];
     for(let index=0;index<HOME_FLOW_BODY_PARTICLES;index+=1){
       const raw=random()*2-1;
-      const lane=Math.sign(raw||1)*Math.pow(Math.abs(raw),.78);
-      particles.push(random(),lane,random()*2-1,random(),.8+random()*1.8,.12+random()*.34,0,0);
+      const lane=Math.sign(raw||1)*Math.pow(Math.abs(raw),.73);
+      particles.push(random(),lane,random()*2-1,random(),.76+random()*1.72,.11+random()*.31,0,0);
+    }
+    for(let index=0;index<HOME_FLOW_LANDING_PARTICLES;index+=1){
+      const core=index<160;
+      particles.push(random(),core?random()*.18:.10+Math.pow(random(),.72)*.90,random()*2-1,random(),.74+random()*1.58,core?.16+random()*.28:.10+random()*.28,3,0);
     }
     for(let index=0;index<HOME_FLOW_POOL_PARTICLES;index+=1){
-      particles.push(random(),Math.pow(random(),.62),random()*2-1,random(),.75+random()*1.65,.1+random()*.28,2,0);
+      particles.push(random(),Math.pow(random(),.62),random()*2-1,random(),.72+random()*1.5,.09+random()*.27,2,0);
     }
-    particles.push(0,0,0,0,28,.94,1,0);
-    particles.push(0,0,0,0,22,.68,3,0);
+    particles.push(0,0,0,0,22,.72,1,0);
     return new Float32Array(particles);
   }
 
@@ -401,10 +502,7 @@
       bindHomeFlowAttributes(gl,ribbonProgram,ribbonBuffer,"aFlow","aStyle");
       gl.uniform1f(ribbonUniforms.time,time);
       gl.uniform1f(ribbonUniforms.canvasAspect,width/height);
-      gl.uniform1f(ribbonUniforms.widthScale,3.2);
-      gl.uniform1f(ribbonUniforms.opacity,.34);
-      gl.drawArrays(gl.TRIANGLES,0,ribbonData.length/8);
-      gl.uniform1f(ribbonUniforms.widthScale,1);
+      gl.uniform1f(ribbonUniforms.widthScale,1.18);
       gl.uniform1f(ribbonUniforms.opacity,1);
       gl.drawArrays(gl.TRIANGLES,0,ribbonData.length/8);
       gl.useProgram(particleProgram);
@@ -424,8 +522,8 @@
       }
     };
     canvas.dataset.flowRenderer="procedural-3d-webgl";
-    canvas.dataset.flowRibbons=String(HOME_FLOW_BODY_SHEETS+HOME_FLOW_BODY_FILAMENTS+HOME_FLOW_POOL_RINGS+HOME_FLOW_POOL_SPIRALS);
-    canvas.dataset.flowParticles=String(HOME_FLOW_BODY_PARTICLES+HOME_FLOW_POOL_PARTICLES);
+    canvas.dataset.flowRibbons=String(HOME_FLOW_BODY_SHEETS+HOME_FLOW_BODY_FILAMENTS+HOME_FLOW_LANDING_STREAMS+HOME_FLOW_POOL_RINGS+HOME_FLOW_POOL_SPIRALS);
+    canvas.dataset.flowParticles=String(HOME_FLOW_BODY_PARTICLES+HOME_FLOW_LANDING_PARTICLES+HOME_FLOW_POOL_PARTICLES);
     canvas.classList.add("is-running");
     draw(started);
     return {stop};

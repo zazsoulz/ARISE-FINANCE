@@ -13,15 +13,19 @@ test("home uses a continuous material flow without route rails",()=>{
   assert.match(v3Source,/class="arise-flow-canvas"/);
   assert.match(v3Source,/function startHomeFluidFlow\(canvas\)/);
   assert.match(v3Source,/requestAnimationFrame\(draw\)/);
-  assert.match(v3Source,/const HOME_FLOW_BODY_SHEETS=64/);
-  assert.match(v3Source,/const HOME_FLOW_BODY_FILAMENTS=220/);
-  assert.match(v3Source,/const HOME_FLOW_POOL_RINGS=68/);
+  assert.match(v3Source,/const HOME_FLOW_BODY_SHEETS=32/);
+  assert.match(v3Source,/const HOME_FLOW_BODY_FILAMENTS=100/);
+  assert.match(v3Source,/const HOME_FLOW_LANDING_STREAMS=28/);
+  assert.match(v3Source,/const HOME_FLOW_POOL_RINGS=34/);
+  assert.match(v3Source,/const HOME_FLOW_LANDING_PARTICLES=800/);
   assert.match(v3Source,/function createHomeFlowRibbonGeometry\(\)/);
   assert.match(v3Source,/function createHomeFlowParticleGeometry\(\)/);
   assert.match(v3Source,/function startProcedural3DHomeFlow\(canvas,reducedMotion\)/);
   assert.match(v3Source,/vec3 bodyPosition\(float progress,float lane,float depth,float seed\)/);
+  assert.match(v3Source,/vec3 landingPosition\(float progress,float reachSeed,float depth,float seed\)/);
   assert.match(v3Source,/vec3 poolPosition\(float progress,float radiusSeed,float depth,float seed,float kind\)/);
-  assert.match(v3Source,/float y=0\.895\+sin\(angle\)\*radius\*0\.155/);
+  assert.match(v3Source,/float y=0\.906\+sin\(angle\)\*radius\*0\.118/);
+  assert.match(v3Source,/float endY=0\.906\+sin\(angle\)\*radius\*0\.118/);
   assert.match(v3Source,/gl\.drawArrays\(gl\.TRIANGLES,0,ribbonData\.length\/8\)/);
   assert.match(v3Source,/gl\.drawArrays\(gl\.POINTS,0,particleData\.length\/8\)/);
   assert.match(v3Source,/canvas\.dataset\.flowRenderer="procedural-3d-webgl"/);
@@ -39,6 +43,7 @@ test("home uses a continuous material flow without route rails",()=>{
   assert.match(productCss,/ARISE CONTINUOUS HOME FLOW/);
   assert.match(productCss,/\.arise-flow-node::before\{[\s\S]*?content:none!important;[\s\S]*?display:none!important/);
   assert.match(productCss,/--arise-flow-guide:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
+  assert.match(productCss,/\.arise-remainder::before,[\s\S]*?\.arise-remainder::after\{[\s\S]*?content:none!important/);
   assert.match(v3Source,/canvas\.dataset\.flowRenderer="static"/);
   assert.match(v3Source,/class="v3-summary-particles"/);
   for(const kind of ["fixed","categories","reserve","goals"]){
