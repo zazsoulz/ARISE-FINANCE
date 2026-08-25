@@ -26,22 +26,24 @@ test('route-following rails and particles are physically absent from home markup
   }
 });
 
-test('reference-preserving material advection owns home motion',()=>{
-  assert.match(source,/const HOME_FLOW_TEXTURE_ASPECT=720\/1279/);
-  assert.match(source,/uniform sampler2D uFlowTexture/);
-  assert.match(source,/function startReferenceHomeFlow\(canvas,image,reducedMotion\)/);
-  assert.match(source,/gl\.texImage2D\(gl\.TEXTURE_2D,0,gl\.RGBA,gl\.RGBA,gl\.UNSIGNED_BYTE,image\)/);
-  assert.match(source,/vec2 primaryUv=mix\(uv\+bodyWarp,poolUv,poolGate\)/);
-  assert.match(source,/vec2 layerAUv=primaryUv/);
-  assert.match(source,/vec2 layerBUv=primaryUv/);
-  assert.match(source,/vec2 layerCUv=primaryUv/);
-  assert.match(source,/mat2\(cs,-sn,sn,cs\)\*poolPoint/);
-  assert.match(source,/float travelling=/);
-  assert.match(source,/gl\.drawArrays\(gl\.TRIANGLE_STRIP,0,4\)/);
-  assert.match(source,/canvas\.dataset\.flowRenderer="reference-advection-webgl"/);
+test('standalone GPU ribbon field owns home motion',()=>{
+  assert.match(source,/const HOME_FLOW_BODY_SHEETS=64/);
+  assert.match(source,/const HOME_FLOW_BODY_FILAMENTS=220/);
+  assert.match(source,/const HOME_FLOW_POOL_RINGS=68/);
+  assert.match(source,/function createHomeFlowRibbonGeometry\(\)/);
+  assert.match(source,/function createHomeFlowParticleGeometry\(\)/);
+  assert.match(source,/function startProcedural3DHomeFlow\(canvas,reducedMotion\)/);
+  assert.match(source,/vec3 bodyPosition\(float progress,float lane,float depth,float seed\)/);
+  assert.match(source,/vec3 poolPosition\(float progress,float radiusSeed,float depth,float seed,float kind\)/);
+  assert.match(source,/float y=0\.895\+sin\(angle\)\*radius\*0\.155/);
+  assert.match(source,/gl\.drawArrays\(gl\.TRIANGLES,0,ribbonData\.length\/8\)/);
+  assert.match(source,/gl\.drawArrays\(gl\.POINTS,0,particleData\.length\/8\)/);
+  assert.match(source,/canvas\.dataset\.flowRenderer="procedural-3d-webgl"/);
+  assert.doesNotMatch(source,/sampler2D/);
+  assert.doesNotMatch(source,/texture2D\(/);
+  assert.doesNotMatch(source,/texImage2D\(/);
+  assert.doesNotMatch(source,/new root\.Image\(\)/);
   assert.doesNotMatch(source,/gl\.drawArrays\(gl\.LINES/);
-  assert.doesNotMatch(source,/gl\.drawArrays\(gl\.POINTS/);
-  assert.doesNotMatch(source,/startWebGLHomeFlow/);
   assert.match(source,/Math\.min\(1\/30,/);
   assert.match(source,/requestAnimationFrame\(draw\)/);
   assert.match(css,/\.arise-flow-canvas\{/);

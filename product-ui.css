@@ -6873,7 +6873,7 @@ body::before{
 
 /* =========================================================
    ARISE CONTINUOUS HOME FLOW
-   Reference-preserving material advection; no route overlays.
+   Live procedural 3D ribbon field; raster guide is fallback only.
 ========================================================= */
 
 .arise-flow-stage::before{

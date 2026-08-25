@@ -38,127 +38,213 @@
     return `<circle class="arise-flow-particle ${tone}" r="${radius}"><animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto"><mpath href="#${path}"/></animateMotion></circle>`;
   }
 
-  const HOME_FLOW_TEXTURE_ASPECT=720/1279;
+  const HOME_FLOW_BODY_SHEETS=64;
+  const HOME_FLOW_BODY_FILAMENTS=220;
+  const HOME_FLOW_POOL_RINGS=68;
+  const HOME_FLOW_POOL_SPIRALS=64;
+  const HOME_FLOW_BODY_PARTICLES=5600;
+  const HOME_FLOW_POOL_PARTICLES=2400;
 
-  function parseHomeFlowGuide(value){
-    const raw=String(value||"").trim();
-    const match=raw.match(/^url\((.*)\)$/i);
-    if(!match)return "";
-    let source=match[1].trim();
-    if((source.startsWith('"')&&source.endsWith('"'))||(source.startsWith("'")&&source.endsWith("'")))source=source.slice(1,-1);
-    try{return new URL(source,root.document?.baseURI||root.location?.href).href;}catch(_error){return source;}
+  function createHomeFlowRandom(seed=0x41a1f10){
+    let state=seed>>>0;
+    return ()=>{
+      state=(Math.imul(state,1664525)+1013904223)>>>0;
+      return state/4294967296;
+    };
   }
 
-  const homeFlowVertexShader=[
-    "attribute vec2 aPosition;",
-    "varying vec2 vUv;",
-    "void main(){vUv=aPosition*.5+.5;gl_Position=vec4(aPosition,0.0,1.0);}"
-  ].join("\n");
-
-  const homeFlowFragmentShader=[
+  const homeFlowRibbonVertexShader=[
     "#ifdef GL_FRAGMENT_PRECISION_HIGH",
     "precision highp float;",
     "#else",
     "precision mediump float;",
     "#endif",
-    "varying vec2 vUv;",
-    "uniform sampler2D uFlowTexture;",
+    "attribute vec4 aFlow;",
+    "attribute vec4 aStyle;",
     "uniform float uTime;",
     "uniform float uCanvasAspect;",
-    "uniform float uTextureAspect;",
-    "float hash21(vec2 point){",
-    "  vec2 p=fract(point*vec2(123.34,345.45));",
-    "  p+=dot(p,p+34.345);",
-    "  return fract(p.x*p.y);",
+    "uniform float uWidthScale;",
+    "varying float vEdge;",
+    "varying float vProgress;",
+    "varying float vSeed;",
+    "varying float vTone;",
+    "varying float vAlpha;",
+    "varying float vKind;",
+    "varying float vWidth;",
+    "varying float vDepth;",
+    "const float PI=3.14159265359;",
+    "const float TAU=6.28318530718;",
+    "vec3 bodyPosition(float progress,float lane,float depth,float seed){",
+    "  float t=clamp(progress,0.0,1.0);",
+    "  float topGate=smoothstep(0.0,0.075,t);",
+    "  float upper=exp(-pow((t-0.38)/0.245,2.0))*0.175;",
+    "  float lower=exp(-pow((t-0.67)/0.22,2.0))*0.185;",
+    "  float envelope=mix(0.0025,upper+lower,topGate);",
+    "  envelope*=1.0-smoothstep(0.86,1.0,t);",
+    "  envelope+=0.0015;",
+    "  float globalSway=(sin(t*5.1-uTime*0.31)*0.019+sin(t*11.7+uTime*0.18+1.4)*0.008)*sin(PI*t);",
+    "  float twist=t*4.85-uTime*0.17+sin(t*3.2-uTime*0.11)*0.34+(seed-0.5)*1.55;",
+    "  float breathing=0.82+0.18*sin(t*16.0-uTime*0.74+seed*9.0);",
+    "  float laneShape=lane*(0.78+0.22*sin(t*9.0-uTime*0.37+seed*17.0))+sin(t*13.0-uTime*0.29+seed*23.0)*abs(lane)*0.11;",
+    "  float crossX=laneShape*cos(twist)*breathing+depth*sin(twist)*0.38;",
+    "  float crossZ=laneShape*sin(twist)*breathing-depth*cos(twist)*0.38;",
+    "  float x=0.5+globalSway+crossX*envelope;",
+    "  float y=0.026+t*0.802+sin(t*19.0-uTime*0.82+seed*7.0)*envelope*0.022;",
+    "  float z=crossZ*envelope;",
+    "  x+=z*0.055;",
+    "  return vec3(x,y,z);",
     "}",
-    "float valueNoise(vec2 point){",
-    "  vec2 cell=floor(point);",
-    "  vec2 local=fract(point);",
-    "  local=local*local*(3.0-2.0*local);",
-    "  float a=hash21(cell);",
-    "  float b=hash21(cell+vec2(1.0,0.0));",
-    "  float c=hash21(cell+vec2(0.0,1.0));",
-    "  float d=hash21(cell+vec2(1.0,1.0));",
-    "  return mix(mix(a,b,local.x),mix(c,d,local.x),local.y);",
-    "}",
-    "float fbm(vec2 point){",
-    "  float sum=0.0;",
-    "  float amplitude=0.52;",
-    "  for(int octave=0;octave<4;octave++){",
-    "    sum+=valueNoise(point)*amplitude;",
-    "    point=mat2(1.67,-1.12,1.12,1.67)*point+vec2(4.3,7.1);",
-    "    amplitude*=0.48;",
+    "vec3 poolPosition(float progress,float radiusSeed,float depth,float seed,float kind){",
+    "  float angularSpeed=0.045+0.024*(depth*0.5+0.5);",
+    "  float angle;",
+    "  float radius;",
+    "  if(kind<1.5){",
+    "    angle=progress*TAU+seed*TAU+uTime*angularSpeed;",
+    "    radius=0.025+radiusSeed*0.45;",
+    "  }else{",
+    "    angle=progress*TAU*1.82+seed*TAU+uTime*(angularSpeed+0.028);",
+    "    radius=0.018+progress*radiusSeed*0.45;",
     "  }",
-    "  return sum;",
+    "  radius+=sin(angle*3.0-uTime*0.52+seed*11.0)*0.0045*(0.25+radiusSeed*0.75);",
+    "  float x=0.5+cos(angle)*radius;",
+    "  float y=0.895+sin(angle)*radius*0.155+sin(angle*5.0+uTime*0.31+seed*6.0)*0.0018;",
+    "  float z=depth*0.026+sin(angle*2.0+seed*4.0)*0.008;",
+    "  x+=z*0.055;",
+    "  return vec3(x,y,z);",
     "}",
-    "vec4 flowSample(vec2 uv){",
-    "  if(uv.x<=0.001||uv.x>=0.999||uv.y<=0.001||uv.y>=0.999)return vec4(0.0);",
-    "  return texture2D(uFlowTexture,uv);",
+    "vec3 flowPosition(float progress){",
+    "  return aStyle.w<0.5?bodyPosition(progress,aFlow.z,aStyle.x,aFlow.w):poolPosition(progress,aFlow.z,aStyle.x,aFlow.w,aStyle.w);",
     "}",
     "void main(){",
-    "  float displayWidth=uTextureAspect/uCanvasAspect;",
-    "  vec2 uv=vec2((vUv.x-0.5)/displayWidth+0.5,vUv.y);",
-    "  if(uv.x<=0.0||uv.x>=1.0){gl_FragColor=vec4(0.0);return;}",
-    "  float down=1.0-uv.y;",
-    "  float time=uTime;",
-    "  float sourceLock=smoothstep(0.045,0.16,down);",
-    "  float bodyGate=(1.0-smoothstep(0.77,0.91,down))*sourceLock;",
-    "  float poolGate=smoothstep(0.69,0.84,down);",
-    "  float widthGain=smoothstep(0.05,0.43,down)*(1.0-smoothstep(0.73,0.9,down));",
-    "  float broad=sin(down*8.6-time*0.72)+0.46*sin(down*18.7-time*0.43+1.8);",
-    "  float current=fbm(vec2(down*3.8-time*0.14,2.7))-0.5;",
-    "  float sway=(broad*0.0065+current*0.021)*widthGain*sourceLock;",
-    "  float localX=uv.x-0.5;",
-    "  float sheetPhase=down*23.0-time*1.08+localX*9.0;",
-    "  vec2 bodyWarp=vec2(sway+sin(sheetPhase)*0.0047*bodyGate,sin(down*13.0-time*0.63+localX*15.0)*0.0028*bodyGate);",
-    "  vec2 poolPoint=vec2((uv.x-0.5)*1.12,(down-0.865)*2.0);",
-    "  float poolRadius=length(poolPoint);",
-    "  float poolAngle=atan(poolPoint.y,poolPoint.x);",
-    "  float turn=time*(0.052+0.018*smoothstep(0.0,1.0,poolRadius));",
-    "  float cs=cos(turn);",
-    "  float sn=sin(turn);",
-    "  vec2 spun=mat2(cs,-sn,sn,cs)*poolPoint;",
-    "  float ringWave=sin(poolRadius*30.0-time*1.28+poolAngle*2.0);",
-    "  spun*=1.0+ringWave*0.0065*poolGate;",
-    "  vec2 poolUv=vec2(0.5+spun.x/1.12,1.0-(0.865+spun.y/2.0));",
-    "  vec2 primaryUv=mix(uv+bodyWarp,poolUv,poolGate);",
-    "  float innerWave=sin(down*31.0-time*1.45+localX*21.0);",
-    "  vec2 layerAUv=primaryUv+vec2(innerWave*0.0038*bodyGate,-0.0042*bodyGate);",
-    "  vec2 layerBUv=primaryUv+vec2(-innerWave*0.0054*bodyGate,0.0056*bodyGate);",
-    "  vec2 layerCUv=primaryUv+vec2((current+innerWave*0.3)*0.008*bodyGate,-0.0085*bodyGate);",
-    "  vec4 base=flowSample(primaryUv);",
-    "  vec4 layerA=flowSample(layerAUv);",
-    "  vec4 layerB=flowSample(layerBUv);",
-    "  vec4 layerC=flowSample(layerCUv);",
-    "  vec4 anchor=flowSample(uv);",
-    "  float blurAlpha=(flowSample(primaryUv+vec2(0.011,0.0)).a+flowSample(primaryUv-vec2(0.011,0.0)).a+flowSample(primaryUv+vec2(0.0,0.009)).a+flowSample(primaryUv-vec2(0.0,0.009)).a)*0.25;",
-    "  float a0=base.a*0.62;",
-    "  float a1=layerA.a*0.38;",
-    "  float a2=layerB.a*0.34;",
-    "  float a3=layerC.a*0.25;",
-    "  float anchorWeight=mix(0.26,0.08,bodyGate);",
-    "  float aa=anchor.a*anchorWeight;",
-    "  float alpha=1.0-(1.0-a0)*(1.0-a1)*(1.0-a2)*(1.0-a3)*(1.0-aa);",
-    "  vec3 premul=base.rgb*a0+layerA.rgb*a1+layerB.rgb*a2+layerC.rgb*a3+anchor.rgb*aa;",
-    "  float weight=max(0.001,a0+a1+a2+a3+aa);",
-    "  vec3 color=premul/weight;",
-    "  float travelling=0.93+0.07*sin(down*74.0-time*3.2+current*11.0);",
-    "  color*=travelling;",
-    "  float halo=max(0.0,blurAlpha-alpha)*0.34+blurAlpha*0.045;",
-    "  vec3 haloTone=mix(vec3(0.36,0.66,0.72),vec3(0.95,0.69,0.34),smoothstep(0.44,0.61,uv.x));",
-    "  color+=haloTone*halo;",
-    "  alpha=clamp(alpha+halo,0.0,0.98);",
-    "  vec2 sparkPoint=vec2(uv.x*124.0,(down-time*0.045)*156.0);",
-    "  vec2 sparkCell=floor(sparkPoint);",
-    "  vec2 sparkLocal=fract(sparkPoint)-0.5;",
-    "  vec2 sparkOffset=vec2(hash21(sparkCell+2.1),hash21(sparkCell+8.7))-0.5;",
-    "  float sparkSeed=hash21(sparkCell+17.4);",
-    "  float spark=(1.0-smoothstep(0.025,0.13,length(sparkLocal-sparkOffset*0.72)))*step(0.955,sparkSeed);",
-    "  spark*=smoothstep(0.025,0.28,max(alpha,blurAlpha))*(0.35+0.65*sourceLock);",
-    "  color+=mix(vec3(0.56,0.82,0.86),vec3(1.0,0.78,0.38),step(0.51,uv.x))*spark*0.55;",
-    "  alpha=max(alpha,spark*0.5);",
-    "  float edgeFade=smoothstep(0.0,0.018,vUv.y)*smoothstep(0.0,0.018,1.0-vUv.y);",
-    "  gl_FragColor=vec4(color,alpha*edgeFade);",
+    "  float progress=aFlow.x;",
+    "  vec3 center=flowPosition(progress);",
+    "  vec3 before=flowPosition(max(0.0,progress-0.0025));",
+    "  vec3 after=flowPosition(min(1.0,progress+0.0025));",
+    "  vec2 tangentPx=normalize(vec2((after.x-before.x)*uCanvasAspect,after.y-before.y)+vec2(0.00001));",
+    "  vec2 normal=vec2(-tangentPx.y/uCanvasAspect,tangentPx.x);",
+    "  float perspective=clamp(1.0+center.z*1.8,0.72,1.24);",
+    "  center.xy+=normal*aFlow.y*aStyle.y*uWidthScale*perspective;",
+    "  gl_Position=vec4(center.x*2.0-1.0,1.0-center.y*2.0,center.z,1.0);",
+    "  vEdge=aFlow.y;",
+    "  vProgress=progress;",
+    "  vSeed=aFlow.w;",
+    "  vTone=smoothstep(0.43,0.57,center.x);",
+    "  vAlpha=aStyle.z;",
+    "  vKind=aStyle.w;",
+    "  vWidth=aStyle.y;",
+    "  vDepth=center.z;",
+    "}"
+  ].join("\n");
+
+  const homeFlowRibbonFragmentShader=[
+    "#ifdef GL_FRAGMENT_PRECISION_HIGH",
+    "precision highp float;",
+    "#else",
+    "precision mediump float;",
+    "#endif",
+    "uniform float uTime;",
+    "uniform float uOpacity;",
+    "varying float vEdge;",
+    "varying float vProgress;",
+    "varying float vSeed;",
+    "varying float vTone;",
+    "varying float vAlpha;",
+    "varying float vKind;",
+    "varying float vWidth;",
+    "varying float vDepth;",
+    "void main(){",
+    "  float sheet=smoothstep(0.004,0.012,vWidth);",
+    "  float edge=pow(max(0.0,1.0-abs(vEdge)),mix(2.2,0.56,sheet));",
+    "  float bodyPacket=0.66+0.34*pow(0.5+0.5*sin(vProgress*96.0-uTime*(2.25+vSeed*0.9)+vSeed*31.0),4.0);",
+    "  float poolPacket=0.68+0.32*pow(0.5+0.5*sin(vProgress*78.0-uTime*(1.15+vSeed*0.45)+vSeed*27.0),5.0);",
+    "  float packet=mix(bodyPacket,poolPacket,step(0.5,vKind));",
+    "  float micro=0.82+0.18*sin(vProgress*241.0-uTime*3.1+vSeed*53.0);",
+    "  vec3 cool=vec3(0.36,0.76,0.86);",
+    "  vec3 ivory=vec3(0.91,0.94,0.88);",
+    "  vec3 warm=vec3(1.0,0.72,0.30);",
+    "  vec3 color=vTone<0.5?mix(ivory,cool,min(1.0,(0.5-vTone)*2.25)):mix(ivory,warm,min(1.0,(vTone-0.5)*2.25));",
+    "  float depthLight=clamp(0.82+vDepth*3.1,0.48,1.18);",
+    "  float alpha=vAlpha*edge*mix(packet,0.82+packet*0.18,sheet)*mix(micro,1.0,sheet)*depthLight*uOpacity;",
+    "  color*=mix(1.18,1.02,sheet)*(0.84+packet*0.24);",
+    "  gl_FragColor=vec4(color,alpha);",
+    "}"
+  ].join("\n");
+
+  const homeFlowParticleVertexShader=[
+    "#ifdef GL_FRAGMENT_PRECISION_HIGH",
+    "precision highp float;",
+    "#else",
+    "precision mediump float;",
+    "#endif",
+    "attribute vec4 aParticle;",
+    "attribute vec4 aParticleStyle;",
+    "uniform float uTime;",
+    "uniform float uPixelRatio;",
+    "varying float vTone;",
+    "varying float vAlpha;",
+    "varying float vSource;",
+    "const float PI=3.14159265359;",
+    "const float TAU=6.28318530718;",
+    "vec3 bodyPosition(float progress,float lane,float depth,float seed){",
+    "  float t=clamp(progress,0.0,1.0);",
+    "  float topGate=smoothstep(0.0,0.075,t);",
+    "  float upper=exp(-pow((t-0.38)/0.245,2.0))*0.175;",
+    "  float lower=exp(-pow((t-0.67)/0.22,2.0))*0.185;",
+    "  float envelope=mix(0.0025,upper+lower,topGate);",
+    "  envelope*=1.0-smoothstep(0.86,1.0,t);",
+    "  envelope+=0.0015;",
+    "  float globalSway=(sin(t*5.1-uTime*0.31)*0.019+sin(t*11.7+uTime*0.18+1.4)*0.008)*sin(PI*t);",
+    "  float twist=t*4.85-uTime*0.17+sin(t*3.2-uTime*0.11)*0.34+(seed-0.5)*1.55;",
+    "  float breathing=0.82+0.18*sin(t*16.0-uTime*0.74+seed*9.0);",
+    "  float laneShape=lane*(0.78+0.22*sin(t*9.0-uTime*0.37+seed*17.0))+sin(t*13.0-uTime*0.29+seed*23.0)*abs(lane)*0.11;",
+    "  float crossX=laneShape*cos(twist)*breathing+depth*sin(twist)*0.38;",
+    "  float crossZ=laneShape*sin(twist)*breathing-depth*cos(twist)*0.38;",
+    "  float x=0.5+globalSway+crossX*envelope;",
+    "  float y=0.026+t*0.802+sin(t*19.0-uTime*0.82+seed*7.0)*envelope*0.022;",
+    "  float z=crossZ*envelope;",
+    "  x+=z*0.055;",
+    "  return vec3(x,y,z);",
+    "}",
+    "void main(){",
+    "  float kind=aParticleStyle.z;",
+    "  vec3 position;",
+    "  if(kind<0.5){",
+    "    float progress=fract(aParticle.x+uTime*(0.026+aParticle.w*0.018));",
+    "    position=bodyPosition(progress,aParticle.y,aParticle.z,aParticle.w);",
+    "  }else if(kind<1.5){",
+    "    position=vec3(0.5,0.026,0.08);",
+    "  }else if(kind<2.5){",
+    "    float angle=aParticle.x*TAU+uTime*(0.075+aParticle.w*0.045);",
+    "    float radius=0.025+aParticle.y*0.45;",
+    "    position=vec3(0.5+cos(angle)*radius,0.895+sin(angle)*radius*0.155,aParticle.z*0.02);",
+    "  }else{",
+    "    position=vec3(0.5,0.828,0.07);",
+    "  }",
+    "  gl_Position=vec4(position.x*2.0-1.0,1.0-position.y*2.0,position.z,1.0);",
+    "  gl_PointSize=aParticleStyle.x*uPixelRatio*(kind>0.5&&kind<1.5?1.0:clamp(1.0+position.z*4.0,0.72,1.32));",
+    "  vTone=smoothstep(0.43,0.57,position.x);",
+    "  vAlpha=aParticleStyle.y;",
+    "  vSource=max(step(0.5,kind)*(1.0-step(1.5,kind)),step(2.5,kind));",
+    "}"
+  ].join("\n");
+
+  const homeFlowParticleFragmentShader=[
+    "precision mediump float;",
+    "varying float vTone;",
+    "varying float vAlpha;",
+    "varying float vSource;",
+    "void main(){",
+    "  float radius=length(gl_PointCoord-0.5);",
+    "  float soft=1.0-smoothstep(0.08,0.5,radius);",
+    "  vec3 cool=vec3(0.43,0.76,0.82);",
+    "  vec3 warm=vec3(1.0,0.73,0.31);",
+    "  vec3 color=mix(cool,warm,vTone);",
+    "  if(vSource>0.5){",
+    "    float core=1.0-smoothstep(0.0,0.18,radius);",
+    "    color=mix(vec3(1.0,0.69,0.24),vec3(1.0,1.0,0.94),core);",
+    "    soft=pow(soft,1.3);",
+    "  }",
+    "  gl_FragColor=vec4(color,vAlpha*soft);",
     "}"
   ].join("\n");
 
@@ -172,9 +258,9 @@
     throw new Error(message);
   }
 
-  function createHomeFlowProgram(gl){
-    const vertex=compileHomeFlowShader(gl,gl.VERTEX_SHADER,homeFlowVertexShader);
-    const fragment=compileHomeFlowShader(gl,gl.FRAGMENT_SHADER,homeFlowFragmentShader);
+  function createHomeFlowProgram(gl,vertexSource,fragmentSource){
+    const vertex=compileHomeFlowShader(gl,gl.VERTEX_SHADER,vertexSource);
+    const fragment=compileHomeFlowShader(gl,gl.FRAGMENT_SHADER,fragmentSource);
     const program=gl.createProgram();
     gl.attachShader(program,vertex);
     gl.attachShader(program,fragment);
@@ -187,16 +273,56 @@
     throw new Error(message);
   }
 
-  function createHomeFlowTexture(gl,image){
-    const texture=gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D,texture);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
-    return texture;
+  function appendHomeFlowRibbon(target,segments,lane,seed,depth,width,alpha,kind){
+    const vertex=(progress,edge)=>[progress,edge,lane,seed,depth,width,alpha,kind];
+    for(let segment=0;segment<segments-1;segment+=1){
+      const start=segment/(segments-1);
+      const end=(segment+1)/(segments-1);
+      target.push(...vertex(start,-1),...vertex(start,1),...vertex(end,-1),...vertex(end,-1),...vertex(start,1),...vertex(end,1));
+    }
+  }
+
+  function createHomeFlowRibbonGeometry(){
+    const random=createHomeFlowRandom();
+    const vertices=[];
+    for(let index=0;index<HOME_FLOW_BODY_SHEETS;index+=1){
+      const raw=random()*2-1;
+      const lane=Math.sign(raw||1)*Math.pow(Math.abs(raw),.72);
+      appendHomeFlowRibbon(vertices,82,lane,random(),random()*2-1,.006+random()*.01,.12+random()*.08,0);
+    }
+    for(let index=0;index<HOME_FLOW_BODY_FILAMENTS;index+=1){
+      const core=index<20;
+      const raw=random()*2-1;
+      const lane=core?raw*.14:Math.sign(raw||1)*Math.pow(Math.abs(raw),.78);
+      const depth=core?(random()*2-1)*.22:random()*2-1;
+      appendHomeFlowRibbon(vertices,90,lane,random(),depth,core?.001+random()*.0025:.0007+random()*.0016,core?.32+random()*.18:.34+random()*.22,0);
+    }
+    for(let index=0;index<HOME_FLOW_POOL_RINGS;index+=1){
+      const radius=(index+1)/(HOME_FLOW_POOL_RINGS+2);
+      const broad=index%9===0;
+      appendHomeFlowRibbon(vertices,102,radius,random(),random()*2-1,broad?.006+random()*.008:.00065+random()*.0019,broad?.15+random()*.1:.3+random()*.34,1);
+    }
+    for(let index=0;index<HOME_FLOW_POOL_SPIRALS;index+=1){
+      const broad=index%11===0;
+      appendHomeFlowRibbon(vertices,118,.48+random()*.52,random(),random()*2-1,broad?.005+random()*.008:.00065+random()*.0019,broad?.14+random()*.11:.28+random()*.34,2);
+    }
+    return new Float32Array(vertices);
+  }
+
+  function createHomeFlowParticleGeometry(){
+    const random=createHomeFlowRandom(0x9e3779b9);
+    const particles=[];
+    for(let index=0;index<HOME_FLOW_BODY_PARTICLES;index+=1){
+      const raw=random()*2-1;
+      const lane=Math.sign(raw||1)*Math.pow(Math.abs(raw),.78);
+      particles.push(random(),lane,random()*2-1,random(),.8+random()*1.8,.12+random()*.34,0,0);
+    }
+    for(let index=0;index<HOME_FLOW_POOL_PARTICLES;index+=1){
+      particles.push(random(),Math.pow(random(),.62),random()*2-1,random(),.75+random()*1.65,.1+random()*.28,2,0);
+    }
+    particles.push(0,0,0,0,28,.94,1,0);
+    particles.push(0,0,0,0,22,.68,3,0);
+    return new Float32Array(particles);
   }
 
   function sizeHomeFlowCanvas(canvas,maxRatio=1.4){
@@ -208,29 +334,41 @@
     return {width,height};
   }
 
-  function startReferenceHomeFlow(canvas,image,reducedMotion){
-    const gl=canvas.getContext("webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false,powerPreference:"high-performance"})
-      ||canvas.getContext("experimental-webgl",{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false});
-    if(!gl)return null;
-    const program=createHomeFlowProgram(gl);
-    const texture=createHomeFlowTexture(gl,image);
-    const buffer=gl.createBuffer();
+  function bindHomeFlowAttributes(gl,program,buffer,firstName,secondName){
     gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-    gl.useProgram(program);
-    const position=gl.getAttribLocation(program,"aPosition");
-    gl.enableVertexAttribArray(position);
-    gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-    const uniforms={
-      texture:gl.getUniformLocation(program,"uFlowTexture"),
-      time:gl.getUniformLocation(program,"uTime"),
-      canvasAspect:gl.getUniformLocation(program,"uCanvasAspect"),
-      textureAspect:gl.getUniformLocation(program,"uTextureAspect")
+    const stride=8*Float32Array.BYTES_PER_ELEMENT;
+    const first=gl.getAttribLocation(program,firstName);
+    const second=gl.getAttribLocation(program,secondName);
+    gl.enableVertexAttribArray(first);
+    gl.enableVertexAttribArray(second);
+    gl.vertexAttribPointer(first,4,gl.FLOAT,false,stride,0);
+    gl.vertexAttribPointer(second,4,gl.FLOAT,false,stride,4*Float32Array.BYTES_PER_ELEMENT);
+  }
+
+  function startProcedural3DHomeFlow(canvas,reducedMotion){
+    const gl=canvas.getContext("webgl",{alpha:true,antialias:true,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false,powerPreference:"high-performance"})
+      ||canvas.getContext("experimental-webgl",{alpha:true,antialias:true,depth:false,stencil:false,premultipliedAlpha:false,preserveDrawingBuffer:false});
+    if(!gl)return null;
+    const ribbonProgram=createHomeFlowProgram(gl,homeFlowRibbonVertexShader,homeFlowRibbonFragmentShader);
+    const particleProgram=createHomeFlowProgram(gl,homeFlowParticleVertexShader,homeFlowParticleFragmentShader);
+    const ribbonData=createHomeFlowRibbonGeometry();
+    const particleData=createHomeFlowParticleGeometry();
+    const ribbonBuffer=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,ribbonBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,ribbonData,gl.STATIC_DRAW);
+    const particleBuffer=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,particleBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,particleData,gl.STATIC_DRAW);
+    const ribbonUniforms={
+      time:gl.getUniformLocation(ribbonProgram,"uTime"),
+      canvasAspect:gl.getUniformLocation(ribbonProgram,"uCanvasAspect"),
+      widthScale:gl.getUniformLocation(ribbonProgram,"uWidthScale"),
+      opacity:gl.getUniformLocation(ribbonProgram,"uOpacity")
     };
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D,texture);
-    gl.uniform1i(uniforms.texture,0);
-    gl.uniform1f(uniforms.textureAspect,(image.naturalWidth||image.width)/(image.naturalHeight||image.height)||HOME_FLOW_TEXTURE_ASPECT);
+    const particleUniforms={
+      time:gl.getUniformLocation(particleProgram,"uTime"),
+      pixelRatio:gl.getUniformLocation(particleProgram,"uPixelRatio")
+    };
     gl.clearColor(0,0,0,0);
     const started=root.performance?.now?.()||Date.now();
     let handle=0;
@@ -242,9 +380,10 @@
       if(stopped)return;
       stopped=true;
       if(handle)root.cancelAnimationFrame(handle);
-      gl.deleteBuffer(buffer);
-      gl.deleteTexture(texture);
-      gl.deleteProgram(program);
+      gl.deleteBuffer(ribbonBuffer);
+      gl.deleteBuffer(particleBuffer);
+      gl.deleteProgram(ribbonProgram);
+      gl.deleteProgram(particleProgram);
     };
     const draw=now=>{
       if(stopped)return;
@@ -255,10 +394,24 @@
       previous=stamp;
       gl.viewport(0,0,width,height);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.useProgram(program);
-      gl.uniform1f(uniforms.time,reducedMotion?1.8:elapsed);
-      gl.uniform1f(uniforms.canvasAspect,width/height);
-      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+      const time=reducedMotion?2.4:elapsed;
+      gl.useProgram(ribbonProgram);
+      bindHomeFlowAttributes(gl,ribbonProgram,ribbonBuffer,"aFlow","aStyle");
+      gl.uniform1f(ribbonUniforms.time,time);
+      gl.uniform1f(ribbonUniforms.canvasAspect,width/height);
+      gl.uniform1f(ribbonUniforms.widthScale,3.2);
+      gl.uniform1f(ribbonUniforms.opacity,.34);
+      gl.drawArrays(gl.TRIANGLES,0,ribbonData.length/8);
+      gl.uniform1f(ribbonUniforms.widthScale,1);
+      gl.uniform1f(ribbonUniforms.opacity,1);
+      gl.drawArrays(gl.TRIANGLES,0,ribbonData.length/8);
+      gl.useProgram(particleProgram);
+      bindHomeFlowAttributes(gl,particleProgram,particleBuffer,"aParticle","aParticleStyle");
+      gl.uniform1f(particleUniforms.time,time);
+      gl.uniform1f(particleUniforms.pixelRatio,Math.min(1.35,Math.max(1,Number(root.devicePixelRatio)||1)));
+      gl.drawArrays(gl.POINTS,0,particleData.length/8);
       frames+=1;
       if(frames===1||frames%6===0){
         canvas.dataset.flowFrames=String(frames);
@@ -270,36 +423,26 @@
         handle=root.requestAnimationFrame(draw);
       }
     };
-    canvas.dataset.flowRenderer="reference-advection-webgl";
-    canvas.dataset.flowLayers="5";
+    canvas.dataset.flowRenderer="procedural-3d-webgl";
+    canvas.dataset.flowRibbons=String(HOME_FLOW_BODY_SHEETS+HOME_FLOW_BODY_FILAMENTS+HOME_FLOW_POOL_RINGS+HOME_FLOW_POOL_SPIRALS);
+    canvas.dataset.flowParticles=String(HOME_FLOW_BODY_PARTICLES+HOME_FLOW_POOL_PARTICLES);
     canvas.classList.add("is-running");
     draw(started);
     return {stop};
   }
 
   function startHomeFluidFlow(canvas){
-    if(!canvas||typeof root.Image!=="function")return null;
+    if(!canvas)return null;
     const reducedMotion=Boolean(root.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
-    const styles=typeof root.getComputedStyle==="function"?root.getComputedStyle(canvas):null;
-    const source=parseHomeFlowGuide(styles?.getPropertyValue("--arise-flow-guide"));
-    if(!source)return null;
-    const image=new root.Image();
-    image.decoding="async";
     let controller=null;
-    image.onload=()=>{
-      if(!canvas.isConnected)return;
-      try{controller=startReferenceHomeFlow(canvas,image,reducedMotion);}catch(error){canvas.dataset.flowError=String(error?.message||error).slice(0,160);}
-      if(controller)return;
-      canvas.dataset.flowRenderer="static";
-      canvas.dataset.flowFrames="1";
-      canvas.dataset.flowTime="0.000";
-      canvas.classList.add("is-static");
-    };
-    image.onerror=()=>{
-      canvas.dataset.flowRenderer="static";
-      canvas.classList.add("is-static");
-    };
-    image.src=source;
+    if(typeof root.WebGLRenderingContext==="function"){
+      try{controller=startProcedural3DHomeFlow(canvas,reducedMotion);}catch(error){canvas.dataset.flowError=String(error?.message||error).slice(0,160);}
+    }
+    if(controller)return controller;
+    canvas.dataset.flowRenderer="static";
+    canvas.dataset.flowFrames="1";
+    canvas.dataset.flowTime="0.000";
+    canvas.classList.add("is-static");
     return {stop:()=>controller?.stop()};
   }
 
