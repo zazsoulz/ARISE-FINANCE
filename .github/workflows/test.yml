@@ -64,6 +64,7 @@ jobs:
           node --check onboarding.js
           node --check runtime-integrity.js
           node --check financial-bootstrap.js
+          node --check scripts/beta-supabase-preflight.js
           node --check scripts/build-standalone-preview.js
           node --check scripts/remove-legacy-nav-source.js
           node --check scripts/remove-legacy-home-source.js
