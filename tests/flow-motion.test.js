@@ -3,7 +3,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
 const index=fs.readFileSync('index.html','utf8');
-const source=fs.readFileSync('arise-v3.js','utf8');
+const shellSource=fs.readFileSync('arise-v3.js','utf8');
+const particleSource=fs.readFileSync('home-particle-matter.js','utf8');
 const css=fs.readFileSync('product-ui.css','utf8');
 
 function pos(value){return index.indexOf(value);}
@@ -19,28 +20,42 @@ test('home flow stays inside the canonical runtime and style surface',()=>{
   assert.equal(fs.existsSync('flow-motion.css'),false,'retired keyframe motion layer returned to the repository');
 });
 
-test('route-following rails and particles are physically absent from home markup',()=>{
-  assert.match(source,/return '<canvas class="arise-flow-canvas" aria-hidden="true"><\/canvas>'/);
+test('unified particle matter supersedes the legacy material renderer at runtime',()=>{
+  const legacy=pos('./arise-v3.js');
+  const particles=pos('./home-particle-matter.js');
+  assert.ok(legacy>=0,'arise-v3.js missing');
+  assert.ok(particles>legacy,'particle matter must load after the compatibility home renderer');
+  assert.match(particleSource,/flowArchitecture="unified-particle-matter"/);
+  assert.match(particleSource,/createParticlePopulation/);
+  assert.match(particleSource,/sampleParticle/);
+  assert.match(particleSource,/oldCanvas\.replaceWith\(canvas\)/);
+});
+
+test('route-following rails and independent particle overlays are absent from effective home markup',()=>{
+  assert.match(shellSource,/return '<canvas class="arise-flow-canvas" aria-hidden="true"><\/canvas>'/);
   for(const token of ['class="arise-flow-svg"','class="arise-flow-branch"','class="arise-flow-drift"','class="arise-flow-particles"','class="arise-flow-source"']){
-    assert.equal(source.includes(token),false,token+' returned to home markup');
+    assert.equal(shellSource.includes(token),false,token+' returned to home markup');
   }
+  assert.equal(particleSource.includes('ribbon'),false,'particle renderer must not introduce ribbon geometry');
+  assert.equal(particleSource.includes('mesh'),false,'particle renderer must not introduce mesh geometry');
+  assert.equal(particleSource.includes('uTexture'),false,'particle renderer must not depend on a raster material texture');
+  assert.equal(particleSource.includes('texture2D'),false,'particle renderer must not deform a raster material texture');
 });
 
-test('one continuously rendered material surface owns home motion',()=>{
-  assert.match(source,/function startWebGLHomeFlow\(canvas,image,reducedMotion\)/);
-  assert.match(source,/uniform float uTime/);
-  assert.match(source,/texture2D\(uTexture,shapeUv\)/);
-  assert.match(source,/texture2D\(uTexture,materialUv\)/);
-  assert.match(source,/float valueNoise\(vec2 point\)/);
-  assert.match(source,/vec2 particlePoint=/);
-  assert.match(source,/Math\.min\(1\/30,/);
-  assert.match(source,/requestAnimationFrame\(draw\)/);
+test('one particle population owns dense, sparse, cloud and reservoir states',()=>{
+  assert.match(particleSource,/const population=createParticlePopulation/);
+  assert.match(particleSource,/for\(const particle of population\)/);
+  assert.match(particleSource,/const state=sampleParticle\(particle,time\)/);
+  assert.match(particleSource,/const cloud=/);
+  assert.match(particleSource,/const reservoir=/);
+  assert.match(particleSource,/globalCompositeOperation="lighter"/);
+  assert.match(particleSource,/requestAnimationFrame\(draw\)/);
   assert.match(css,/\.arise-flow-canvas\{/);
-  assert.match(css,/--arise-flow-texture:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
 });
 
-test('fluid renderer has a safe static fallback and reduced-motion frame',()=>{
-  assert.match(source,/canvas\.dataset\.flowRenderer="static2d"/);
-  assert.match(source,/if\(reducedMotion\)\{[\s\S]*?canvas\.dataset\.flowMotion="reduced"/);
+test('particle renderer has a safe static fallback and deterministic reduced-motion frame',()=>{
+  assert.match(particleSource,/canvas\.dataset\.flowRenderer="static"/);
+  assert.match(particleSource,/reducedMotion\?0\.43:elapsed/);
+  assert.match(particleSource,/canvas\.dataset\.flowMotion=reducedMotion\?"reduced":"active"/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?\.arise-flow-canvas\{[\s\S]*?transform:none!important/);
 });
