@@ -40,6 +40,7 @@ jobs:
           node --check product-rules.js
           node --check navigation-compat.js
           node --check arise-v3.js
+          node --check home-particle-matter.js
           node --check expense-edit-ui.js
           node --check history-inspector.js
           node --check product-ui.js
