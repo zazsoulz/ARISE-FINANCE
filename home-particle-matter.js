@@ -27,8 +27,8 @@
         depth,
         seed,
         tone:toneSeed<0.18?"cool":toneSeed>0.76?"warm":"pale",
-        speed:mix(0.030,0.052,hash(index+131.9)),
-        radius:mix(0.55,1.45,depth)
+        speed:mix(0.028,0.049,hash(index+131.9)),
+        radius:mix(0.50,1.32,depth)
       };
     });
   }
@@ -43,14 +43,16 @@
     const progress=(particle.phase+time*particle.speed)%1;
     const cloud=smoothstep(0.24,0.43,progress)*(1-smoothstep(0.60,0.76,progress));
     const grain=smoothstep(0.12,0.28,progress)*(1-smoothstep(0.68,0.82,progress));
+    const reconverge=smoothstep(0.56,0.76,progress);
     const reservoir=smoothstep(0.76,0.98,progress);
-    const topWidth=mix(0.065,0.10,smoothstep(0.02,0.20,progress));
+    const topWidth=mix(0.055,0.086,smoothstep(0.02,0.20,progress));
     const cloudWidth=mix(topWidth,0.285,cloud);
-    const streamWidth=mix(cloudWidth,0.105,smoothstep(0.58,0.78,progress));
+    const streamWidth=mix(cloudWidth,0.092,reconverge);
     const width=mix(streamWidth,0.31,reservoir);
     const travellingNoise=Math.sin((progress*8.7+particle.seed*4.9+time*0.14)*TAU);
     const secondaryNoise=Math.sin((progress*4.1+particle.depth*2.3-time*0.09)*TAU);
-    const center=0.5+travellingNoise*0.018+secondaryNoise*0.010;
+    const weave=Math.sin((progress*5.4+particle.seed*2.8+time*0.07)*TAU)*(1-cloud)*0.012;
+    const center=0.5+travellingNoise*0.016+secondaryNoise*0.009+weave;
     const cloudDrift=cloud*Math.sin((particle.seed*3.2+progress*1.7+time*0.05)*TAU)*0.08;
     let x=center+particle.lane*width+cloudDrift;
     let y=-0.035+progress*1.055;
@@ -59,10 +61,12 @@
       x+=Math.cos(angle)*0.035*reservoir*(0.4+particle.depth*0.6);
       y-=Math.abs(Math.sin(angle))*0.020*reservoir;
     }
-    const dense=1-cloud*0.78;
-    const radius=particle.radius*mix(1.35,0.68,cloud)*mix(1,1.18,reservoir);
-    const alpha=mix(0.22,0.66,dense)*mix(0.72,1,particle.depth)*(0.86+grain*0.14);
-    return {x,y,progress,cloud,grain,reservoir,dense,radius,alpha};
+    const dense=1-cloud*0.80;
+    const radius=particle.radius*mix(1.52,0.62,cloud)*mix(1,1.18,reservoir);
+    const haloRadius=radius*mix(2.15,1.35,cloud);
+    const alpha=mix(0.20,0.58,dense)*mix(0.72,1,particle.depth)*(0.86+grain*0.14);
+    const haloAlpha=alpha*mix(0.26,0.08,cloud);
+    return {x,y,progress,cloud,grain,reconverge,reservoir,dense,radius,haloRadius,alpha,haloAlpha};
   }
 
   function sizeCanvas(canvas){
@@ -74,6 +78,23 @@
     return {width,height,ratio};
   }
 
+  function drawParticle(context,particle,state,width,height,ratio){
+    const x=state.x*width;
+    const y=state.y*height;
+    const haloRadius=Math.max(0.65,state.haloRadius*ratio);
+    const coreRadius=Math.max(0.42,state.radius*ratio);
+    if(state.haloAlpha>0.012){
+      context.beginPath();
+      context.arc(x,y,haloRadius,0,TAU);
+      context.fillStyle=toneColor(particle.tone,state.haloAlpha);
+      context.fill();
+    }
+    context.beginPath();
+    context.arc(x,y,coreRadius,0,TAU);
+    context.fillStyle=toneColor(particle.tone,state.alpha);
+    context.fill();
+  }
+
   function drawPopulation(context,canvas,population,time){
     const {width,height,ratio}=sizeCanvas(canvas);
     context.setTransform(1,0,0,1,0,0);
@@ -82,13 +103,7 @@
     for(const particle of population){
       const state=sampleParticle(particle,time);
       if(state.y<-0.03||state.y>1.03||state.x<-0.08||state.x>1.08)continue;
-      const x=state.x*width;
-      const y=state.y*height;
-      const radius=Math.max(0.45,state.radius*ratio);
-      context.beginPath();
-      context.arc(x,y,radius,0,TAU);
-      context.fillStyle=toneColor(particle.tone,state.alpha);
-      context.fill();
+      drawParticle(context,particle,state,width,height,ratio);
     }
     context.globalCompositeOperation="source-over";
   }
@@ -105,7 +120,7 @@
     }
     const reducedMotion=Boolean(root.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
     const compact=(canvas.clientWidth||0)<520;
-    const population=createParticlePopulation(compact?920:1480);
+    const population=createParticlePopulation(compact?1280:2200);
     canvas.dataset.flowPopulation=String(population.length);
     canvas.dataset.flowRenderer="particle2d";
     canvas.dataset.flowPopulationOwner="home-particle-matter";

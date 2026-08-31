@@ -15,6 +15,10 @@ function stddev(values){
   return Math.sqrt(values.reduce((sum,value)=>sum+(value-mean)**2,0)/values.length);
 }
 
+function mean(values){
+  return values.reduce((sum,value)=>sum+value,0)/values.length;
+}
+
 test('one deterministic population expands into a cloud and reconverges without population swaps',()=>{
   const matter=loadMatter();
   const population=matter.createParticlePopulation(1200);
@@ -34,6 +38,29 @@ test('one deterministic population expands into a cloud and reconverges without 
   assert.ok(stddev(bands.cloud)>stddev(bands.top)*1.6,'cloud state must expose a much wider particle field than dense top flow');
   assert.ok(stddev(bands.cloud)>stddev(bands.stream)*1.5,'particles must reconverge after the cloud state');
   assert.ok(stddev(bands.reservoir)>stddev(bands.stream)*1.5,'the same particles must open into the connected lower reservoir');
+});
+
+test('dense regions visually cohere while cloud particles become smaller and more individually legible',()=>{
+  const matter=loadMatter();
+  const population=matter.createParticlePopulation(1600);
+  const denseRadii=[];
+  const denseHalos=[];
+  const cloudRadii=[];
+  const cloudHalos=[];
+  for(const particle of population){
+    const state=matter.sampleParticle(particle,0);
+    if(state.progress>0.08&&state.progress<0.20){
+      denseRadii.push(state.radius);
+      denseHalos.push(state.haloRadius);
+    }
+    if(state.progress>0.42&&state.progress<0.56){
+      cloudRadii.push(state.radius);
+      cloudHalos.push(state.haloRadius);
+    }
+  }
+  assert.ok(denseRadii.length>80&&cloudRadii.length>80,'appearance bands must be sufficiently sampled');
+  assert.ok(mean(denseRadii)>mean(cloudRadii)*1.6,'dense matter should use larger particle cores than the exposed cloud');
+  assert.ok(mean(denseHalos)>mean(cloudHalos)*2,'dense matter should gain cohesion from the same particles rather than a separate overlay');
 });
 
 test('color tendencies are intermingled rather than assigned as independent lanes',()=>{
@@ -79,8 +106,8 @@ test('reduced motion draws one stable frame from the same particle population',(
     assert.equal(canvas.dataset.flowMotion,'reduced');
     assert.equal(canvas.dataset.flowFrames,'1');
     assert.equal(canvas.dataset.flowTime,'0.430');
-    assert.equal(canvas.dataset.flowPopulation,'920');
-    assert.equal(controller.population.length,920);
+    assert.equal(canvas.dataset.flowPopulation,'1280');
+    assert.equal(controller.population.length,1280);
     assert.equal(rafCalls,0,'reduced motion must not schedule animation frames');
   }finally{
     globalThis.matchMedia=previousMatchMedia;
