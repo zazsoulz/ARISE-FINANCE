@@ -64,10 +64,15 @@ test('month timeline includes zero-operation calendar months',()=>{
   assert.equal(june.freeEnd,10000,'carried unallocated money remains visible in an empty month');
 });
 
-test('series is chronological and lifetime analytics stay transaction-derived',()=>{
+test('series is chronological through the current calendar month and lifetime analytics stay transaction-derived',()=>{
   const p=profile();
-  assert.deepEqual(analytics.series(p).map(row=>row.month),['2026-07','2026-08']);
+  const expectedMonths=analytics.months(p);
+  const seriesMonths=analytics.series(p).map(row=>row.month);
+  assert.deepEqual(seriesMonths,expectedMonths.slice(-12));
+  assert.equal(seriesMonths[0],'2026-07','series must still begin at the first ledger month while inside the default window');
+  assert.ok(seriesMonths.includes('2026-08'),'last transaction month must remain represented');
   const life=analytics.lifetime(p);
+  assert.equal(life.months,expectedMonths.length,'lifetime calendar span must follow the same current-month contract');
   assert.equal(life.totalIncome,300000);
   assert.equal(life.totalExpenses,60000);
   assert.equal(life.maxIncome,150000);
