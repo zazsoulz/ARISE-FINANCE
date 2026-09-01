@@ -116,3 +116,68 @@ test('reduced motion draws one stable frame from the same particle population',(
     globalThis.devicePixelRatio=previousDpr;
   }
 });
+
+test('unified home flow suppresses the legacy texture renderer before render and reuses the canonical canvas',()=>{
+  const previous={
+    renderHome:globalThis.renderHome,
+    document:globalThis.document,
+    matchMedia:globalThis.matchMedia,
+    requestAnimationFrame:globalThis.requestAnimationFrame,
+    cancelAnimationFrame:globalThis.cancelAnimationFrame,
+    devicePixelRatio:globalThis.devicePixelRatio
+  };
+  let suppressionActive=false;
+  let suppressionRemoved=false;
+  let legacyCalls=0;
+  let cloneCalls=0;
+  const context={
+    setTransform(){},clearRect(){},beginPath(){},arc(){},fill(){},
+    set globalCompositeOperation(_value){},
+    set fillStyle(_value){}
+  };
+  const canvas={
+    clientWidth:390,clientHeight:570,width:0,height:0,isConnected:true,
+    dataset:{},style:{},classList:{add(){}},
+    getContext(){return context;},
+    removeAttribute(name){delete this.dataset[name];},
+    cloneNode(){cloneCalls+=1;return this;}
+  };
+  try{
+    globalThis.matchMedia=()=>({matches:true});
+    globalThis.requestAnimationFrame=()=>1;
+    globalThis.cancelAnimationFrame=()=>{};
+    globalThis.devicePixelRatio=1;
+    globalThis.document={
+      head:{appendChild(style){suppressionActive=true;style.__attached=true;}},
+      createElement(){
+        return {
+          dataset:{},textContent:'',
+          remove(){suppressionActive=false;suppressionRemoved=true;this.__attached=false;}
+        };
+      },
+      querySelector(selector){return selector==='.arise-flow-canvas'?canvas:null;}
+    };
+    globalThis.renderHome=()=>{
+      legacyCalls+=1;
+      assert.equal(suppressionActive,true,'legacy render must execute while the old texture source is suppressed');
+    };
+    const matter=loadMatter();
+    matter.installUnifiedHomeFlow();
+    globalThis.renderHome();
+    assert.equal(legacyCalls,1);
+    assert.equal(suppressionRemoved,true,'temporary suppression must be removed after the legacy screen shell renders');
+    assert.equal(suppressionActive,false);
+    assert.equal(cloneCalls,0,'canonical canvas must not be replaced just to stop the legacy renderer');
+    assert.equal(canvas.dataset.flowArchitecture,'unified-particle-matter');
+    assert.equal(canvas.dataset.flowRenderer,'particle2d');
+  }finally{
+    globalThis.renderHome=previous.renderHome;
+    globalThis.document=previous.document;
+    globalThis.matchMedia=previous.matchMedia;
+    globalThis.requestAnimationFrame=previous.requestAnimationFrame;
+    globalThis.cancelAnimationFrame=previous.cancelAnimationFrame;
+    globalThis.devicePixelRatio=previous.devicePixelRatio;
+    delete globalThis.ARISE_PARTICLE_MATTER;
+    delete globalThis.__ARISE_UNIFIED_PARTICLE_FLOW_INSTALLED__;
+  }
+});

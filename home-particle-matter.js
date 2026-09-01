@@ -152,19 +152,32 @@
     };
   }
 
+  function suppressLegacyFlowRenderer(){
+    const document=root.document;
+    if(!document||typeof document.createElement!=="function"||!document.head?.appendChild)return null;
+    const style=document.createElement("style");
+    style.dataset.ariseFlowSuppression="legacy-renderer";
+    style.textContent=".arise-flow-canvas{--arise-flow-texture:none!important;background:none!important}";
+    document.head.appendChild(style);
+    return ()=>style.remove?.();
+  }
+
   function installUnifiedHomeFlow(){
     if(root.__ARISE_UNIFIED_PARTICLE_FLOW_INSTALLED__)return;
     if(typeof root.renderHome!=="function")return;
     const legacyRenderHome=root.renderHome;
     root.renderHome=function(){
-      legacyRenderHome.apply(this,arguments);
-      const oldCanvas=root.document?.querySelector?.(".arise-flow-canvas");
-      if(!oldCanvas)return;
-      const canvas=oldCanvas.cloneNode(false);
-      canvas.removeAttribute("data-flow-renderer");
-      canvas.removeAttribute("data-flow-frames");
-      canvas.removeAttribute("data-flow-time");
-      oldCanvas.replaceWith(canvas);
+      const releaseLegacyFlow=suppressLegacyFlowRenderer();
+      try{
+        legacyRenderHome.apply(this,arguments);
+      }finally{
+        releaseLegacyFlow?.();
+      }
+      const canvas=root.document?.querySelector?.(".arise-flow-canvas");
+      if(!canvas)return;
+      canvas.removeAttribute?.("data-flow-renderer");
+      canvas.removeAttribute?.("data-flow-frames");
+      canvas.removeAttribute?.("data-flow-time");
       startUnifiedParticleMatter(canvas);
     };
     root.__ARISE_UNIFIED_PARTICLE_FLOW_INSTALLED__=true;
@@ -175,6 +188,7 @@
     sampleParticle,
     drawPopulation,
     startUnifiedParticleMatter,
+    suppressLegacyFlowRenderer,
     installUnifiedHomeFlow
   };
   installUnifiedHomeFlow();
