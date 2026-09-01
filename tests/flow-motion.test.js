@@ -28,7 +28,10 @@ test('unified particle matter supersedes the legacy material renderer at runtime
   assert.match(particleSource,/flowArchitecture="unified-particle-matter"/);
   assert.match(particleSource,/createParticlePopulation/);
   assert.match(particleSource,/sampleParticle/);
-  assert.match(particleSource,/oldCanvas\.replaceWith\(canvas\)/);
+  assert.match(particleSource,/suppressLegacyFlowRenderer/,'legacy texture renderer must be suppressed before compatibility render');
+  assert.match(particleSource,/--arise-flow-texture:none!important/,'legacy texture input must be disabled during takeover');
+  assert.equal(particleSource.includes('oldCanvas.replaceWith(canvas)'),false,'unified renderer must not depend on replacing the canonical canvas');
+  assert.equal(particleSource.includes('cloneNode(false)'),false,'unified renderer must reuse the canonical flow canvas');
 });
 
 test('route-following rails and independent particle overlays are absent from effective home markup',()=>{
