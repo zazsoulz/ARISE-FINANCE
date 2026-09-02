@@ -4,21 +4,28 @@ const fs=require("node:fs");
 
 const productCss=fs.readFileSync("product-ui.css","utf8");
 const v3Source=fs.readFileSync("arise-v3.js","utf8");
+const particleSource=fs.readFileSync("home-particle-matter.js","utf8");
 const analyticsSource=fs.readFileSync("analytics-ui.js","utf8");
 const authSource=fs.readFileSync("auth-ui.js","utf8");
 const productSource=fs.readFileSync("product-ui.js","utf8");
 
-test("home uses a continuous material flow without route rails",()=>{
+test("home uses one continuous unified particle flow without route rails or legacy texture runtime",()=>{
   assert.match(v3Source,/function homeFlowScene\(\)/);
   assert.match(v3Source,/class="arise-flow-canvas"/);
-  assert.match(v3Source,/function startHomeFluidFlow\(canvas\)/);
-  assert.match(v3Source,/requestAnimationFrame\(draw\)/);
-  assert.match(v3Source,/uniform float uTime/);
-  assert.match(v3Source,/texture2D\(uTexture,shapeUv\)/);
-  assert.match(v3Source,/texture2D\(uTexture,materialUv\)/);
-  assert.match(v3Source,/float valueNoise\(vec2 point\)/);
-  assert.match(v3Source,/vec2 particlePoint=/);
-  assert.match(v3Source,/Math\.min\(1\/30,/);
+  assert.match(particleSource,/function startUnifiedParticleMatter\(canvas\)/);
+  assert.match(particleSource,/createParticlePopulation\(compact\?1280:2200\)/);
+  assert.match(particleSource,/dataset\.flowArchitecture="unified-particle-matter"/);
+  assert.match(particleSource,/dataset\.flowPopulationOwner="home-particle-matter"/);
+  assert.match(particleSource,/requestAnimationFrame\(draw\)/);
+  assert.match(particleSource,/Math\.min\(1\/30,/);
+  for(const legacyToken of [
+    "startHomeFluidFlow",
+    "homeFlowVertexShader",
+    "homeFlowFragmentShader",
+    "parseFlowTexture",
+    "startWebGLHomeFlow",
+    "startCanvasHomeFlow"
+  ])assert.equal(v3Source.includes(legacyToken),false,`${legacyToken} must stay physically retired from arise-v3.js`);
   assert.doesNotMatch(v3Source,/class="arise-flow-svg"/);
   assert.doesNotMatch(v3Source,/class="arise-flow-branch"/);
   assert.doesNotMatch(v3Source,/class="arise-flow-drift"/);
@@ -26,8 +33,6 @@ test("home uses a continuous material flow without route rails",()=>{
   assert.doesNotMatch(v3Source,/class="arise-flow-source"/);
   assert.match(productCss,/ARISE CONTINUOUS HOME FLOW/);
   assert.match(productCss,/\.arise-flow-node::before\{[\s\S]*?content:none!important;[\s\S]*?display:none!important/);
-  assert.match(productCss,/--arise-flow-texture:url\("\.\/assets\/arise-flow-organic-v3\.webp"\)/);
-  assert.match(v3Source,/canvas\.dataset\.flowRenderer="static2d"/);
   assert.match(v3Source,/class="v3-summary-particles"/);
   for(const kind of ["fixed","categories","reserve","goals"]){
     assert.ok(v3Source.includes(`kind:"${kind}"`),`${kind} flow destination is missing`);

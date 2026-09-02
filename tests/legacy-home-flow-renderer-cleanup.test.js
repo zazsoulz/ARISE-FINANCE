@@ -6,11 +6,16 @@ const cleanup=require('../scripts/remove-legacy-home-flow-renderer.js');
 
 const SOURCE_PATH=path.join(__dirname,'..','arise-v3.js');
 
-test('legacy texture/WebGL home-flow renderer can be physically retired without changing canonical screen ownership',()=>{
+test('legacy texture/WebGL home-flow renderer is safely removable or already physically retired',()=>{
   const source=fs.readFileSync(SOURCE_PATH,'utf8');
   const transformed=cleanup.transform(source);
+  const wasStaged=cleanup.LEGACY_TOKENS.some(token=>source.includes(token));
 
-  assert.ok(transformed.length<source.length-5000,'cleanup should remove the legacy renderer implementation, not merely disable it');
+  if(wasStaged){
+    assert.ok(transformed.length<source.length-5000,'cleanup should remove the legacy renderer implementation, not merely disable it');
+  }else{
+    assert.equal(transformed,source,'already-retired source must remain unchanged');
+  }
   for(const token of cleanup.LEGACY_TOKENS){
     assert.equal(transformed.includes(token),false,`${token} must be physically absent after cleanup`);
   }
@@ -31,7 +36,8 @@ test('legacy home-flow cleanup is idempotent once physical retirement is complet
 
 test('cleanup fails closed on partial legacy renderer state',()=>{
   const source=fs.readFileSync(SOURCE_PATH,'utf8');
-  const malformed=source.replaceAll('startCanvasHomeFlow','renamedLegacyFallback');
+  const clean=cleanup.transform(source);
+  const malformed=clean.replace(cleanup.END_MARKER,`  const startHomeFluidFlow=null;\n${cleanup.END_MARKER}`);
   assert.throws(()=>cleanup.transform(malformed),/Partial legacy home-flow renderer detected/);
 });
 
