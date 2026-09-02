@@ -16,6 +16,8 @@ const LEGACY_TOKENS=[
 const START_MARKER='  const homeFlowVertexShader=[';
 const END_MARKER='  function homeFlowScene(){';
 const START_CALL='    startHomeFluidFlow(page.querySelector(".arise-flow-canvas"));';
+const EXPORT_FRAGMENT=',summaryFlowScene,startHomeFluidFlow};';
+const CLEAN_EXPORT_FRAGMENT=',summaryFlowScene};';
 
 function count(source,needle){
   return source.split(needle).length-1;
@@ -38,14 +40,16 @@ function transform(source){
   const present=legacyPresence(source);
   const hasStart=source.includes(START_MARKER);
   const startCallCount=count(source,START_CALL);
+  const exportCount=count(source,EXPORT_FRAGMENT);
 
-  if(present.length===0&&!hasStart&&startCallCount===0)return source;
+  if(present.length===0&&!hasStart&&startCallCount===0&&exportCount===0)return source;
 
   if(present.length!==LEGACY_TOKENS.length){
     throw new Error(`Partial legacy home-flow renderer detected: ${present.join(', ')||'none'}.`);
   }
   if(count(source,START_MARKER)!==1)throw new Error('Expected exactly one legacy home-flow block start.');
   if(startCallCount!==1)throw new Error('Expected exactly one legacy home-flow startup call.');
+  if(exportCount!==1)throw new Error('Expected exactly one legacy home-flow export entry.');
 
   const start=source.indexOf(START_MARKER);
   const end=source.indexOf(END_MARKER);
@@ -53,10 +57,13 @@ function transform(source){
 
   let next=source.slice(0,start)+source.slice(end);
   next=next.replace(`${START_CALL}\n`,'');
+  next=next.replace(EXPORT_FRAGMENT,CLEAN_EXPORT_FRAGMENT);
 
   const leftovers=legacyPresence(next);
   if(leftovers.length)throw new Error(`Legacy home-flow symbols survived cleanup: ${leftovers.join(', ')}.`);
-  if(next.includes(START_MARKER)||next.includes(START_CALL))throw new Error('Legacy home-flow boundary/startup survived cleanup.');
+  if(next.includes(START_MARKER)||next.includes(START_CALL)||next.includes(EXPORT_FRAGMENT)){
+    throw new Error('Legacy home-flow boundary/startup/export survived cleanup.');
+  }
   assertCanonicalAnchors(next);
   return next;
 }
@@ -77,4 +84,4 @@ function main(argv=process.argv.slice(2)){
 
 if(require.main===module)main();
 
-module.exports={transform,LEGACY_TOKENS,START_MARKER,END_MARKER,START_CALL};
+module.exports={transform,LEGACY_TOKENS,START_MARKER,END_MARKER,START_CALL,EXPORT_FRAGMENT,CLEAN_EXPORT_FRAGMENT};
