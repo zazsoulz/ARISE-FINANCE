@@ -15,6 +15,8 @@ test('legacy texture/WebGL home-flow renderer can be physically retired without 
     assert.equal(transformed.includes(token),false,`${token} must be physically absent after cleanup`);
   }
   assert.equal(transformed.includes(cleanup.START_CALL),false,'legacy home-flow startup call must be removed');
+  assert.equal(transformed.includes(cleanup.EXPORT_FRAGMENT),false,'legacy home-flow export must be removed');
+  assert.equal(transformed.includes(cleanup.CLEAN_EXPORT_FRAGMENT),true,'canonical ARISE_V3 export must remain valid');
   assert.equal(transformed.includes('  function homeFlowScene(){'),true,'canonical canvas scene must remain');
   assert.equal(transformed.includes('  root.renderHome=function(){'),true,'canonical home screen owner must remain');
   assert.equal(transformed.includes('    bindPageLinks(page);'),true,'home interactions must remain bound');
@@ -29,7 +31,7 @@ test('legacy home-flow cleanup is idempotent once physical retirement is complet
 
 test('cleanup fails closed on partial legacy renderer state',()=>{
   const source=fs.readFileSync(SOURCE_PATH,'utf8');
-  const malformed=source.replace('  function startCanvasHomeFlow(canvas,image,reducedMotion){','  function renamedLegacyFallback(canvas,image,reducedMotion){');
+  const malformed=source.replaceAll('startCanvasHomeFlow','renamedLegacyFallback');
   assert.throws(()=>cleanup.transform(malformed),/Partial legacy home-flow renderer detected/);
 });
 
