@@ -1,0 +1,37 @@
+name: Apply guarded home flow cleanup
+
+on:
+  push:
+    branches:
+      - agent/retire-legacy-home-flow-physical
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/retire-legacy-home-flow-physical
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Apply fail-closed cleanup
+        run: node scripts/remove-legacy-home-flow-renderer.js
+      - name: Verify transformed runtime
+        run: |
+          node --check arise-v3.js
+          node --test tests/legacy-home-flow-renderer-cleanup.test.js tests/unified-particle-matter.test.js tests/flow-motion.test.js
+      - name: Commit physical retirement
+        run: |
+          if git diff --quiet -- arise-v3.js; then
+            echo "No cleanup diff remains"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add arise-v3.js
+          git commit -m "Physically retire legacy home flow renderer"
+          git push origin HEAD:agent/retire-legacy-home-flow-physical
