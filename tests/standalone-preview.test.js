@@ -30,11 +30,12 @@ test("standalone preview strips the legacy engine and eager shell bootstrap",()=
   assert.ok(html.includes('id="arise-boot-hide"'));
 });
 
-test("standalone preview embeds project-local visual assets",()=>{
+test("standalone preview embeds required project-local visual assets without retired raster flow",()=>{
   const {html}=buildStandalone();
   assert.equal(html.includes('url("./assets/'),false);
   assert.ok(html.includes('data:font/ttf;base64,'));
-  assert.ok(html.includes('data:image/webp;base64,'));
+  assert.equal(html.includes('arise-flow-organic-v3.webp'),false);
+  assert.equal(html.includes('data:image/webp;base64,'),false);
 });
 
 test("standalone preview boots offline into the canonical auth screen",async()=>{
