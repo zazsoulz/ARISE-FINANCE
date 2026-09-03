@@ -1657,7 +1657,7 @@ textarea:focus{
   position:absolute;
   z-index:0;
   inset:-20px -10px -16px;
-  background:url("./assets/arise-flow-organic-v3.webp") center center / auto 100% no-repeat!important;
+  background:none center center / auto 100% no-repeat!important;
   opacity:.64!important;
   filter:saturate(.72) contrast(1.05) brightness(.9)!important;
   mix-blend-mode:screen;
@@ -1889,7 +1889,7 @@ textarea:focus{
   width:260px!important;
   height:408px!important;
   border:0!important;
-  background:url("./assets/arise-flow-organic-v3.webp") center / auto 100% no-repeat!important;
+  background:none center / auto 100% no-repeat!important;
   opacity:.43!important;
   filter:saturate(.65) contrast(1.08)!important;
   mix-blend-mode:screen;
@@ -2497,7 +2497,7 @@ textarea:focus{
   position:absolute;
   z-index:0;
   inset:78px 2% -28px;
-  background:url("./assets/arise-flow-organic-v3.webp") center bottom / auto 92% no-repeat;
+  background:none center bottom / auto 92% no-repeat;
   opacity:.44;
   filter:saturate(.66) brightness(.78);
   mix-blend-mode:screen;
@@ -4670,7 +4670,7 @@ body{
   height:404px!important;
   border:0!important;
   border-radius:0!important;
-  background:url("./assets/arise-flow-organic-v3.webp") center / auto 100% no-repeat!important;
+  background:none center / auto 100% no-repeat!important;
   opacity:.42!important;
   filter:saturate(.72) contrast(1.08) brightness(.9)!important;
   mix-blend-mode:screen;
@@ -6904,7 +6904,7 @@ body::before{
 }
 
 .arise-flow-canvas{
-  --arise-flow-texture:url("./assets/arise-flow-organic-v3.webp");
+  --arise-flow-texture:none;
   position:absolute;
   z-index:2;
   top:-6px;
