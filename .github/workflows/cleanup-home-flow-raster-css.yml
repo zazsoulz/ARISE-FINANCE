@@ -1,0 +1,41 @@
+name: Cleanup home flow raster CSS
+
+on:
+  push:
+    branches:
+      - cleanup/retire-home-flow-raster-asset
+    paths:
+      - .github/workflows/cleanup-home-flow-raster-css.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/retire-home-flow-raster-asset
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Remove retired bitmap reference
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const file='product-ui.css';
+          let css=fs.readFileSync(file,'utf8');
+          const before=css;
+          css=css.replace(/url\((['"]?)(?:\.\/)?assets\/arise-flow-organic-v3\.webp\1\)/g,'none');
+          if(css===before) throw new Error('retired raster reference was not found in product-ui.css');
+          if(css.includes('arise-flow-organic-v3.webp')) throw new Error('retired raster reference remains in product-ui.css');
+          fs.writeFileSync(file,css);
+          NODE
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add product-ui.css
+          git commit -m "Remove retired raster reference from product CSS"
+          git push origin HEAD:cleanup/retire-home-flow-raster-asset
