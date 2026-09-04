@@ -27,7 +27,7 @@ function boot(){
   for(const path of [
     'financial-core.js','goal-lifecycle-core.js','reserve-lifecycle-core.js','goal-future-reroute-core.js',
     'expense-reconciliation.js','financial-runtime.js','goal-history.js','financial-integration.js',
-    'reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','navigation-compat.js','arise-v3.js',
+    'reserve-analytics.js','reserve-essential-spend.js','analytics-engine.js','product-rules.js','navigation-compat.js','arise-v3.js','home-particle-matter.js',
     'history-inspector.js','analytics-ui.js','expense-edit-ui.js',
     'account-settings.js','profile-lifecycle.js','settings-ui.js','product-ui.js','reserve-lifecycle-ui.js'
   ]) file(ctx,path);
