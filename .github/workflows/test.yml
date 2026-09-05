@@ -44,6 +44,7 @@ jobs:
           node --check expense-edit-ui.js
           node --check history-inspector.js
           node --check product-ui.js
+          node --check sync-action-ui.js
           node --check reserve-lifecycle-ui.js
           node --check sync-conflict-ui.js
           node --check goal-lifecycle-ui.js
