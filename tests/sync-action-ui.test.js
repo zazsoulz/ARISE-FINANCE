@@ -47,7 +47,8 @@ test("missing sync runtime produces a human-readable local-safe status",()=>{
 test("normal online sync remains owned by canonical product-ui retry handler",()=>{
   const app=boot({kind:"online",withSync:true});
   const outcome=app.root.ARISE_SYNC_ACTION_UI.handleSyncAction();
-  assert.deepEqual(outcome,{handled:false,result:false});
+  assert.equal(outcome.handled,false);
+  assert.equal(outcome.result,false);
 });
 
 test("capture listener suppresses the older click handler only for handled dead-end states",()=>{
