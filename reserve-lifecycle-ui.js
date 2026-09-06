@@ -45,7 +45,11 @@
     };
   }
 
-  function reserveTarget(profile){return safe(reserveSettings(profile).targetBalance||reserveSettings(profile).target||0);}
+  function reserveTarget(profile){
+    const settings=reserveSettings(profile);
+    const value=Object.prototype.hasOwnProperty.call(settings,"targetBalance")?settings.targetBalance:settings.target;
+    return safe(value??0);
+  }
 
   function essentialCategoryOptions(profile){
     const selected=new Set(selectedEssentialCategoryIds(profile));
@@ -235,6 +239,6 @@
     return typeof previousHistoryTransaction==="function"?previousHistoryTransaction(tx):"";
   };
 
-  root.ARISE_RESERVE_LIFECYCLE={reserveSettings,selectedEssentialCategoryIds,categorySpendModel,runwayModel,reserveSection,appendReserveSection,showReserveDepositModal,showReserveWithdrawalModal,reserveTransactions,transferLabel,inspectReserveTransaction,bindReserveRows};
+  root.ARISE_RESERVE_LIFECYCLE={reserveSettings,reserveTarget,selectedEssentialCategoryIds,categorySpendModel,runwayModel,reserveSection,appendReserveSection,showReserveDepositModal,showReserveWithdrawalModal,reserveTransactions,transferLabel,inspectReserveTransaction,bindReserveRows};
   root.ARISE_RESERVE_HISTORY_DRILLDOWN={reserveTransactions,transferLabel,inspectReserveTransaction,bindReserveRows};
 })(typeof globalThis!=="undefined"?globalThis:window);
