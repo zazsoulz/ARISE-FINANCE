@@ -78,6 +78,16 @@ test('reserve section explains user-controlled essential expense model',()=>{
   assert.match(html,/reserve-essential-category/);
 });
 
+test('reserve section presents an explicit unset target state without changing money',()=>{
+  const {ctx}=boot({reserveBalance:150000,targetBalance:0});
+  const html=ctx.ARISE_RESERVE_LIFECYCLE.reserveSection(ctx.activeProfile());
+  assert.match(html,/data-reserve-target-state="unset"/);
+  assert.match(html,/Цель подушки не задана/);
+  assert.match(html,/Баланс: 150000 ₽/);
+  assert.match(html,/Текущий баланс и история операций от этого не изменятся/);
+  assert.match(html,/id="reserveDepositAction">Пополнить резерв/);
+});
+
 test('reserve section separates target completion and surplus without changing user rules',()=>{
   const {ctx}=boot({reserveBalance:350000,targetBalance:300000});
   const html=ctx.ARISE_RESERVE_LIFECYCLE.reserveSection(ctx.activeProfile());
