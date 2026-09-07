@@ -158,7 +158,10 @@
     const targetState=target>0?`<div class="reserve-target-state ${complete?"is-complete":"is-building"}" data-reserve-target-state="${complete?"complete":"building"}" role="status">
       <div><span>${complete?"Цель подушки достигнута":"Подушка формируется"}</span><strong>${complete?(surplus>0?`Сверх цели: ${money(surplus)}`:`Целевой баланс: ${money(target)}`):`До цели: ${money(remaining)}`}</strong></div>
       <p>${complete?"Цель — ориентир, а не автоматическая остановка. ARISE не меняет правило пополнения без твоего решения.":"Пополнения и выводы остаются отдельными операциями, а баланс считается только по истории."}</p>
-    </div>`:"";
+    </div>`:`<div class="reserve-target-state is-unset" data-reserve-target-state="unset" role="status">
+      <div><span>Цель подушки не задана</span><strong>Баланс: ${money(balance)}</strong></div>
+      <p>Задай сумму цели ниже, если хочешь видеть прогресс и остаток до неё. Текущий баланс и история операций от этого не изменятся.</p>
+    </div>`;
 
     return `<section class="card" id="reserveLifecycle" style="margin-top:16px">
       <div class="kicker">ФИНАНСОВАЯ ПОДУШКА</div>
