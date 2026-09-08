@@ -27,6 +27,15 @@ test('quick financial actions are real buttons and named in visible copy',()=>{
   assert.match(productUI,/<strong>Расход<\/strong>/);
 });
 
+test('empty-state recovery actions remain non-submitting buttons with live status semantics',()=>{
+  assert.match(productUI,/button\.type=\"button\"/);
+  assert.match(productUI,/el\.setAttribute\(\"role\",\"status\"\)/);
+  assert.match(productUI,/el\.setAttribute\(\"aria-live\",\"polite\"\)/);
+  for(const label of ['Добавить доход','Создать цель','Добавить расход','Перейти к распределению']){
+    assert.match(productUI,new RegExp(label));
+  }
+});
+
 test('settings and reserve primary actions use button controls rather than dead labels',()=>{
   assert.match(settingsUI,/<button[^>]+id=\"saveProfileSettings\"/);
   assert.match(settingsUI,/<button[^>]+id=\"saveCategories\"/);
