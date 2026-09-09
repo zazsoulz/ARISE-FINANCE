@@ -122,6 +122,18 @@ test('onboarding choice updates its preview and creates the selected isolated st
   dom.window.close();
 });
 
+test('onboarding actions are non-submitting and async status is announced',()=>{
+  const {ctx,dom}=loadUi();
+  ctx.ARISE_ONBOARDING.showNewProfileOnboarding();
+  const document=dom.window.document;
+  assert.equal(document.getElementById('onboardingProfileSave').type,'button');
+  assert.equal(document.getElementById('onboardingProfileCancel').type,'button');
+  const status=document.getElementById('onboardingProfileStatus');
+  assert.equal(status.getAttribute('role'),'status');
+  assert.equal(status.getAttribute('aria-live'),'polite');
+  dom.window.close();
+});
+
 test('blank profile first run explains unallocated remainder and offers a working next step',()=>{
   const {ctx,dom,state,counts}=loadUi();
   const profile=ctx.ARISE_ONBOARDING.applyTemplate(ctx.createProfile('Blank'),'blank');
@@ -131,6 +143,8 @@ test('blank profile first run explains unallocated remainder and offers a workin
   assert.match(guide.textContent,/Профиль создан с нуля/);
   assert.match(guide.textContent,/отдельный системный остаток, а не категория/);
   assert.equal(dom.window.document.getElementById('onboardingConfigure').textContent,'Создать первое правило');
+  assert.equal(dom.window.document.getElementById('onboardingConfigure').type,'button');
+  assert.equal(dom.window.document.getElementById('onboardingDone').type,'button');
   dom.window.document.getElementById('onboardingConfigure').click();
   assert.equal(profile.settings.onboarding.completed,true);
   assert.equal(ctx.activePage,'settings');
