@@ -123,8 +123,8 @@
         <span>БУДЕТ СОЗДАНО</span><strong data-onboarding-preview-meta></strong><p data-onboarding-preview-detail></p>
       </div>
       <div class="notice onboarding-remainder-note"><strong>«Не распределено» — не категория</strong><div class="tiny muted">Ни один вариант не создаёт системную категорию «Свободные деньги». Нераспределённый остаток существует отдельно и переносится дальше.</div></div>
-      <div id="onboardingProfileStatus" class="tiny muted" style="margin-top:10px"></div>
-      <div class="actions"><button class="btn primary" id="onboardingProfileSave">Создать с примерами</button><button class="btn" id="onboardingProfileCancel">Отмена</button></div>
+      <div id="onboardingProfileStatus" class="tiny muted" style="margin-top:10px" role="status" aria-live="polite"></div>
+      <div class="actions"><button type="button" class="btn primary" id="onboardingProfileSave">Создать с примерами</button><button type="button" class="btn" id="onboardingProfileCancel">Отмена</button></div>
     `);
     document.querySelectorAll('input[name="onboardingTemplate"]').forEach(input=>input.addEventListener("change",updateTemplatePreview));
     updateTemplatePreview();
@@ -155,7 +155,7 @@
     guide.className="card soft onboarding-first-run";
     const template=normalizeTemplate(profile.settings.onboarding.template);
     const blank=template==="blank";
-    guide.innerHTML=`<div class="kicker">ПЕРВЫЙ ЗАПУСК</div><h2 class="title">${blank?"Профиль создан с нуля":"Примеры готовы — сделай их своими"}</h2><div class="sub" style="margin-top:8px">${blank?"Категорий, целей и правил резерва пока нет. До их создания новый доход останется в «Не распределено» — это отдельный системный остаток, а не категория.":"«Обязательные расходы», «Семья» и «Повседневные расходы» — обычные редактируемые примеры. Проверь суммы, проценты и приоритеты перед первым доходом. Остаток после правил останется в «Не распределено»."}</div><div class="actions"><button class="btn primary" id="onboardingConfigure">${blank?"Создать первое правило":"Проверить категории"}</button><button class="btn" id="onboardingDone">${blank?"Оставить как есть":"Понятно"}</button></div>`;
+    guide.innerHTML=`<div class="kicker">ПЕРВЫЙ ЗАПУСК</div><h2 class="title">${blank?"Профиль создан с нуля":"Примеры готовы — сделай их своими"}</h2><div class="sub" style="margin-top:8px">${blank?"Категорий, целей и правил резерва пока нет. До их создания новый доход останется в «Не распределено» — это отдельный системный остаток, а не категория.":"«Обязательные расходы», «Семья» и «Повседневные расходы» — обычные редактируемые примеры. Проверь суммы, проценты и приоритеты перед первым доходом. Остаток после правил останется в «Не распределено»."}</div><div class="actions"><button type="button" class="btn primary" id="onboardingConfigure">${blank?"Создать первое правило":"Проверить категории"}</button><button type="button" class="btn" id="onboardingDone">${blank?"Оставить как есть":"Понятно"}</button></div>`;
     page.prepend(guide);
     document.getElementById("onboardingConfigure").onclick=()=>{profile.settings.onboarding.completed=true;saveState();activePage="settings";render();};
     document.getElementById("onboardingDone").onclick=()=>{profile.settings.onboarding.completed=true;saveState();guide.remove();};
