@@ -122,15 +122,38 @@ test('onboarding choice updates its preview and creates the selected isolated st
   dom.window.close();
 });
 
-test('onboarding actions are non-submitting and async status is announced',()=>{
+test('onboarding actions and fields expose accessible semantics',()=>{
   const {ctx,dom}=loadUi();
   ctx.ARISE_ONBOARDING.showNewProfileOnboarding();
   const document=dom.window.document;
+  const name=document.getElementById('onboardingProfileName');
+  const currency=document.getElementById('onboardingProfileCurrency');
   assert.equal(document.getElementById('onboardingProfileSave').type,'button');
   assert.equal(document.getElementById('onboardingProfileCancel').type,'button');
+  assert.equal(document.querySelector('label[for="onboardingProfileName"]').textContent,'Название');
+  assert.equal(document.querySelector('label[for="onboardingProfileCurrency"]').textContent,'Базовая валюта');
+  assert.equal(name.required,true);
+  assert.equal(name.getAttribute('aria-describedby'),'onboardingProfileStatus');
+  assert.equal(currency.tagName,'SELECT');
   const status=document.getElementById('onboardingProfileStatus');
   assert.equal(status.getAttribute('role'),'status');
   assert.equal(status.getAttribute('aria-live'),'polite');
+  dom.window.close();
+});
+
+test('empty profile name is announced, marked invalid and focused without persistence',async()=>{
+  const {ctx,dom,state,counts}=loadUi();
+  ctx.ARISE_ONBOARDING.showNewProfileOnboarding();
+  const document=dom.window.document;
+  const name=document.getElementById('onboardingProfileName');
+  name.value='   ';
+  document.getElementById('onboardingProfileSave').click();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(name.getAttribute('aria-invalid'),'true');
+  assert.equal(document.activeElement,name);
+  assert.match(document.getElementById('onboardingProfileStatus').textContent,/Укажи название профиля/);
+  assert.equal(state.profiles.length,0);
+  assert.deepEqual(counts(),{saved:0,rendered:0,closed:0});
   dom.window.close();
 });
 
