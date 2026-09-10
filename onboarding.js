@@ -106,8 +106,8 @@
       <h2 class="title">С чего начать</h2>
       <div class="sub" style="margin-top:8px">Выбери только начальную структуру. Категории, цели, резерв и операции каждого финансового профиля полностью изолированы от остальных.</div>
       <div class="form" style="margin-top:18px">
-        <div class="field full"><label>Название</label><input id="onboardingProfileName" value="Новый профиль" maxlength="60" autocomplete="off"></div>
-        <div class="field full"><label>Базовая валюта</label><select id="onboardingProfileCurrency"><option value="RUB">₽ RUB</option><option value="EUR">€ EUR</option><option value="USD">$ USD</option></select></div>
+        <div class="field full"><label for="onboardingProfileName">Название</label><input id="onboardingProfileName" value="Новый профиль" maxlength="60" autocomplete="off" required aria-describedby="onboardingProfileStatus"></div>
+        <div class="field full"><label for="onboardingProfileCurrency">Базовая валюта</label><select id="onboardingProfileCurrency"><option value="RUB">₽ RUB</option><option value="EUR">€ EUR</option><option value="USD">$ USD</option></select></div>
       </div>
       <div class="onboarding-template-list" role="radiogroup" aria-label="Начальная структура профиля">
         <label class="onboarding-template-card is-selected" data-onboarding-template-card="starter">
@@ -132,10 +132,18 @@
     document.getElementById("onboardingProfileSave").onclick=async()=>{
       const button=document.getElementById("onboardingProfileSave");
       const status=document.getElementById("onboardingProfileStatus");
-      const name=document.getElementById("onboardingProfileName").value.trim();
+      const nameInput=document.getElementById("onboardingProfileName");
+      const name=nameInput.value.trim();
       const currency=document.getElementById("onboardingProfileCurrency").value;
       const template=updateTemplatePreview();
-      if(!name){status.textContent="Укажи название профиля.";status.className="tiny negative";return;}
+      if(!name){
+        nameInput.setAttribute("aria-invalid","true");
+        status.textContent="Укажи название профиля.";
+        status.className="tiny negative";
+        nameInput.focus();
+        return;
+      }
+      nameInput.removeAttribute("aria-invalid");
       button.disabled=true;status.textContent="Создаю профиль…";
       const profile=applyTemplate(baseCreateProfile(name),template);
       profile.settings.currency=currency;
