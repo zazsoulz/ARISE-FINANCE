@@ -21,6 +21,20 @@
     el.style.display=text?"block":"none";
   }
 
+  function clearInvalidFields(){
+    for(const id of ["authName","authEmail","authPassword"]){
+      document.getElementById(id)?.removeAttribute("aria-invalid");
+    }
+  }
+
+  function invalidateField(field,message){
+    if(field){
+      field.setAttribute("aria-invalid","true");
+      field.focus();
+    }
+    setMessage(message,"warning");
+  }
+
   async function finishAuthenticatedSession(session){
     const remote=root.ARISE_SUPABASE;
     const localAccounts=root.ARISE_LOCAL_ACCOUNTS;
@@ -52,6 +66,9 @@
 
   function bindAuth(){
     const name=document.getElementById("authNameField");
+    const nameInput=document.getElementById("authName");
+    const emailInput=document.getElementById("authEmail");
+    const passwordInput=document.getElementById("authPassword");
     const title=document.getElementById("authTitle");
     const submit=document.getElementById("authSubmit");
     const toggle=document.getElementById("authToggle");
@@ -60,26 +77,33 @@
     const syncMode=()=>{
       const registering=mode==="register";
       if(name) name.style.display=registering?"block":"none";
+      if(nameInput) nameInput.required=registering;
+      if(passwordInput) passwordInput.autocomplete=registering?"new-password":"current-password";
       if(title) title.textContent=registering?"Создать аккаунт":"Войти в ARISE";
       if(submit) submit.textContent=registering?"Создать аккаунт":"Войти";
       if(toggle) toggle.textContent=registering?"Уже есть аккаунт? Войти":"Нет аккаунта? Создать";
       if(reset) reset.style.display=registering?"none":"inline-flex";
+      clearInvalidFields();
       setMessage("");
     };
 
     toggle.onclick=()=>{mode=mode==="login"?"register":"login";syncMode();};
     reset.onclick=async()=>{
-      const email=document.getElementById("authEmail").value.trim();
-      if(!email){setMessage("Укажи почту, на которую отправить ссылку.","warning");return;}
+      clearInvalidFields();
+      const email=emailInput.value.trim();
+      if(!email){invalidateField(emailInput,"Укажи почту, на которую отправить ссылку.");return;}
       try{await root.ARISE_SUPABASE.resetPassword(email);setMessage("Ссылка для смены пароля отправлена на почту.");}
       catch(error){console.error(error);setMessage(humanAuthError(error),"danger");}
     };
 
     submit.onclick=async()=>{
-      const email=document.getElementById("authEmail").value.trim();
-      const password=document.getElementById("authPassword").value;
-      const accountName=document.getElementById("authName")?.value.trim()||"";
-      if(!email||!password||(mode==="register"&&!accountName)){setMessage("Заполни обязательные поля.","warning");return;}
+      clearInvalidFields();
+      const email=emailInput.value.trim();
+      const password=passwordInput.value;
+      const accountName=nameInput?.value.trim()||"";
+      if(mode==="register"&&!accountName){invalidateField(nameInput,"Укажи имя для аккаунта.");return;}
+      if(!email){invalidateField(emailInput,"Укажи почту.");return;}
+      if(!password){invalidateField(passwordInput,"Укажи пароль.");return;}
       submit.disabled=true;
       setMessage(mode==="register"?"Создаю аккаунт…":"Вхожу…");
       try{
@@ -112,13 +136,13 @@
         <div class="sub" style="margin-top:9px">Аккаунт хранит только твою личную информацию. Финансовые профили живут отдельно внутри него.</div>
         <div class="login-assurance"><i aria-hidden="true"></i><span>Локальная копия данных</span><b aria-hidden="true"></b><span>Защищённая синхронизация</span></div>
         <div class="form" style="margin-top:22px">
-          <div class="field full" id="authNameField" style="display:none"><label>Имя</label><input id="authName" autocomplete="name" placeholder="Имя"></div>
-          <div class="field full"><label>Почта</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com"></div>
-          <div class="field full"><label>Пароль</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль"></div>
+          <div class="field full" id="authNameField" style="display:none"><label for="authName">Имя</label><input id="authName" autocomplete="name" placeholder="Имя" aria-describedby="authMessage"></div>
+          <div class="field full"><label for="authEmail">Почта</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com" required aria-describedby="authMessage"></div>
+          <div class="field full"><label for="authPassword">Пароль</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль" required aria-describedby="authMessage"></div>
         </div>
-        <div id="authMessage" class="notice" style="display:none;margin-top:14px"></div>
+        <div id="authMessage" class="notice" style="display:none;margin-top:14px" role="status" aria-live="polite"></div>
         <div class="actions">
-          <button class="btn primary" id="authSubmit">Войти</button>
+          <button class="btn primary" id="authSubmit" type="button">Войти</button>
           <button class="btn" id="authToggle" type="button">Нет аккаунта? Создать</button>
           <button class="btn" id="authReset" type="button">Забыли пароль?</button>
         </div>
