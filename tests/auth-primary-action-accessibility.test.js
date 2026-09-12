@@ -24,6 +24,7 @@ test('auth fields preserve semantic input types, labels and browser autocomplete
 test('auth validation identifies and focuses the field that blocks the action',()=>{
   assert.match(source,/field\.setAttribute\("aria-invalid","true"\)/);
   assert.match(source,/field\.focus\(\)/);
+  assert.match(source,/removeAttribute\("aria-invalid"\)/);
   assert.match(source,/invalidateField\(nameInput,"Укажи имя для аккаунта\."\)/);
   assert.match(source,/invalidateField\(emailInput,"Укажи почту\."\)/);
   assert.match(source,/invalidateField\(passwordInput,"Укажи пароль\."\)/);
