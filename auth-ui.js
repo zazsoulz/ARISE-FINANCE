@@ -3,13 +3,14 @@
 
   let mode="login";
 
-  function humanAuthError(error){
+  function humanAuthError(error,action="login"){
     const text=String(error&&error.message||"").toLowerCase();
     if(text.includes("invalid login credentials")) return "Неверная почта или пароль.";
     if(text.includes("email not confirmed")) return "Подтверди почту по ссылке из письма.";
     if(text.includes("user already registered")) return "Аккаунт с такой почтой уже существует.";
     if(text.includes("password")&&text.includes("characters")) return "Пароль слишком короткий.";
     if(text.includes("rate limit")) return "Слишком много попыток. Попробуй немного позже.";
+    if(action==="reset") return "Не удалось отправить ссылку для смены пароля. Проверь почту и соединение.";
     return "Не удалось выполнить вход. Проверь данные и соединение.";
   }
 
@@ -92,8 +93,11 @@
       clearInvalidFields();
       const email=emailInput.value.trim();
       if(!email){invalidateField(emailInput,"Укажи почту, на которую отправить ссылку.");return;}
+      reset.disabled=true;
+      setMessage("Отправляю ссылку…");
       try{await root.ARISE_SUPABASE.resetPassword(email);setMessage("Ссылка для смены пароля отправлена на почту.");}
-      catch(error){console.error(error);setMessage(humanAuthError(error),"danger");}
+      catch(error){console.error(error);setMessage(humanAuthError(error,"reset"),"danger");}
+      finally{reset.disabled=false;}
     };
 
     submit.onclick=async()=>{
