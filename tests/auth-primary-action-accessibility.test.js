@@ -29,6 +29,9 @@ test('auth validation identifies and focuses the field that blocks the action',(
   assert.match(source,/invalidateField\(emailInput,"Укажи почту\."\)/);
   assert.match(source,/invalidateField\(passwordInput,"Укажи пароль\."\)/);
   assert.match(source,/invalidateField\(emailInput,"Укажи почту, на которую отправить ссылку\."\)/);
+  assert.match(source,/function hasInvalidEmailFormat\(emailInput\)/);
+  assert.match(source,/emailInput\.validity\.typeMismatch/);
+  assert.equal((source.match(/invalidateField\(emailInput,"Проверь формат почты\."\)/g)||[]).length,2);
   assert.match(source,/id="authMessage"[^>]+role="status" aria-live="polite"/);
 });
 
