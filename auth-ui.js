@@ -36,6 +36,10 @@
     setMessage(message,"warning");
   }
 
+  function hasInvalidEmailFormat(emailInput){
+    return Boolean(emailInput&&emailInput.validity&&emailInput.validity.typeMismatch);
+  }
+
   async function finishAuthenticatedSession(session){
     const remote=root.ARISE_SUPABASE;
     const localAccounts=root.ARISE_LOCAL_ACCOUNTS;
@@ -93,6 +97,7 @@
       clearInvalidFields();
       const email=emailInput.value.trim();
       if(!email){invalidateField(emailInput,"Укажи почту, на которую отправить ссылку.");return;}
+      if(hasInvalidEmailFormat(emailInput)){invalidateField(emailInput,"Проверь формат почты.");return;}
       reset.disabled=true;
       setMessage("Отправляю ссылку…");
       try{await root.ARISE_SUPABASE.resetPassword(email);setMessage("Ссылка для смены пароля отправлена на почту.");}
@@ -107,6 +112,7 @@
       const accountName=nameInput?.value.trim()||"";
       if(mode==="register"&&!accountName){invalidateField(nameInput,"Укажи имя для аккаунта.");return;}
       if(!email){invalidateField(emailInput,"Укажи почту.");return;}
+      if(hasInvalidEmailFormat(emailInput)){invalidateField(emailInput,"Проверь формат почты.");return;}
       if(!password){invalidateField(passwordInput,"Укажи пароль.");return;}
       submit.disabled=true;
       setMessage(mode==="register"?"Создаю аккаунт…":"Вхожу…");
