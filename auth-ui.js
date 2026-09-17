@@ -129,6 +129,14 @@
       finally{submit.disabled=false;}
     };
 
+    for(const field of [nameInput,emailInput,passwordInput]){
+      field?.addEventListener("keydown",event=>{
+        if(event.key!=="Enter"||submit.disabled)return;
+        event.preventDefault();
+        submit.click();
+      });
+    }
+
     syncMode();
   }
 
