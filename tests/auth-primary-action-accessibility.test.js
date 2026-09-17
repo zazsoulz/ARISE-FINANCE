@@ -35,6 +35,14 @@ test('auth validation identifies and focuses the field that blocks the action',(
   assert.match(source,/id="authMessage"[^>]+role="status" aria-live="polite"/);
 });
 
+test('Enter on an auth field triggers the guarded primary action',()=>{
+  assert.match(source,/for\(const field of \[nameInput,emailInput,passwordInput\]\)/);
+  assert.match(source,/field\?\.addEventListener\("keydown",event=>\{/);
+  assert.match(source,/if\(event\.key!=="Enter"\|\|submit\.disabled\)return/);
+  assert.match(source,/event\.preventDefault\(\)/);
+  assert.match(source,/submit\.click\(\)/);
+});
+
 test('decorative auth flow remains hidden from assistive technology',()=>{
   assert.match(source,/<aside class="login-visual" aria-hidden="true">/);
   assert.match(source,/class="login-assurance"><i aria-hidden="true"><\/i>/);
