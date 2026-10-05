@@ -11,6 +11,7 @@
     if(text.includes("password")&&text.includes("characters")) return "Пароль слишком короткий.";
     if(text.includes("rate limit")) return "Слишком много попыток. Попробуй немного позже.";
     if(action==="reset") return "Не удалось отправить ссылку для смены пароля. Проверь почту и соединение.";
+    if(action==="register") return "Не удалось создать аккаунт. Проверь данные и соединение.";
     return "Не удалось выполнить вход. Проверь данные и соединение.";
   }
 
@@ -125,7 +126,7 @@
           const data=await root.ARISE_SUPABASE.signIn({email,password});
           await finishAuthenticatedSession(data.session);
         }
-      }catch(error){console.error("ARISE auth",error);setMessage(humanAuthError(error),"danger");}
+      }catch(error){console.error("ARISE auth",error);setMessage(humanAuthError(error,mode),"danger");}
       finally{submit.disabled=false;}
     };
 

@@ -15,3 +15,8 @@ test('password recovery uses recovery-specific fallback copy',()=>{
   assert.match(source,/if\(action==="reset"\) return "Не удалось отправить ссылку для смены пароля\. Проверь почту и соединение\."/);
   assert.match(source,/humanAuthError\(error,"reset"\)/);
 });
+
+test('registration uses registration-specific fallback copy',()=>{
+  assert.match(source,/if\(action==="register"\) return "Не удалось создать аккаунт\. Проверь данные и соединение\."/);
+  assert.match(source,/humanAuthError\(error,mode\)/);
+});
