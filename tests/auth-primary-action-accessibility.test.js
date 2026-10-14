@@ -38,7 +38,7 @@ test('auth validation identifies and focuses the field that blocks the action',(
 test('Enter on an auth field triggers the guarded primary action',()=>{
   assert.match(source,/for\(const field of \[nameInput,emailInput,passwordInput\]\)/);
   assert.match(source,/field\?\.addEventListener\("keydown",event=>\{/);
-  assert.match(source,/if\(event\.key!=="Enter"\|\|submit\.disabled\)return/);
+  assert.match(source,/if\(event\.key!=="Enter"\|\|authBusy\)return/);
   assert.match(source,/event\.preventDefault\(\)/);
   assert.match(source,/submit\.click\(\)/);
 });
