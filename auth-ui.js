@@ -79,6 +79,12 @@
     const submit=document.getElementById("authSubmit");
     const toggle=document.getElementById("authToggle");
     const reset=document.getElementById("authReset");
+    let authBusy=false;
+
+    const setAuthBusy=busy=>{
+      authBusy=Boolean(busy);
+      for(const control of [submit,toggle,reset]) if(control) control.disabled=authBusy;
+    };
 
     const syncMode=()=>{
       const registering=mode==="register";
@@ -93,32 +99,35 @@
       setMessage("");
     };
 
-    toggle.onclick=()=>{mode=mode==="login"?"register":"login";syncMode();};
+    toggle.onclick=()=>{if(authBusy)return;mode=mode==="login"?"register":"login";syncMode();};
     reset.onclick=async()=>{
+      if(authBusy)return;
       clearInvalidFields();
       const email=emailInput.value.trim();
       if(!email){invalidateField(emailInput,"Укажи почту, на которую отправить ссылку.");return;}
       if(hasInvalidEmailFormat(emailInput)){invalidateField(emailInput,"Проверь формат почты.");return;}
-      reset.disabled=true;
+      setAuthBusy(true);
       setMessage("Отправляю ссылку…");
       try{await root.ARISE_SUPABASE.resetPassword(email);setMessage("Ссылка для смены пароля отправлена на почту.");}
       catch(error){console.error(error);setMessage(humanAuthError(error,"reset"),"danger");}
-      finally{reset.disabled=false;}
+      finally{setAuthBusy(false);}
     };
 
     submit.onclick=async()=>{
+      if(authBusy)return;
       clearInvalidFields();
       const email=emailInput.value.trim();
       const password=passwordInput.value;
       const accountName=nameInput?.value.trim()||"";
-      if(mode==="register"&&!accountName){invalidateField(nameInput,"Укажи имя для аккаунта.");return;}
+      const action=mode;
+      if(action==="register"&&!accountName){invalidateField(nameInput,"Укажи имя для аккаунта.");return;}
       if(!email){invalidateField(emailInput,"Укажи почту.");return;}
       if(hasInvalidEmailFormat(emailInput)){invalidateField(emailInput,"Проверь формат почты.");return;}
       if(!password){invalidateField(passwordInput,"Укажи пароль.");return;}
-      submit.disabled=true;
-      setMessage(mode==="register"?"Создаю аккаунт…":"Вхожу…");
+      setAuthBusy(true);
+      setMessage(action==="register"?"Создаю аккаунт…":"Вхожу…");
       try{
-        if(mode==="register"){
+        if(action==="register"){
           const data=await root.ARISE_SUPABASE.signUp({name:accountName,email,password});
           if(!data.session){setMessage("Аккаунт создан. Подтверди почту по ссылке из письма.");return;}
           await finishAuthenticatedSession(data.session);
@@ -126,13 +135,13 @@
           const data=await root.ARISE_SUPABASE.signIn({email,password});
           await finishAuthenticatedSession(data.session);
         }
-      }catch(error){console.error("ARISE auth",error);setMessage(humanAuthError(error,mode),"danger");}
-      finally{submit.disabled=false;}
+      }catch(error){console.error("ARISE auth",error);setMessage(humanAuthError(error,action),"danger");}
+      finally{setAuthBusy(false);}
     };
 
     for(const field of [nameInput,emailInput,passwordInput]){
       field?.addEventListener("keydown",event=>{
-        if(event.key!=="Enter"||submit.disabled)return;
+        if(event.key!=="Enter"||authBusy)return;
         event.preventDefault();
         submit.click();
       });
