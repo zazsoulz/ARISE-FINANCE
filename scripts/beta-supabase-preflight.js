@@ -32,7 +32,16 @@ async function readJson(response,label){
   return body;
 }
 
-async function runPreflight({env=process.env,fetchImpl=globalThis.fetch}={}){
+async function runPreflight({env=process.env,fetchImpl=globalThis.fetch,timeoutMs=15000}={}){
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1)throw new Error('Preflight timeoutMs must be a positive integer.');
+  async function request(url,options,label){
+    try{
+      return await fetchImpl(url,{...options,signal:AbortSignal.timeout(timeoutMs)});
+    }catch(error){
+      if(error&&(['AbortError','TimeoutError'].includes(error.name)))throw new Error(`${label} timed out after ${timeoutMs}ms.`);
+      throw new Error(`${label} network request failed: ${error&&error.message||'unknown error'}`);
+    }
+  }
   if(typeof fetchImpl!=='function')throw new Error('A fetch implementation is required.');
 
   const url=normalizeUrl(required(env,'SUPABASE_URL'));
@@ -41,11 +50,11 @@ async function runPreflight({env=process.env,fetchImpl=globalThis.fetch}={}){
   const email=required(env,'ARISE_BETA_EMAIL');
   const password=required(env,'ARISE_BETA_PASSWORD');
 
-  const authResponse=await fetchImpl(`${url}/auth/v1/token?grant_type=password`,{
+  const authResponse=await request(`${url}/auth/v1/token?grant_type=password`,{
     method:'POST',
     headers:{'apikey':apiKey,'Content-Type':'application/json'},
     body:JSON.stringify({email,password})
-  });
+  },'Supabase beta sign-in');
   const auth=await readJson(authResponse,'Supabase beta sign-in');
   const accessToken=String(auth&&auth.access_token||'').trim();
   if(!accessToken)throw new Error('Supabase beta sign-in returned no access token.');
@@ -53,7 +62,7 @@ async function runPreflight({env=process.env,fetchImpl=globalThis.fetch}={}){
   const headers={apikey:apiKey,Authorization:`Bearer ${accessToken}`};
   const checks=[];
   for(const table of CANONICAL_TABLES){
-    const response=await fetchImpl(`${url}/rest/v1/${table}?select=*&limit=1`,{method:'GET',headers});
+    const response=await request(`${url}/rest/v1/${table}?select=*&limit=1`,{method:'GET',headers},`Read ${table}`);
     await readJson(response,`Read ${table}`);
     checks.push({table,status:response.status});
   }
