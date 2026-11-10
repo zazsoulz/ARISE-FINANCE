@@ -35,11 +35,30 @@ async function readJson(response,label){
 async function runPreflight({env=process.env,fetchImpl=globalThis.fetch,timeoutMs=15000}={}){
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1)throw new Error('Preflight timeoutMs must be a positive integer.');
   async function request(url,options,label){
+    const controller=new AbortController();
+    let timer;
+    const timeout=new Promise((_resolve,reject)=>{
+      timer=setTimeout(()=>{
+        controller.abort();
+        reject(new Error(`${label} timed out after ${timeoutMs}ms.`));
+      },timeoutMs);
+    });
     try{
-      return await fetchImpl(url,{...options,signal:AbortSignal.timeout(timeoutMs)});
+      return await Promise.race([
+        (async()=>{
+          const response=await fetchImpl(url,{...options,signal:controller.signal});
+          const body=await readJson(response,label);
+          return {response,body};
+        })(),
+        timeout
+      ]);
     }catch(error){
+      if(error&&error.message===`${label} timed out after ${timeoutMs}ms.`)throw error;
       if(error&&(['AbortError','TimeoutError'].includes(error.name)))throw new Error(`${label} timed out after ${timeoutMs}ms.`);
+      if(error&&/ failed with HTTP /.test(error.message||''))throw error;
       throw new Error(`${label} network request failed: ${error&&error.message||'unknown error'}`);
+    }finally{
+      clearTimeout(timer);
     }
   }
   if(typeof fetchImpl!=='function')throw new Error('A fetch implementation is required.');
@@ -50,20 +69,19 @@ async function runPreflight({env=process.env,fetchImpl=globalThis.fetch,timeoutM
   const email=required(env,'ARISE_BETA_EMAIL');
   const password=required(env,'ARISE_BETA_PASSWORD');
 
-  const authResponse=await request(`${url}/auth/v1/token?grant_type=password`,{
+  const authResult=await request(`${url}/auth/v1/token?grant_type=password`,{
     method:'POST',
     headers:{'apikey':apiKey,'Content-Type':'application/json'},
     body:JSON.stringify({email,password})
   },'Supabase beta sign-in');
-  const auth=await readJson(authResponse,'Supabase beta sign-in');
+  const auth=authResult.body;
   const accessToken=String(auth&&auth.access_token||'').trim();
   if(!accessToken)throw new Error('Supabase beta sign-in returned no access token.');
 
   const headers={apikey:apiKey,Authorization:`Bearer ${accessToken}`};
   const checks=[];
   for(const table of CANONICAL_TABLES){
-    const response=await request(`${url}/rest/v1/${table}?select=*&limit=1`,{method:'GET',headers},`Read ${table}`);
-    await readJson(response,`Read ${table}`);
+    const {response}=await request(`${url}/rest/v1/${table}?select=*&limit=1`,{method:'GET',headers},`Read ${table}`);
     checks.push({table,status:response.status});
   }
 
