@@ -96,3 +96,23 @@ test('beta preflight rejects invalid timeout configuration before network access
   await assert.rejects(runPreflight({env,timeoutMs:0,fetchImpl:async()=>{calls++;return response(200,{})}}),/positive integer/);
   assert.equal(calls,0);
 });
+
+test('beta preflight bounds a stalled auth response body even when fetch resolves',async()=>{
+  const fetchImpl=async()=>({ok:true,status:200,text:()=>new Promise(()=>{})});
+  await assert.rejects(runPreflight({env,fetchImpl,timeoutMs:10}),/Supabase beta sign-in timed out after 10ms/);
+});
+
+test('beta preflight bounds a stalled table response body and stops further reads',async()=>{
+  let reads=0;
+  const fetchImpl=async(url)=>{
+    if(url.includes('/auth/v1/token'))return response(200,{access_token:'session-token'});
+    reads++;
+    return {ok:true,status:200,text:()=>new Promise(()=>{})};
+  };
+  await assert.rejects(runPreflight({env,fetchImpl,timeoutMs:10}),/Read finance_profiles timed out after 10ms/);
+  assert.equal(reads,1);
+});
+
+test('beta preflight bounds fetch implementations that ignore abort signals',async()=>{
+  await assert.rejects(runPreflight({env,fetchImpl:async()=>new Promise(()=>{}),timeoutMs:10}),/Supabase beta sign-in timed out after 10ms/);
+});
