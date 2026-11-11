@@ -65,3 +65,54 @@ test('beta Supabase preflight surfaces a canonical table failure without continu
   await assert.rejects(runPreflight({env,fetchImpl}),/HTTP 403/);
   assert.equal(restReads,2,'preflight should stop at the first failing canonical table');
 });
+
+test('beta preflight bounds hanging sign-in requests and reports a contextual timeout',async()=>{
+  let seenSignal;
+  const fetchImpl=async(_url,options)=>{
+    seenSignal=options.signal;
+    return new Promise((_resolve,reject)=>{
+      options.signal.addEventListener('abort',()=>reject(options.signal.reason),{once:true});
+    });
+  };
+  await assert.rejects(runPreflight({env,fetchImpl,timeoutMs:10}),/Supabase beta sign-in timed out after 10ms/);
+  assert.equal(seenSignal.aborted,true);
+});
+
+test('beta preflight bounds hanging canonical table reads without continuing',async()=>{
+  let reads=0;
+  const fetchImpl=async(url,options)=>{
+    if(url.includes('/auth/v1/token'))return response(200,{access_token:'session-token'});
+    reads++;
+    return new Promise((_resolve,reject)=>{
+      options.signal.addEventListener('abort',()=>reject(options.signal.reason),{once:true});
+    });
+  };
+  await assert.rejects(runPreflight({env,fetchImpl,timeoutMs:10}),/Read finance_profiles timed out after 10ms/);
+  assert.equal(reads,1);
+});
+
+test('beta preflight rejects invalid timeout configuration before network access',async()=>{
+  let calls=0;
+  await assert.rejects(runPreflight({env,timeoutMs:0,fetchImpl:async()=>{calls++;return response(200,{})}}),/positive integer/);
+  assert.equal(calls,0);
+});
+
+test('beta preflight bounds a stalled auth response body even when fetch resolves',async()=>{
+  const fetchImpl=async()=>({ok:true,status:200,text:()=>new Promise(()=>{})});
+  await assert.rejects(runPreflight({env,fetchImpl,timeoutMs:10}),/Supabase beta sign-in timed out after 10ms/);
+});
+
+test('beta preflight bounds a stalled table response body and stops further reads',async()=>{
+  let reads=0;
+  const fetchImpl=async(url)=>{
+    if(url.includes('/auth/v1/token'))return response(200,{access_token:'session-token'});
+    reads++;
+    return {ok:true,status:200,text:()=>new Promise(()=>{})};
+  };
+  await assert.rejects(runPreflight({env,fetchImpl,timeoutMs:10}),/Read finance_profiles timed out after 10ms/);
+  assert.equal(reads,1);
+});
+
+test('beta preflight bounds fetch implementations that ignore abort signals',async()=>{
+  await assert.rejects(runPreflight({env,fetchImpl:async()=>new Promise(()=>{}),timeoutMs:10}),/Supabase beta sign-in timed out after 10ms/);
+});
