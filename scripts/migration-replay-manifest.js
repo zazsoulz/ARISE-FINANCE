@@ -8,6 +8,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 function inventory(dir) {
+  if (!fs.lstatSync(dir).isDirectory()) throw new Error('Migration path must be a real directory');
   const names = fs.readdirSync(dir).filter((name) => name.endsWith('.sql')).sort();
   if (names.length === 0) throw new Error('No SQL migrations found');
   const seen = new Set();
@@ -18,7 +19,13 @@ function inventory(dir) {
     const version = name.slice(0, 14);
     if (seen.has(version)) throw new Error('Duplicate migration version: ' + version);
     seen.add(version);
-    const bytes = fs.readFileSync(path.join(dir, name));
+    const filePath = path.join(dir, name);
+    // Never follow symlinks or accept non-regular migration entries.
+    // A manifest must attest to bytes inside the checked-out migration directory.
+    if (!fs.lstatSync(filePath).isFile()) {
+      throw new Error('Migration must be a regular file: ' + name);
+    }
+    const bytes = fs.readFileSync(filePath);
     if (!bytes.length || !bytes.toString('utf8').trim()) {
       throw new Error('Empty migration: ' + name);
     }
