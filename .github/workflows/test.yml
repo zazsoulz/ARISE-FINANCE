@@ -68,6 +68,7 @@ jobs:
           node --check financial-bootstrap.js
           node --check scripts/beta-supabase-preflight.js
           node --check scripts/build-standalone-preview.js
+          node --check scripts/migration-replay-manifest.js
           node --check scripts/remove-legacy-nav-source.js
           node --check scripts/remove-legacy-home-source.js
           node --check scripts/remove-legacy-income-source.js
@@ -77,6 +78,8 @@ jobs:
           node --check scripts/remove-legacy-settings-source.js
           node --check scripts/remove-navigation-compat-source.js
           node --check scripts/remove-history-transaction-source.js
+      - name: Build deterministic migration inventory
+        run: node scripts/migration-replay-manifest.js > "$RUNNER_TEMP/arise-migration-replay-manifest.json"
       - name: Physical cleanup guards
         run: |
           node scripts/remove-legacy-nav-source.js --check
@@ -90,3 +93,10 @@ jobs:
           node scripts/remove-history-transaction-source.js --check
       - name: Regression and UI smoke tests
         run: node --test tests/*.test.js
+      - name: Upload migration inventory evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: arise-migration-manifest-\${{ github.sha }}
+          path: \${{ runner.temp }}/arise-migration-replay-manifest.json
+          if-no-files-found: error
+          retention-days: 30
