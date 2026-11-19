@@ -96,7 +96,7 @@ jobs:
       - name: Upload migration inventory evidence
         uses: actions/upload-artifact@v4
         with:
-          name: arise-migration-manifest-\${{ github.sha }}
-          path: \${{ runner.temp }}/arise-migration-replay-manifest.json
+          name: arise-migration-manifest-${{ github.sha }}
+          path: ${{ runner.temp }}/arise-migration-replay-manifest.json
           if-no-files-found: error
           retention-days: 30
