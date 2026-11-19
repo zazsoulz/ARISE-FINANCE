@@ -80,6 +80,8 @@ jobs:
           node --check scripts/remove-history-transaction-source.js
       - name: Build deterministic migration inventory
         run: node scripts/migration-replay-manifest.js > "$RUNNER_TEMP/arise-migration-replay-manifest.json"
+      - name: Build canonical standalone preview
+        run: node scripts/build-standalone-preview.js "$RUNNER_TEMP/arise-finance-standalone.html"
       - name: Physical cleanup guards
         run: |
           node scripts/remove-legacy-nav-source.js --check
@@ -100,3 +102,10 @@ jobs:
           path: ${{ runner.temp }}/arise-migration-replay-manifest.json
           if-no-files-found: error
           retention-days: 30
+      - name: Upload standalone preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arise-standalone-preview-${{ github.sha }}
+          path: ${{ runner.temp }}/arise-finance-standalone.html
+          if-no-files-found: error
+          retention-days: 7
