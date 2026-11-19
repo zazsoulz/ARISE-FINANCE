@@ -58,3 +58,20 @@ test('rejects a symlinked migration directory', () => {
     }
   });
 });
+
+test('rejects migrations reached through a symlinked parent directory', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'arise-parent-link-'));
+  const targetMigrations = path.join(root, 'outside', 'migrations');
+  const linkedParent = path.join(root, 'supabase');
+  fs.mkdirSync(targetMigrations, { recursive: true });
+  fs.writeFileSync(path.join(targetMigrations, '20260820000000_real.sql'), 'select 1;');
+  try {
+    fs.symlinkSync(path.join(root, 'outside'), linkedParent, 'dir');
+    assert.throws(
+      () => inventory(path.join(linkedParent, 'migrations')),
+      /Migration parent path must be a real directory/
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
