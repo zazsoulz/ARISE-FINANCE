@@ -8,12 +8,16 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 function inventory(dir) {
+  const parentDir = path.dirname(dir);
+  if (!fs.lstatSync(parentDir).isDirectory()) {
+    throw new Error('Migration parent path must be a real directory');
+  }
   if (!fs.lstatSync(dir).isDirectory()) throw new Error('Migration path must be a real directory');
   const names = fs.readdirSync(dir).filter((name) => name.endsWith('.sql')).sort();
   if (names.length === 0) throw new Error('No SQL migrations found');
   const seen = new Set();
   return names.map((name) => {
-    if (!/^\d{14}_[a-z0-9_]+\.sql$/.test(name)) {
+    if (!/^\\d{14}_[a-z0-9_]+\\.sql$/.test(name)) {
       throw new Error('Invalid migration filename: ' + name);
     }
     const version = name.slice(0, 14);
@@ -37,9 +41,9 @@ if (require.main === module) {
   try {
     const dir = process.argv[2] || path.join(__dirname, '..', 'supabase', 'migrations');
     const migrations = inventory(dir);
-    process.stdout.write(JSON.stringify({ format: 'arise-migration-manifest-v1', migrations }, null, 2) + '\n');
+    process.stdout.write(JSON.stringify({ format: 'arise-migration-manifest-v1', migrations }, null, 2) + '\\n');
   } catch (error) {
-    process.stderr.write('Migration inventory failed: ' + error.message + '\n');
+    process.stderr.write('Migration inventory failed: ' + error.message + '\\n');
     process.exitCode = 1;
   }
 }
