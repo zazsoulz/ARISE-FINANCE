@@ -33,3 +33,45 @@ test('fails closed on invalid names and blank SQL', () => {
   withDir({ 'bad.sql': 'select 1;' }, dir => assert.throws(() => inventory(dir), /Invalid migration filename/));
   withDir({ '20260820000000_empty.sql': '  ' }, dir => assert.throws(() => inventory(dir), /Empty migration/));
 });
+
+test('rejects symlinked SQL entries rather than hashing external content', () => {
+  withDir({ '20260820000000_real.sql': 'select 1;' }, dir => {
+    const outside = path.join(os.tmpdir(), 'arise-outside-' + process.pid + '-' + Date.now() + '.sql');
+    fs.writeFileSync(outside, 'select secret;');
+    try {
+      fs.symlinkSync(outside, path.join(dir, '20260820000001_link.sql'));
+      assert.throws(() => inventory(dir), /Migration must be a regular file/);
+    } finally {
+      fs.rmSync(outside, { force: true });
+    }
+  });
+});
+
+test('rejects a symlinked migration directory', () => {
+  withDir({ '20260820000000_real.sql': 'select 1;' }, dir => {
+    const link = dir + '-link';
+    try {
+      fs.symlinkSync(dir, link, 'dir');
+      assert.throws(() => inventory(link), /Migration path must be a real directory/);
+    } finally {
+      fs.rmSync(link, { force: true });
+    }
+  });
+});
+
+test('rejects migrations reached through a symlinked parent directory', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'arise-parent-link-'));
+  const targetMigrations = path.join(root, 'outside', 'migrations');
+  const linkedParent = path.join(root, 'supabase');
+  fs.mkdirSync(targetMigrations, { recursive: true });
+  fs.writeFileSync(path.join(targetMigrations, '20260820000000_real.sql'), 'select 1;');
+  try {
+    fs.symlinkSync(path.join(root, 'outside'), linkedParent, 'dir');
+    assert.throws(
+      () => inventory(path.join(linkedParent, 'migrations')),
+      /Migration parent path must be a real directory/
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
