@@ -1,0 +1,61 @@
+name: Supabase Migration Replay Smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - schema.sql
+      - supabase/migrations/**
+      - supabase/test/**
+      - scripts/verify-local-migration-replay.sh
+      - .github/workflows/supabase-migration-replay.yml
+  push:
+    branches: [main]
+    paths:
+      - schema.sql
+      - supabase/migrations/**
+      - supabase/test/**
+      - scripts/verify-local-migration-replay.sh
+      - .github/workflows/supabase-migration-replay.yml
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: arise_replay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d arise_replay"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay migrations, verify owner RLS, and restore a synthetic backup
+        run: |
+          docker run --rm --network host \
+            -e PGHOST=127.0.0.1 \
+            -e PGPORT=5432 \
+            -e PGUSER=postgres \
+            -e PGPASSWORD=postgres \
+            -e PGDATABASE=arise_replay \
+            -v "$GITHUB_WORKSPACE:/repo:ro" \
+            -v "$RUNNER_TEMP:/artifacts" \
+            postgres:17 \
+            bash /repo/scripts/verify-local-migration-replay.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arise-local-migration-replay-${{ github.sha }}
+          path: ${{ runner.temp }}/arise-local-migration-replay-summary.txt
+          if-no-files-found: ignore
+          retention-days: 30

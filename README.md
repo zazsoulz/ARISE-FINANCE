@@ -20,16 +20,17 @@
 - Архитектура Supabase auth/database и SQL-схема.
 - Email/password, Google, Apple и phone UI/API hooks при наличии Supabase.
 
-## Production-подключение
+## Supabase schema and migration path
 
-1. Создай проект Supabase.
-2. Выполни `supabase/schema.sql` в SQL Editor.
-3. Включи Email, Phone, Google и Apple providers в Supabase Auth.
-4. Скопируй `config.example.js` в `config.js` и укажи URL и anon key.
-5. Подключи `config.js` перед основным script в `index.html`.
-6. Для production лучше перенести sync функций из localStorage в Supabase queries.
-7. Для актуальных валютных курсов используй серверный endpoint/cron, а не доверяй клиентскому API.
+The current canonical backend uses the root `schema.sql` as a legacy-compatibility baseline, followed by the timestamped migrations in `supabase/migrations/`.
 
+For a **new disposable project**:
+
+1. Apply the root `schema.sql` once. It establishes the legacy `public.profiles` and `public.finance_profiles` baseline consumed by the first canonical migration.
+2. Apply every file in `supabase/migrations/` in lexicographic timestamp order using the Supabase migration runner.
+3. Follow `docs/ISOLATED_REPLAY_RESTORE_RUNBOOK.md` for the full beta replay, ownership/RLS, backup and restore gate.
+
+Do not re-run the baseline against an active project, and never edit or reorder an already-applied migration. The CI `Supabase Migration Replay Smoke` workflow runs a disposable PostgreSQL 17 compatibility replay and dump/restore preflight; it is useful regression evidence but does **not** replace the real Supabase beta rehearsal tracked in issue #201.
 ## Важно
 
 Текущий ZIP специально сохраняет рабочую offline-first модель: если Supabase не настроен, данные остаются на устройстве. Это позволяет продолжать UI/UX разработку без блокировки на backend.
