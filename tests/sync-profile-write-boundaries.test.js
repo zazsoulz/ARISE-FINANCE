@@ -17,7 +17,7 @@ function makeClient(options={}){
       insert(payload){call.operation='insert';call.payload=payload;return builder;},
       delete(){call.operation='delete';return builder;},
       maybeSingle(){call.terminal='maybeSingle';calls.push(call);return Promise.resolve(options.maybeSingle?options.maybeSingle(call):{data:{id:'remote-row'},error:null});},
-      single(){call.terminal='single';calls.push(call);return Promise.resolve(options.single?options.single(call):{data:{id:'remote-row'},error:null});},
+      single(){call.terminal='single';calls.push(call);return Promise.resolve(options.single?options.single(call):{data:{id:'remote-tx'},error:null});},
       then(resolve,reject){call.terminal='await';calls.push(call);return Promise.resolve(options.await?options.await(call):{data:[],error:null}).then(resolve,reject);}
     };
     return builder;
