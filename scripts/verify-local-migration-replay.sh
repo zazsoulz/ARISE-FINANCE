@@ -62,8 +62,11 @@ pg_restore --exit-on-error --no-owner --host "$PGHOST" --port "$PGPORT" --userna
 run_sql "$RESTORE_DB" --file /repo/supabase/test/assertions.sql
 run_sql "$RESTORE_DB" --file /repo/supabase/test/rls-assertions.sql
 
-RESTORED_NET=$(query_scalar "$RESTORE_DB" "select coalesce(sum(case when type='income' then base_amount when type='expense' then -base_amount else 0 end),0)::text from public.finance_transactions where user_id='11111111-1111-4111-8111-111111111111'::uuid")
-RESTORED_ALLOCATION_TOTAL=$(query_scalar "$RESTORE_DB" "select coalesce(sum(a.amount),0)::text from public.finance_allocations a join public.finance_transactions t on t.id=a.transaction_id where t.client_mutation_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid")
+RESTORED_PRIMARY_NET=$(query_scalar "$RESTORE_DB" "select coalesce(sum(case when t.type='income' then t.base_amount when t.type='expense' then -t.base_amount else 0 end),0)::text from public.finance_transactions t join public.finance_profiles p on p.id=t.profile_id where p.user_id='11111111-1111-4111-8111-111111111111'::uuid and p.name='Профиль A'")
+RESTORED_SECONDARY_NET=$(query_scalar "$RESTORE_DB" "select coalesce(sum(t.base_amount),0)::text from public.finance_transactions t join public.finance_profiles p on p.id=t.profile_id where p.user_id='11111111-1111-4111-8111-111111111111'::uuid and p.name='Secondary profile'")
+RESTORED_PRIMARY_ALLOCATION=$(query_scalar "$RESTORE_DB" "select coalesce(sum(a.amount),0)::text from public.finance_allocations a join public.finance_transactions t on t.id=a.transaction_id where t.client_mutation_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid")
+RESTORED_SECONDARY_ALLOCATION=$(query_scalar "$RESTORE_DB" "select coalesce(sum(a.amount),0)::text from public.finance_allocations a join public.finance_transactions t on t.id=a.transaction_id where t.client_mutation_id='dddddddd-dddd-4ddd-8ddd-dddddddddddd'::uuid")
+RESTORED_PROFILES=$(query_scalar "$RESTORE_DB" "select count(*)::text from public.finance_profiles where user_id='11111111-1111-4111-8111-111111111111'::uuid and archived_at is null")
 RESTORED_TRANSACTIONS=$(query_scalar "$RESTORE_DB" "select count(*)::text from public.finance_transactions where user_id='11111111-1111-4111-8111-111111111111'::uuid")
 RESTORED_RECEIPTS=$(query_scalar "$RESTORE_DB" "select count(*)::text from public.sync_receipts where mutation_id='cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid")
 
@@ -78,8 +81,11 @@ RESTORED_RECEIPTS=$(query_scalar "$RESTORE_DB" "select count(*)::text from publi
   printf 'source_replay=passed\n'
   printf 'two_owner_rls=passed\n'
   printf 'backup_restore=passed\n'
-  printf 'restored_ledger_net_rub=%s\n' "$RESTORED_NET"
-  printf 'restored_income_allocation_total=%s\n' "$RESTORED_ALLOCATION_TOTAL"
+  printf 'restored_primary_profile_net_rub=%s\n' "$RESTORED_PRIMARY_NET"
+  printf 'restored_primary_income_allocation_total=%s\n' "$RESTORED_PRIMARY_ALLOCATION"
+  printf 'restored_secondary_profile_net_eur=%s\n' "$RESTORED_SECONDARY_NET"
+  printf 'restored_secondary_income_allocation_total=%s\n' "$RESTORED_SECONDARY_ALLOCATION"
+  printf 'restored_owner_a_active_profile_count=%s\n' "$RESTORED_PROFILES"
   printf 'restored_owner_a_transaction_count=%s\n' "$RESTORED_TRANSACTIONS"
   printf 'restored_sync_receipt_count=%s\n' "$RESTORED_RECEIPTS"
   printf 'backup_sha256=%s\n' "$(sha256sum "$DUMP_FILE" | awk '{print $1}')"

@@ -97,8 +97,8 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ Canonical performance migration adds targeted indexes without weakening RLS boundaries.
 - ✅ Browser runtime has a regression fence preventing direct dependency on legacy Supabase tables.
 - ✅ Live canonical `finance_*` RLS/policy structure and migration intent were audited.
-- 🟡 Migration history still needs isolated replay/restore rehearsal.
-- 🟡 Backup/restore rehearsal is not yet production-ready.
+- 🟡 Full Supabase-platform replay/restore rehearsal remains outstanding. A disposable PostgreSQL 17.12 GitHub Actions smoke now passes the root compatibility baseline plus all seven timestamped migrations, two-owner RLS checks, ledger/allocation invariants, and custom-format backup/restore; it does not exercise Supabase Auth/Storage platform behavior or platform advisors. [Local replay CI evidence](https://github.com/zazsoulz/ARISE-FINANCE/actions/workflows/supabase-migration-replay.yml).
+- 🟡 Production-grade Supabase backup/restore rehearsal is not yet complete.
 - 🟡 Compatibility-era tables should only be removed after recovery/replay proof.
 
 ## Offline-first and sync
@@ -166,7 +166,7 @@ The highest-value remaining work is now operational beta verification, final sha
 ## Immediate prioritized backlog
 ### P0 — beta correctness/hardening
 1. Run the real end-to-end two-device sync matrix against the beta Supabase environment, including offline edit, concurrent edit, delete-vs-edit, retry after ambiguous failure and explicit conflict resolution.
-2. Perform isolated migration replay plus backup/restore rehearsal against a disposable/beta environment; do not rewrite applied production migration history.
+2. Perform the full isolated migration replay plus backup/restore rehearsal against disposable Supabase environments; the local PostgreSQL CI smoke is green but does not close this platform-level gate. Do not rewrite applied production migration history.
 3. Enable leaked-password protection in Supabase Auth and re-run the security/auth-recovery/RLS advisor checks before beta sign-off.
 
 ### P1 — product completeness

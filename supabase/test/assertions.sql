@@ -5,26 +5,38 @@ declare
   user_b constant uuid := '22222222-2222-4222-8222-222222222222';
   user_c constant uuid := '33333333-3333-4333-8333-333333333333';
   profile_a uuid;
+  profile_a2 uuid;
   income_id uuid;
+  income_a2 uuid;
   net_base numeric;
+  net_secondary numeric;
   allocated numeric;
+  allocated_secondary numeric;
 begin
   if (select count(*) from public.accounts where user_id in (user_a,user_b,user_c)) <> 3 then
     raise exception 'Expected three account rows after backfill and auth bootstrap';
   end if;
 
-  if (select count(*) from public.finance_profiles where user_id=user_a and archived_at is null) <> 1
+  if (select count(*) from public.finance_profiles where user_id=user_a and archived_at is null) <> 2
      or (select count(*) from public.finance_profiles where user_id=user_b and archived_at is null) <> 1
      or (select count(*) from public.finance_profiles where user_id=user_c and archived_at is null) <> 1 then
-    raise exception 'Expected one isolated active finance profile per synthetic owner';
+    raise exception 'Expected two independent active profiles for owner A and one for owners B/C';
   end if;
 
-  select id into profile_a from public.finance_profiles where user_id=user_a and archived_at is null;
+  select id into profile_a from public.finance_profiles
+    where user_id=user_a and name='Профиль A' and archived_at is null;
+  select id into profile_a2 from public.finance_profiles
+    where user_id=user_a and name='Secondary profile' and archived_at is null;
   select id into income_id from public.finance_transactions
     where profile_id=profile_a and client_mutation_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid;
+  select id into income_a2 from public.finance_transactions
+    where profile_id=profile_a2 and client_mutation_id='dddddddd-dddd-4ddd-8ddd-dddddddddddd'::uuid;
 
-  if profile_a is null or income_id is null then
-    raise exception 'Canonical profile or stable income transaction identifier was not preserved';
+  if profile_a is null or profile_a2 is null or profile_a=profile_a2 or income_id is null or income_a2 is null then
+    raise exception 'Independent profile IDs or stable transaction identifiers were not preserved';
+  end if;
+  if (select base_currency from public.finance_profiles where id=profile_a2) <> 'EUR' then
+    raise exception 'Secondary financial profile base currency was not preserved';
   end if;
 
   if (select count(*) from public.finance_categories where profile_id=profile_a) <> 3 then
@@ -47,6 +59,19 @@ begin
   if (select count(*) from public.finance_transactions where profile_id=profile_a) <> 2 then
     raise exception 'Synthetic mixed-currency ledger rows are missing';
   end if;
+  if (select count(*) from public.finance_categories where profile_id=profile_a2) <> 1
+     or (select count(*) from public.finance_goals where profile_id=profile_a2) <> 0
+     or (select count(*) from public.finance_transactions where profile_id=profile_a2) <> 1 then
+    raise exception 'Secondary profile data leaked from or into the primary profile';
+  end if;
+  if not exists (
+    select 1 from public.finance_profiles
+    where id=profile_a2
+      and settings #>> '{reserve,enabled}'='false'
+      and settings #>> '{monthStartDay}'='1'
+  ) then
+    raise exception 'Secondary profile defaults differ from the canonical migration defaults';
+  end if;
   if (select count(*) from public.finance_allocations where transaction_id=income_id) <> 4 then
     raise exception 'Expected category, goal, reserve and unallocated income allocations';
   end if;
@@ -64,6 +89,19 @@ begin
   where transaction_id=income_id;
   if allocated <> 10000 then
     raise exception 'Income allocation conservation mismatch: %',allocated;
+  end if;
+  select coalesce(sum(base_amount),0) into net_secondary
+  from public.finance_transactions where profile_id=profile_a2;
+  if net_secondary <> 25 then
+    raise exception 'Secondary profile EUR ledger mismatch: %',net_secondary;
+  end if;
+  select coalesce(sum(amount),0) into allocated_secondary
+  from public.finance_allocations where transaction_id=income_a2;
+  if allocated_secondary <> 25 then
+    raise exception 'Secondary profile allocation conservation mismatch: %',allocated_secondary;
+  end if;
+  if (select count(*) from public.finance_transactions where user_id=user_a) <> 3 then
+    raise exception 'Expected three transactions across the two independent owner-A profiles';
   end if;
 
   if (select count(*) from public.sync_receipts
