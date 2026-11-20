@@ -106,17 +106,21 @@ create policy "own allocations" on public.allocations for all using (
 create policy "public exchange rates read" on public.exchange_rates for select using (true);
 
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $
+returns trigger
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $function$
 declare
-  display_name text;
+  v_display_name text;
 begin
-  display_name := coalesce(new.raw_user_meta_data->>'name',new.raw_user_meta_data->>'full_name','Мой профиль');
+  v_display_name := coalesce(new.raw_user_meta_data->>'name',new.raw_user_meta_data->>'full_name','Мой профиль');
   insert into public.profiles(id,display_name,name,base_currency)
-  values(new.id,display_name,display_name,'RUB');
+  values(new.id,v_display_name,v_display_name,'RUB');
   return new;
 end;
-$;
+$function$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users
-for each row execute procedure public.handle_new_user();
+for each row execute function public.handle_new_user();
