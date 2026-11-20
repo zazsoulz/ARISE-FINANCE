@@ -77,7 +77,7 @@
       if(mutation.action==="delete"){
         const remoteId=mutation.entityRemoteId||null;
         if(remoteId){
-          const {error}=await c.from(config.table).delete().eq("id",remoteId).eq("profile_id",profileId);
+          const {error}=await c.from(config.table).delete().eq("id",remoteId).eq("profile_id",profileId).eq("user_id",userId);
           if(error) throw error;
         }
       }else{
@@ -91,7 +91,7 @@
         let remoteId=rid(entity)||mutation.entityRemoteId||null;
         let data,error;
         if(remoteId){
-          ({data,error}=await c.from(config.table).update(payload).eq("id",remoteId).eq("profile_id",profileId).select("id").maybeSingle());
+          ({data,error}=await c.from(config.table).update(payload).eq("id",remoteId).eq("profile_id",profileId).eq("user_id",userId).select("id").maybeSingle());
           if(!error&&!data)remoteId=null;
         }
         if(!remoteId){
