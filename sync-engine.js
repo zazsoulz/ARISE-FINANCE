@@ -92,13 +92,13 @@
 
   function transactionType(tx){if(["income","expense","goal_contribution","goal_withdrawal","reserve_deposit","reserve_withdrawal","transfer"].includes(tx.type))return tx.type;return tx.type==="goalContribution"?"goal_contribution":"transfer";}
 
-  async function findExistingTransaction(c,userId,tx){
+  async function findExistingTransaction(c,userId,profileId,tx){
     const known=remoteId(tx);if(known)return known;
     if(isUuid(tx.id)){
-      const {data,error}=await c.from("finance_transactions").select("id").eq("user_id",userId).eq("client_mutation_id",tx.id).maybeSingle();
+      const {data,error}=await c.from("finance_transactions").select("id").eq("user_id",userId).eq("profile_id",profileId).eq("client_mutation_id",tx.id).maybeSingle();
       if(error)throw error;if(data&&data.id)return data.id;
     }
-    const {data,error}=await c.from("finance_transactions").select("id,payload").eq("user_id",userId).contains("payload",{localId:tx.id}).limit(1);
+    const {data,error}=await c.from("finance_transactions").select("id,payload").eq("user_id",userId).eq("profile_id",profileId).contains("payload",{localId:tx.id}).limit(1);
     if(error)throw error;
     return data&&data[0]&&data[0].id||null;
   }
@@ -136,8 +136,8 @@
       remainder:Math.max(0,Number(tx.remainder)||0),reserve_amount:Math.max(0,Number(tx.reserve)||0),client_mutation_id:isUuid(tx.id)?tx.id:null,
       payload:{localId:tx.id,month:tx.month||null,ledgerAmount:fx.baseAmount,allocations:tx.allocations||[],goalAllocations:tx.goalAllocations||[],fundingBreakdown:tx.fundingBreakdown||null}
     };
-    let id=await findExistingTransaction(c,user.id,tx);let data,error;
-    if(id)({data,error}=await c.from("finance_transactions").update(payload).eq("id",id).select("id").single());
+    let id=await findExistingTransaction(c,user.id,profileId,tx);let data,error;
+    if(id)({data,error}=await c.from("finance_transactions").update(payload).eq("id",id).eq("profile_id",profileId).eq("user_id",user.id).select("id").single());
     else({data,error}=await c.from("finance_transactions").insert(payload).select("id").single());
     if(error)throw error;id=data.id;mark(tx,id);
 
@@ -147,7 +147,7 @@
       for(const item of tx.goalAllocations||[]){const g=(profile.goals||[]).find(goalItem=>goalItem.id===item.goalId);rows.push({transaction_id:id,profile_id:profileId,user_id:user.id,allocation_type:"goal",category_id:null,goal_id:g?remoteId(g):null,name_snapshot:String(item.name||g&&g.name||""),amount:Math.max(0,Number(item.amount)||0),rule_snapshot:{priority:Number(item.priority)||null}});}
       if(Number(tx.reserve)>0)rows.push({transaction_id:id,profile_id:profileId,user_id:user.id,allocation_type:"reserve",category_id:null,goal_id:null,name_snapshot:"Резерв",amount:Math.max(0,Number(tx.reserve)||0),rule_snapshot:{}});
       if(Number(tx.remainder)>0)rows.push({transaction_id:id,profile_id:profileId,user_id:user.id,allocation_type:"unallocated",category_id:null,goal_id:null,name_snapshot:"Не распределено",amount:Math.max(0,Number(tx.remainder)||0),rule_snapshot:{}});
-      const {error:deleteError}=await c.from("finance_allocations").delete().eq("transaction_id",id);if(deleteError)throw deleteError;
+      const {error:deleteError}=await c.from("finance_allocations").delete().eq("transaction_id",id).eq("profile_id",profileId).eq("user_id",user.id);if(deleteError)throw deleteError;
       if(rows.length){const {error:insertError}=await c.from("finance_allocations").insert(rows);if(insertError)throw insertError;}
     }
   }
@@ -169,8 +169,8 @@
       try{
         if(mutation.action==="delete"){
           let id=mutation.entityRemoteId||null;
-          if(!id&&mutation.entityLocalId)id=await findExistingTransaction(c,user.id,{id:mutation.entityLocalId});
-          if(id){const {error}=await c.from("finance_transactions").delete().eq("id",id).eq("profile_id",profileId);if(error)throw error;}
+          if(!id&&mutation.entityLocalId)id=await findExistingTransaction(c,user.id,profileId,{id:mutation.entityLocalId});
+          if(id){const {error}=await c.from("finance_transactions").delete().eq("id",id).eq("profile_id",profileId).eq("user_id",user.id);if(error)throw error;}
         }else{
           const tx=(profile.transactions||[]).find(item=>String(item.id)===String(mutation.entityLocalId));
           if(tx)await syncTransaction(profile,profileId,user,tx);
@@ -184,7 +184,7 @@
   async function syncProfile(profile,profileId,user){
     assertNoConflict(profile,"Финансовый профиль");
     const c=client();
-    const {error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId);if(error)throw error;
+    const {error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId).eq("user_id",user.id);if(error)throw error;
     const entityResult=await drainEntityOutbox(profile,profileId,user);
     const seededTransactions=seedTransactionOutbox(profile);
     const transactionOutboxCount=await flushTransactionOutbox(profile,profileId,user);
