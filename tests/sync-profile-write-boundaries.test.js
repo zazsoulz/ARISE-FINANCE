@@ -135,6 +135,30 @@ test('profile metadata update is scoped to the authenticated account',async()=>{
   assert.ok(update);
   assert.ok(hasFilter(update,'id','remote-profile'));
   assert.ok(hasFilter(update,'user_id','user-1'));
+  assert.equal(update.columns,'id');
+  assert.equal(update.terminal,'maybeSingle');
+});
+
+test('sync stops before draining profile data when the remote profile row is unavailable to the authenticated owner',async()=>{
+  const {context,calls}=bootEngine({
+    clientOptions:{maybeSingle(call){
+      if(call.table==='finance_profiles'&&call.operation==='update')return {data:null,error:null};
+      return {data:{id:'remote-row'},error:null};
+    }}
+  });
+  const profile={id:'local-profile',name:'Основной',settings:{currency:'RUB'},categories:[],goals:[],transactions:[],ariseSync:{remoteId:'missing-profile'}};
+  context.state.profiles=[profile];
+
+  await assert.rejects(
+    ()=>context.ARISE_SYNC.pushAll(),
+    /Финансовый профиль не найден для текущего аккаунта/
+  );
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].table,'finance_profiles');
+  assert.equal(calls[0].operation,'update');
+  assert.ok(hasFilter(calls[0],'id','missing-profile'));
+  assert.ok(hasFilter(calls[0],'user_id','user-1'));
+  assert.equal(calls[0].terminal,'maybeSingle');
 });
 
 test('category and goal outbox updates include both profile and account ownership filters',async()=>{
