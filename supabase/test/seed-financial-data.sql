@@ -11,7 +11,6 @@ declare
   profile_a2 uuid;
   profile_b uuid;
   category_a uuid;
-  category_a2 uuid;
   goal_a uuid;
   income_id uuid;
   income_a2 uuid;
@@ -38,7 +37,7 @@ begin
     profile_id,user_id,name,rule_type,percent,fixed_amount,priority,sort_order
   ) values (
     profile_a2,user_a,'Secondary profile category','fixed',0,250,3,10
-  ) returning id into category_a2;
+  );
 
   insert into public.finance_categories(
     profile_id,user_id,name,rule_type,percent,fixed_amount,priority,monthly_limit,enabled,sort_order
