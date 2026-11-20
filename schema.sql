@@ -18,9 +18,9 @@ alter table public.profiles
 create table if not exists public.finance_profiles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
+  name text not null default 'Основной',
   base_currency text not null default 'RUB',
-  settings jsonb not null default '{}'::jsonb,
+  settings jsonb not null default '{"reserve":{"enabled":false,"percent":0,"priority":3,"limit":null,"target":null},"monthStartDay":1}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   archived_at timestamptz
