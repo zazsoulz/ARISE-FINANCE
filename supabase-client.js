@@ -149,22 +149,22 @@
 
   async function updateFinanceProfile(profileId,patch={}){
     const supabase=getClient();
-    await requireUser();
+    const user=await requireUser();
     const row={};
     if(Object.prototype.hasOwnProperty.call(patch,"name")) row.name=String(patch.name||"").trim()||"Профиль";
     if(Object.prototype.hasOwnProperty.call(patch,"baseCurrency")) row.base_currency=patch.baseCurrency;
     if(Object.prototype.hasOwnProperty.call(patch,"settings")) row.settings=patch.settings;
-    const {data,error}=await supabase.from("finance_profiles").update(row).eq("id",profileId).is("archived_at",null).select(PROFILE_FIELDS).single();
+    const {data,error}=await supabase.from("finance_profiles").update(row).eq("id",profileId).eq("user_id",user.id).is("archived_at",null).select(PROFILE_FIELDS).single();
     if(error) throw error;
     return data;
   }
 
   async function archiveFinanceProfile(profileId){
     const supabase=getClient();
-    await requireUser();
+    const user=await requireUser();
     const profiles=await listFinanceProfiles();
     if(profiles.length<=1) throw new Error("Нельзя архивировать единственный финансовый профиль.");
-    const {data,error}=await supabase.from("finance_profiles").update({archived_at:new Date().toISOString()}).eq("id",profileId).is("archived_at",null).select("id,archived_at").single();
+    const {data,error}=await supabase.from("finance_profiles").update({archived_at:new Date().toISOString()}).eq("id",profileId).eq("user_id",user.id).is("archived_at",null).select("id,archived_at").single();
     if(error) throw error;
     return data;
   }
@@ -172,7 +172,7 @@
   async function restoreFinanceProfile(profileId){
     const supabase=getClient();
     await requireUser();
-    const {data,error}=await supabase.from("finance_profiles").update({archived_at:null}).eq("id",profileId).not("archived_at","is",null).select(PROFILE_FIELDS).single();
+    const {data,error}=await supabase.from("finance_profiles").update({archived_at:null}).eq("id",profileId).eq("user_id",user.id).not("archived_at","is",null).select(PROFILE_FIELDS).single();
     if(error) throw error;
     return data;
   }
