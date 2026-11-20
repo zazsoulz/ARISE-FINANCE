@@ -4,8 +4,16 @@ create extension if not exists "pgcrypto";
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default 'Мой профиль',
+  name text not null default 'Мой профиль',
+  base_currency text not null default 'RUB',
   created_at timestamptz not null default now()
 );
+
+-- The canonical finance-profile migration backfills from these legacy fields.
+-- Keep this baseline safe for projects that already ran an older schema.sql.
+alter table public.profiles
+  add column if not exists name text not null default 'Мой профиль',
+  add column if not exists base_currency text not null default 'RUB';
 
 create table if not exists public.finance_profiles (
   id uuid primary key default gen_random_uuid(),
@@ -13,8 +21,16 @@ create table if not exists public.finance_profiles (
   name text not null,
   base_currency text not null default 'RUB',
   settings jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  archived_at timestamptz
 );
+
+-- The first canonical migration installs an updated_at trigger and checks
+-- archived_at during backfill. Add both fields to older baseline installs.
+alter table public.finance_profiles
+  add column if not exists updated_at timestamptz not null default now(),
+  add column if not exists archived_at timestamptz;
 
 create table if not exists public.goals (
   id uuid primary key default gen_random_uuid(),
@@ -90,12 +106,16 @@ create policy "own allocations" on public.allocations for all using (
 create policy "public exchange rates read" on public.exchange_rates for select using (true);
 
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer as $
+declare
+  display_name text;
 begin
-  insert into public.profiles(id, display_name) values(new.id, coalesce(new.raw_user_meta_data->>'name','Мой профиль'));
+  display_name := coalesce(new.raw_user_meta_data->>'name',new.raw_user_meta_data->>'full_name','Мой профиль');
+  insert into public.profiles(id,display_name,name,base_currency)
+  values(new.id,display_name,display_name,'RUB');
   return new;
 end;
-$$;
+$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users

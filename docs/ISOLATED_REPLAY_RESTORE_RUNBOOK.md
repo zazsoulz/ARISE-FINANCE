@@ -2,6 +2,10 @@
 
 This is an **operator checklist**, not evidence of a completed rehearsal. The gate in `docs/ARISE_AUDIT.md` stays open until the full run passes. Do not use Vercel or a production database for this procedure.
 
+Repository baseline: the first canonical migration backfills from legacy `public.profiles` and extends the existing `public.finance_profiles` table. For a clean disposable replay, apply the root `schema.sql` baseline once, then apply every file in `supabase/migrations/` in lexicographic timestamp order. The baseline now includes the legacy columns required by that first migration. Do not treat the baseline as a replacement for the migrations.
+
+The CI `Supabase Migration Replay Smoke` workflow runs this sequence against a disposable PostgreSQL 17 service with minimal local Auth/Storage compatibility objects, then performs a custom-format dump and restore into a second database. This catches PostgreSQL DDL, ownership, RLS-policy and backup regressions early. It is **not** a full Supabase platform rehearsal and does not close #201: the real beta gate still requires two disposable Supabase environments, platform Auth/Storage behavior, advisor checks and sanitized evidence.
+
 ## Preconditions and safety
 
 1. Use **two disposable PostgreSQL/Supabase environments**: an empty migration target (A) and a separate empty restore target (B). Never use the active ARISE production project as either target.
@@ -12,7 +16,7 @@ This is an **operator checklist**, not evidence of a completed rehearsal. The ga
 
 ## Replay in A
 
-- Start from a clean database, using the repository's migration runner and migration order. Preserve full logs, exit codes and migration checksums.
+- Start from a clean disposable database. Apply the root `schema.sql` compatibility baseline once, then apply the repository migrations in lexicographic timestamp order with the supported Supabase migration runner. Preserve full logs, exit codes and migration checksums.
 - Inspect `finance_profiles`, `finance_categories`, `finance_goals`, `finance_transactions`, `finance_allocations`, `sync_receipts` and any other canonical schema objects required by the current migrations.
 - Capture table/column types, constraints, indexes, RLS enabled/forced state, grants and policies using PostgreSQL catalog queries. A table existing is **not** proof that its ownership policy works.
 - Create two synthetic auth identities and independent finance profiles. Seed representative categories, goals, reserve settings, mixed-currency income/expense transactions, allocations and mutation/receipt metadata using supported application/API paths.
