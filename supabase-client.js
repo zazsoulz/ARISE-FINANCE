@@ -171,7 +171,7 @@
 
   async function restoreFinanceProfile(profileId){
     const supabase=getClient();
-    await requireUser();
+    const user=await requireUser();
     const {data,error}=await supabase.from("finance_profiles").update({archived_at:null}).eq("id",profileId).eq("user_id",user.id).not("archived_at","is",null).select(PROFILE_FIELDS).single();
     if(error) throw error;
     return data;
