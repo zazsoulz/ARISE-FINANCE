@@ -184,7 +184,7 @@
   async function syncProfile(profile,profileId,user){
     assertNoConflict(profile,"Финансовый профиль");
     const c=client();
-    const {error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId).eq("user_id",user.id);if(error)throw error;
+    const {data,error}=await c.from("finance_profiles").update({name:profile.name||"Профиль",base_currency:currency(profile),settings:{...(profile.settings||{})}}).eq("id",profileId).eq("user_id",user.id).select("id").maybeSingle();if(error)throw error;if(!data||!data.id)throw new Error("Финансовый профиль не найден для текущего аккаунта. Синхронизация остановлена, чтобы не перенести данные в другой профиль.");
     const entityResult=await drainEntityOutbox(profile,profileId,user);
     const seededTransactions=seedTransactionOutbox(profile);
     const transactionOutboxCount=await flushTransactionOutbox(profile,profileId,user);
