@@ -33,6 +33,14 @@ begin
   if (select count(*) from public.finance_categories where user_id=user_c) <> 2 then
     raise exception 'New-user bootstrap must create only the two canonical starter categories';
   end if;
+  if not exists (
+    select 1 from public.finance_profiles
+    where user_id=user_c
+      and settings #>> '{reserve,enabled}'='false'
+      and settings #>> '{monthStartDay}'='1'
+  ) then
+    raise exception 'New-user finance profile defaults differ from the canonical migration defaults';
+  end if;
   if (select count(*) from public.finance_goals where profile_id=profile_a) <> 1 then
     raise exception 'Synthetic goal row is missing';
   end if;
