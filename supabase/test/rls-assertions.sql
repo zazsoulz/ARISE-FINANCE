@@ -9,9 +9,12 @@ declare
   affected_rows integer;
 begin
   select count(*) into visible_count from public.finance_profiles;
-  if visible_count <> 1 then raise exception 'Owner A should see exactly one finance profile'; end if;
+  if visible_count <> 2 then raise exception 'Owner A should see both of their independent finance profiles'; end if;
+  select count(*) into visible_count from public.finance_profiles
+    where user_id='22222222-2222-4222-8222-222222222222'::uuid;
+  if visible_count <> 0 then raise exception 'Owner A can see owner B finance profiles'; end if;
   select count(*) into visible_count from public.finance_transactions;
-  if visible_count <> 2 then raise exception 'Owner A should see exactly two ledger rows'; end if;
+  if visible_count <> 3 then raise exception 'Owner A should see exactly three ledger rows across their two profiles'; end if;
   select count(*) into visible_count from public.finance_transactions
     where user_id='22222222-2222-4222-8222-222222222222'::uuid;
   if visible_count <> 0 then raise exception 'Owner A can see owner B ledger rows'; end if;
@@ -46,7 +49,10 @@ do $$
 declare visible_count integer;
 begin
   select count(*) into visible_count from public.finance_profiles;
-  if visible_count <> 1 then raise exception 'Owner B should see exactly one finance profile'; end if;
+  if visible_count <> 1 then raise exception 'Owner B should see only their own finance profile'; end if;
+  select count(*) into visible_count from public.finance_profiles
+    where user_id='11111111-1111-4111-8111-111111111111'::uuid;
+  if visible_count <> 0 then raise exception 'Owner B can see owner A finance profiles'; end if;
   select count(*) into visible_count from public.finance_transactions;
   if visible_count <> 0 then raise exception 'Owner B must not see owner A ledger rows'; end if;
   select count(*) into visible_count from storage.objects;
