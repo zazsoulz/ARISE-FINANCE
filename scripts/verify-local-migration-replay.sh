@@ -60,7 +60,7 @@ createdb --host "$PGHOST" --port "$PGPORT" --username "$PGUSER" "$RESTORE_DB"
 pg_restore --exit-on-error --no-owner --host "$PGHOST" --port "$PGPORT" --username "$PGUSER" --dbname "$RESTORE_DB" "$DUMP_FILE"
 
 run_sql "$RESTORE_DB" --file /repo/supabase/test/assertions.sql
-run_sql "$RESTORE_DB" --file /repo/supabase/test/rls-assertions.sql"
+run_sql "$RESTORE_DB" --file /repo/supabase/test/rls-assertions.sql
 
 RESTORED_NET=$(query_scalar "$RESTORE_DB" "select coalesce(sum(case when type='income' then base_amount when type='expense' then -base_amount else 0 end),0)::text from public.finance_transactions where user_id='11111111-1111-4111-8111-111111111111'::uuid")
 RESTORED_ALLOCATION_TOTAL=$(query_scalar "$RESTORE_DB" "select coalesce(sum(a.amount),0)::text from public.finance_allocations a join public.finance_transactions t on t.id=a.transaction_id where t.client_mutation_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid")
