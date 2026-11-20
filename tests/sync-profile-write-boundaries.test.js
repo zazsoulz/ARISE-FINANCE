@@ -167,3 +167,47 @@ test('category and goal deletes include both profile and account ownership filte
     assert.ok(hasFilter(deletion,'user_id','user-1'));
   }
 });
+
+
+function bootSupabaseClient(){
+  const calls=[];
+  const fakeSupabase={
+    auth:{getUser:async()=>({data:{user:{id:'user-1'}},error:null})},
+    from(table){
+      const call={table,operation:'select',filters:[]};
+      const builder={
+        select(columns){call.columns=columns;return builder;},
+        update(payload){call.operation='update';call.payload=payload;return builder;},
+        eq(column,value){call.filters.push([column,value]);return builder;},
+        is(column,value){call.filters.push([column,'is:'+value]);return builder;},
+        not(column,operator,value){call.filters.push([column,'not:'+operator+':'+value]);return builder;},
+        order(column,options){call.order={column,options};return builder;},
+        single(){call.terminal='single';calls.push(call);return Promise.resolve({data:{id:'profile-result'},error:null});},
+        then(resolve,reject){call.terminal='await';calls.push(call);return Promise.resolve({data:[{id:'profile-a'},{id:'profile-b'}],error:null}).then(resolve,reject);}
+      };
+      return builder;
+    }
+  };
+  const context=vm.createContext({
+    console,
+    ARISE_SUPABASE_CONFIG:{url:'https://example.supabase.co',publishableKey:'sb_publishable_test'},
+    supabase:{createClient:()=>fakeSupabase}
+  });
+  context.globalThis=context;
+  vm.runInContext(fs.readFileSync('supabase-client.js','utf8'),context,{filename:'supabase-client.js'});
+  return {context,calls};
+}
+
+test('profile update, archive and restore APIs constrain mutations to the authenticated owner',async()=>{
+  const {context,calls}=bootSupabaseClient();
+  await context.ARISE_SUPABASE.updateFinanceProfile('profile-update',{name:'Updated'});
+  await context.ARISE_SUPABASE.archiveFinanceProfile('profile-archive');
+  await context.ARISE_SUPABASE.restoreFinanceProfile('profile-restore');
+
+  const writes=calls.filter(call=>call.table==='finance_profiles'&&call.operation==='update');
+  assert.equal(writes.length,3);
+  assert.ok(hasFilter(writes[0],'id','profile-update'));
+  assert.ok(hasFilter(writes[1],'id','profile-archive'));
+  assert.ok(hasFilter(writes[2],'id','profile-restore'));
+  for(const write of writes)assert.ok(hasFilter(write,'user_id','user-1'));
+});
