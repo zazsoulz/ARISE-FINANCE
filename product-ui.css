@@ -6357,6 +6357,14 @@ body::before{
   fill:rgba(223,189,117,.012);
 }
 
+.analytics-chart-hit:focus-visible{
+  fill:rgba(223,189,117,.045);
+  stroke:rgba(223,189,117,.72);
+  stroke-width:2;
+  stroke-dasharray:4 3;
+  vector-effect:non-scaling-stroke;
+}
+
 .v3-chart-point,
 .analytics-pulse circle{
   transform-box:fill-box;
