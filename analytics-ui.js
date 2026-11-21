@@ -72,7 +72,7 @@
       const left=index===0?horizontalPad:center-step/2;
       const right=index===rows.length-1?width-horizontalPad:center+step/2;
       const label=monthLabel(row.month);
-      return `<rect class="analytics-chart-hit" tabindex="0" role="button" x="${left.toFixed(1)}" y="0" width="${Math.max(1,right-left).toFixed(1)}" height="${height}" data-chart-index="${index}" data-chart-label="${escapeHTML(label)}" data-chart-income="${safe(row.income)}" data-chart-expense="${safe(row.expenses)}" aria-label="${escapeHTML(label)}: доход ${money(row.income)}, расходы ${money(row.expenses)}"/>`;
+      return `<rect class="analytics-chart-hit" tabindex="0" role="button" aria-pressed="false" x="${left.toFixed(1)}" y="0" width="${Math.max(1,right-left).toFixed(1)}" height="${height}" data-chart-index="${index}" data-chart-label="${escapeHTML(label)}" data-chart-income="${safe(row.income)}" data-chart-expense="${safe(row.expenses)}" aria-label="${escapeHTML(label)}: доход ${money(row.income)}, расходы ${money(row.expenses)}"/>`;
     }).join("");
   }
   function chartGuides(maxScale,width=720,height=200,horizontalPad=48,verticalPad=20){
@@ -131,6 +131,9 @@
     const activate=index=>{
       const hit=hits[index],incomePoint=incomePoints[index],expensePoint=expensePoints[index];
       if(!hit||!incomePoint||!expensePoint)return;
+      hits.forEach((candidate,candidateIndex)=>{
+        candidate.setAttribute("aria-pressed",candidateIndex===index?"true":"false");
+      });
       [...incomePoints,...expensePoints].forEach(point=>point.classList.remove("is-active"));
       incomePoint.classList.add("is-active");
       expensePoint.classList.add("is-active");
@@ -143,6 +146,11 @@
       hit.addEventListener("pointerenter",()=>activate(index));
       hit.addEventListener("focus",()=>activate(index));
       hit.addEventListener("click",()=>activate(index));
+      hit.addEventListener("keydown",event=>{
+        if(event.key!=="Enter"&&event.key!==" ")return;
+        event.preventDefault();
+        activate(index);
+      });
     });
     activate(Math.max(0,hits.length-1));
   }
