@@ -1,6 +1,6 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `673e2b5448f0c0ef911e6a4c86fc260328b8358e` (2026-08-24).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `3453305f6f65c780abdda923f52dae5f14b705b9` (2026-11-21; pre-PR baseline).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
@@ -133,7 +133,7 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ Completed-goal lifecycle analytics are present and ledger-derived.
 - ✅ Reserve history has dedicated transaction drill-down.
 - ✅ Financial-pulse chart data has a keyboard-accessible semantic table fallback.
-- 🟡 Charts still need final real-device touch inspection and interaction polish.
+- 🟡 Analytics chart month targets support Enter/Space activation and visible keyboard focus; final real-device touch inspection and interaction polish remain.
 
 ## Visual system and interactions
 - ✅ A1-V3 dark premium visual language is integrated.
