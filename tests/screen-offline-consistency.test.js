@@ -115,6 +115,7 @@ for(const page of pages){
 
 test("topbar sync indicator tracks live connectivity and sync lifecycle events without reload",()=>{
   const {dom,setStatus,setOnline}=boot("home",{online:true,status:"synced"});
+  dom.window.document.body.innerHTML=dom.window.renderTopbar();
   const button=dom.window.document.querySelector(".product-sync");
   const assertIndicator=(kind,label,disabled=false)=>{
     assert.equal(button.classList.contains(kind),true,kind+" state should be visible");
