@@ -1,6 +1,6 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `3453305f6f65c780abdda923f52dae5f14b705b9` (2026-11-21; pre-PR baseline).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `71fc6910572b87b1aca011532182ccda17927cc0` (2026-11-22).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
@@ -145,7 +145,7 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ Production primary actions have dedicated smoke coverage, including reserve lifecycle actions.
 - ✅ Bootstrap failure and global sync/error/conflict states are actionable.
 - ✅ Core empty states now expose useful next actions instead of dead ends.
-- 🟡 Final screen-by-screen loading/error/offline/retry consistency review remains.
+- 🟡 The shared topbar sync indicator now has event-driven regression coverage for offline/online, error, syncing (disabled) and synced transitions without reload; final screen-by-screen real-device loading/error/offline/retry consistency review remains.
 - 🟡 Final icon and real-device touch polish remains before beta sign-off.
 
 ## Architecture
@@ -176,7 +176,7 @@ The highest-value remaining work is now operational beta verification, final sha
 
 ### P2 — beta polish / consolidation
 1. Continue shrinking remaining shared compatibility helpers/CSS only after ownership is explicit and regression protected.
-2. Review loading/error/offline/retry states screen by screen for consistent actions and copy.
+2. Event-driven topbar recovery transitions are regression-covered; complete the screen-by-screen real-device review for consistent loading/error/offline/retry actions and copy.
 3. Finish real-device chart/touch interaction polish and final icon pass.
 4. Run standalone mobile/desktop browser verification using the canonical manifest-based preview artifact.
 5. Perform the final dead-primary-action inventory and accessibility pass after consolidation.
