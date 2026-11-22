@@ -111,3 +111,39 @@ for(const page of pages){
     synced.dom.window.close();
   });
 }
+
+
+test("topbar sync indicator tracks live connectivity and sync lifecycle events without reload",()=>{
+  const {dom,setStatus,setOnline}=boot("home",{online:true,status:"synced"});
+  dom.window.document.body.innerHTML=dom.window.renderTopbar();
+  const button=dom.window.document.querySelector(".product-sync");
+  const assertIndicator=(kind,label,disabled=false)=>{
+    assert.equal(button.classList.contains(kind),true,kind+" state should be visible");
+    assert.equal(button.querySelector("span").textContent,label);
+    assert.equal(button.disabled,disabled);
+  };
+
+  assertIndicator("online","Синхронизировано");
+
+  setStatus("error");
+  dom.window.dispatchEvent(new dom.window.Event("arise:sync"));
+  assertIndicator("error","Ошибка синхронизации");
+
+  setOnline(false);
+  dom.window.dispatchEvent(new dom.window.Event("offline"));
+  assertIndicator("offline","Офлайн");
+
+  setOnline(true);
+  dom.window.dispatchEvent(new dom.window.Event("online"));
+  assertIndicator("error","Ошибка синхронизации");
+
+  setStatus("busy");
+  dom.window.dispatchEvent(new dom.window.Event("arise:sync"));
+  assertIndicator("syncing","Синхронизация",true);
+
+  setStatus("synced");
+  dom.window.dispatchEvent(new dom.window.Event("arise:sync"));
+  assertIndicator("online","Синхронизировано");
+
+  dom.window.close();
+});
