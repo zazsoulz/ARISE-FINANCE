@@ -130,3 +130,62 @@ test('screen-level primary financial actions open their canonical workflows',asy
 
   dom.window.close();
 });
+
+
+test('live sync recovery remains visible across every canonical screen without reload',async()=>{
+  const {dom,context}=await bootProductionRuntime();
+  const {window}=dom;
+  const document=window.document;
+  const pages=['home','income','goals','history','analytics','settings'];
+
+  const setOnline=value=>{
+    Object.defineProperty(window.navigator,'onLine',{configurable:true,value});
+  };
+  const setStatus=status=>{
+    window.ARISE_SYNC.lastResult=()=>({status});
+  };
+  const assertIndicator=(kind,label,disabled=false)=>{
+    const button=document.querySelector('.product-sync');
+    assert.ok(button,'shared sync control disappeared during navigation');
+    assert.equal(button.classList.contains(kind),true,kind+' state should be visible');
+    assert.equal(button.querySelector('span').textContent,label);
+    assert.equal(button.disabled,disabled);
+    assert.equal(button.getAttribute('aria-live'),'polite');
+  };
+
+  for(const page of pages){
+    if(page==='settings'){
+      document.querySelector('.product-avatar[data-page="settings"]').click();
+    }else{
+      document.querySelector(`.product-nav [data-page="${page}"]`).click();
+    }
+    assert.equal(execute(context,'activePage',`active-${page}.js`),page,`${page} screen did not become active`);
+
+    setOnline(true);
+    setStatus('synced');
+    window.dispatchEvent(new window.Event('arise:sync'));
+    assertIndicator('online','Синхронизировано');
+
+    setStatus('error');
+    window.dispatchEvent(new window.Event('arise:sync'));
+    assertIndicator('error','Ошибка синхронизации');
+
+    setOnline(false);
+    window.dispatchEvent(new window.Event('offline'));
+    assertIndicator('offline','Офлайн');
+
+    setOnline(true);
+    window.dispatchEvent(new window.Event('online'));
+    assertIndicator('error','Ошибка синхронизации');
+
+    setStatus('busy');
+    window.dispatchEvent(new window.Event('arise:sync'));
+    assertIndicator('syncing','Синхронизация',true);
+
+    setStatus('synced');
+    window.dispatchEvent(new window.Event('arise:sync'));
+    assertIndicator('online','Синхронизировано');
+  }
+
+  dom.window.close();
+});
