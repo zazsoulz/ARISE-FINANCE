@@ -1,6 +1,6 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `71fc6910572b87b1aca011532182ccda17927cc0` (2026-11-22).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `6bc316602c304cff275dd89d35fdb83af5944a89` (2026-11-23).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
@@ -145,7 +145,7 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ Production primary actions have dedicated smoke coverage, including reserve lifecycle actions.
 - ✅ Bootstrap failure and global sync/error/conflict states are actionable.
 - ✅ Core empty states now expose useful next actions instead of dead ends.
-- 🟡 The shared topbar sync indicator now has event-driven regression coverage for offline/online, error, syncing (disabled) and synced transitions without reload; final screen-by-screen real-device loading/error/offline/retry consistency review remains.
+- 🟡 The shared topbar sync indicator now has event-driven regression coverage on the canonical production runtime manifest across Home, Distribution, Goals, History, Analytics and Settings for synced, error, offline, recovered-online, syncing/disabled and recovered-synced transitions without reload. This is automated DOM/runtime evidence only; final real-device layout, touch and loading/error/offline/retry copy review remains.
 - 🟡 Final icon and real-device touch polish remains before beta sign-off.
 
 ## Architecture
@@ -176,7 +176,7 @@ The highest-value remaining work is now operational beta verification, final sha
 
 ### P2 — beta polish / consolidation
 1. Continue shrinking remaining shared compatibility helpers/CSS only after ownership is explicit and regression protected.
-2. Event-driven topbar recovery transitions are regression-covered; complete the screen-by-screen real-device review for consistent loading/error/offline/retry actions and copy.
+2. The topbar sync recovery matrix now runs across all six canonical screens through the production runtime manifest; complete the real-device review for screen layout, touch targets and consistent loading/error/offline/retry actions and copy.
 3. Finish real-device chart/touch interaction polish and final icon pass.
 4. Run standalone mobile/desktop browser verification using the canonical manifest-based preview artifact.
 5. Perform the final dead-primary-action inventory and accessibility pass after consolidation.
