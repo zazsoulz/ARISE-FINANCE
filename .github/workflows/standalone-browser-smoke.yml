@@ -34,11 +34,12 @@ jobs:
       - name: Verify standalone in Chromium at mobile, tablet and desktop sizes
         run: node scripts/standalone-browser-smoke.js "$RUNNER_TEMP/arise-finance-standalone.html" "$RUNNER_TEMP/arise-browser-report.json"
       - name: Upload browser evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: arise-standalone-browser-evidence-${{ github.sha }}
           path: |
             ${{ runner.temp }}/arise-browser-report.json
             ${{ runner.temp }}/arise-standalone-*.png
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
