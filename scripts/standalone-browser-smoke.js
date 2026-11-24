@@ -55,7 +55,7 @@ async function main(){
       }));
       await page.goto(origin,{waitUntil:"load",timeout:30000});
       await page.waitForFunction(
-        ()=>!!document.querySelector("#registerSubmit")||!!document.querySelector(".product-nav"),
+        ()=>!!document.querySelector("#authSubmit")||!!document.querySelector(".login-logo")||!!document.querySelector(".product-nav"),
         null,
         {timeout:15000}
       );
