@@ -127,12 +127,13 @@ async function main(){
             viewportHeight:window.innerHeight
           };
         });
+        console.log(label+" modal metrics at "+viewport.width+"px: "+JSON.stringify(metrics));
         assert.equal(metrics.open,true,label+" did not open a modal");
-        assert.ok(metrics.width>0&&metrics.height>0,label+" modal has no visible sheet");
+        assert.ok(metrics.width>0&&metrics.height>0,label+" modal has no visible sheet: "+JSON.stringify(metrics));
         assert.ok(metrics.left>=-1&&metrics.right<=viewport.width+1,
-          label+" modal exceeds horizontal viewport bounds at "+viewport.width+"px");
+          label+" modal exceeds horizontal viewport bounds at "+viewport.width+"px: "+JSON.stringify(metrics));
         assert.ok(metrics.top>=-1&&metrics.bottom<=viewport.height+1,
-          label+" modal exceeds vertical viewport bounds at "+viewport.width+"px");
+          label+" modal exceeds vertical viewport bounds at "+viewport.width+"px: "+JSON.stringify(metrics));
         return metrics;
       }
 
