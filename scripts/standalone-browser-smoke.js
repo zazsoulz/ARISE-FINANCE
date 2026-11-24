@@ -96,6 +96,8 @@ async function main(){
             documentWidth:document.documentElement.scrollWidth,
             bodyWidth:document.body.scrollWidth,
             navPosition:getComputedStyle(nav).position,
+            navWidth:nav.getBoundingClientRect().width,
+            navCenter:nav.getBoundingClientRect().left+nav.getBoundingClientRect().width/2,
             minNavItemHeight:Math.min.apply(null,items.map(item=>item.getBoundingClientRect().height))
           };
         });
@@ -103,12 +105,16 @@ async function main(){
           screen.name+" causes document horizontal overflow at "+viewport.width+"px: "+metrics.documentWidth+"px");
         assert.ok(metrics.bodyWidth<=viewport.width+1,
           screen.name+" causes body horizontal overflow at "+viewport.width+"px: "+metrics.bodyWidth+"px");
+        assert.equal(metrics.navPosition,"fixed",
+          "Canonical navigation must remain viewport-anchored at "+viewport.width+"px: "+JSON.stringify(metrics));
         if(metrics.mobileLayout){
-          assert.equal(metrics.navPosition,"fixed","Mobile navigation must remain fixed at "+viewport.width+"px");
           assert.ok(metrics.minNavItemHeight>=44,
             "Mobile navigation touch target is below 44px on "+screen.name+" at "+viewport.width+"px");
         }else{
-          assert.equal(metrics.navPosition,"sticky","Desktop/tablet navigation must remain in document flow");
+          assert.ok(metrics.navWidth<=721,
+            "Desktop navigation exceeds its 720px design width at "+viewport.width+"px: "+JSON.stringify(metrics));
+          assert.ok(Math.abs(metrics.navCenter-viewport.width/2)<=1,
+            "Desktop navigation is not centered at "+viewport.width+"px: "+JSON.stringify(metrics));
         }
         screenResults.push({screen:screen.name,...metrics});
       }
