@@ -1,6 +1,6 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `6bc316602c304cff275dd89d35fdb83af5944a89` (2026-11-23).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `bab4ea7b8f0d43489bc37cc383e41ff776a4bf8c` (2026-11-24).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
@@ -141,6 +141,7 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ Mobile bottom navigation and desktop navigation exist.
 - ✅ Quick income/expense actions and sync/offline status are visible.
 - ✅ Responsive/focus/touch/modal behavior has regression coverage.
+- 🟡 Standalone Browser Smoke now builds the canonical preview and runs headless Chromium across 320, 390, 768, 820 and 1440 CSS-pixel viewports. It checks all six canonical screens for horizontal overflow, viewport-anchored navigation, mobile navigation target size, and quick-income/quick-expense/goal modal bounds plus Escape focus restoration. This is repeatable browser evidence, not a substitute for physical-device inspection or live Supabase verification.
 - ✅ Motion respects reduced-motion preferences.
 - ✅ Production primary actions have dedicated smoke coverage, including reserve lifecycle actions.
 - ✅ Bootstrap failure and global sync/error/conflict states are actionable.
@@ -152,7 +153,7 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ Financial, product, account/auth, sync, currency, analytics and UI responsibilities are separated into modules.
 - ✅ `index.html` removes the legacy financial block before effective runtime execution, preventing a second financial truth.
 - ✅ Runtime-integrity checks enforce the canonical financial core at startup.
-- ✅ GitHub Actions cover syntax, financial regressions, loader/bootstrap, physical-cleanup guards and headless UI contracts.
+- ✅ GitHub Actions cover syntax, financial regressions, loader/bootstrap, physical-cleanup guards, headless UI contracts and the standalone Chromium viewport smoke.
 - ✅ Browser runtime is fenced from direct legacy Supabase-table access.
 - ✅ Standalone preview is assembled from the canonical runtime manifest rather than a divergent loader.
 - ✅ Canonical screen ownership is external to the compatibility shell for Topbar, Navigation, Home, Income, Goals, History, Analytics and Settings.
@@ -178,7 +179,7 @@ The highest-value remaining work is now operational beta verification, final sha
 1. Continue shrinking remaining shared compatibility helpers/CSS only after ownership is explicit and regression protected.
 2. The topbar sync recovery matrix now runs across all six canonical screens through the production runtime manifest; complete the real-device review for screen layout, touch targets and consistent loading/error/offline/retry actions and copy.
 3. Finish real-device chart/touch interaction polish and final icon pass.
-4. Run standalone mobile/desktop browser verification using the canonical manifest-based preview artifact.
+4. Standalone mobile/desktop Chromium verification now runs in CI using the canonical manifest-based preview; complete the separate physical-device visual/touch review.
 5. Perform the final dead-primary-action inventory and accessibility pass after consolidation.
 
 ## Definition of beta-ready core
