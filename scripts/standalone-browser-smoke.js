@@ -39,6 +39,7 @@ async function main(){
     {name:"mobile-320",width:320,height:740},
     {name:"mobile-390",width:390,height:844},
     {name:"tablet-768",width:768,height:1024},
+    {name:"tablet-820",width:820,height:1024},
     {name:"desktop-1440",width:1440,height:900}
   ];
   let browser;
@@ -90,6 +91,8 @@ async function main(){
           const items=Array.from(nav.querySelectorAll(".product-nav-item"));
           return {
             viewportWidth:window.innerWidth,
+            layoutViewportWidth:document.documentElement.clientWidth,
+            mobileLayout:window.matchMedia("(max-width:760px)").matches,
             documentWidth:document.documentElement.scrollWidth,
             bodyWidth:document.body.scrollWidth,
             navPosition:getComputedStyle(nav).position,
@@ -100,7 +103,7 @@ async function main(){
           screen.name+" causes document horizontal overflow at "+viewport.width+"px: "+metrics.documentWidth+"px");
         assert.ok(metrics.bodyWidth<=viewport.width+1,
           screen.name+" causes body horizontal overflow at "+viewport.width+"px: "+metrics.bodyWidth+"px");
-        if(viewport.width<=760){
+        if(metrics.mobileLayout){
           assert.equal(metrics.navPosition,"fixed","Mobile navigation must remain fixed at "+viewport.width+"px");
           assert.ok(metrics.minNavItemHeight>=44,
             "Mobile navigation touch target is below 44px on "+screen.name+" at "+viewport.width+"px");
