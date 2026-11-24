@@ -181,7 +181,7 @@ The highest-value remaining work is now operational beta verification, final sha
 2. The topbar sync recovery matrix now runs across all six canonical screens through the production runtime manifest; complete the real-device review for screen layout, touch targets and consistent loading/error/offline/retry actions and copy.
 3. Finish real-device chart/touch interaction polish and final icon pass.
 4. Standalone mobile/desktop Chromium verification and selected cross-screen primary actions now run in CI using the canonical manifest-based preview; complete the separate physical-device visual/touch review and full dead-primary-action inventory.
-5. Perform the final dead-primary-action inventory and accessibility pass after consolidation.
+5. Complete the final accessibility pass after consolidation and resolve any remaining dead primary actions found by the inventory.
 
 ## Definition of beta-ready core
 Do not reintroduce Vercel as an active dependency until all of the following are true:
