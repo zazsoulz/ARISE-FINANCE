@@ -150,6 +150,34 @@ async function main(){
         return metrics;
       }
 
+      async function assertActionOpensAndRestores(selector,inputSelector,label){
+        const opener=page.locator(selector);
+        await opener.click();
+        await page.waitForSelector(inputSelector,{state:"visible",timeout:5000});
+        await page.keyboard.press("Escape");
+        await page.waitForFunction(()=>!document.getElementById("modal").classList.contains("open"));
+        assert.equal(await page.evaluate(sel=>document.activeElement===document.querySelector(sel),selector),true,
+          label+" did not restore focus to its opener at "+viewport.width+"px");
+      }
+
+      await page.locator('.product-nav [data-page="history"]').click();
+      await page.waitForSelector(".arise-v3-history",{state:"visible"});
+      await assertActionOpensAndRestores("#historyIncome","#incomeAmount","History income");
+      await assertActionOpensAndRestores("#historyExpense","#expenseAmount","History expense");
+
+      await page.locator('.product-nav [data-page="income"]').click();
+      await page.waitForSelector(".arise-v3-distribution",{state:"visible"});
+      await assertActionOpensAndRestores("#incomeStart","#incomeAmount","Distribution income");
+      await page.locator("#incomeSettings").click();
+      await page.waitForSelector("#settingsProfileName",{state:"visible",timeout:10000});
+
+      await page.locator("#reserveDepositAction").click();
+      await page.waitForSelector("#reserveDepositAmount",{state:"visible",timeout:5000});
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(()=>!document.getElementById("modal").classList.contains("open"));
+      assert.equal(await page.evaluate(()=>document.activeElement===document.querySelector("#reserveDepositAction")),true,
+        "Reserve deposit modal did not restore focus to its opener at "+viewport.width+"px");
+
       await page.locator('.product-nav [data-page="home"]').click();
       await page.waitForSelector(".arise-v3-home",{state:"visible"});
       await page.locator("[data-quick-income]").click();
