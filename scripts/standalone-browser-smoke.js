@@ -111,6 +111,10 @@ async function main(){
       }
 
       async function assertOpenSheetFits(label){
+        await page.waitForFunction(()=>{
+          const sheet=document.getElementById("sheet");
+          return !!sheet&&sheet.getAnimations().every(animation=>animation.playState==="finished");
+        },null,{timeout:3000});
         const metrics=await page.evaluate(()=>{
           const overlay=document.getElementById("modal");
           const sheet=document.getElementById("sheet");
