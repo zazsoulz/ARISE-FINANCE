@@ -51,7 +51,7 @@ async function main(){
       await page.route("**/npm/@supabase/supabase-js@2*",route=>route.fulfill({
         status:200,
         contentType:"application/javascript",
-        body:"window.supabase={createClient:function(){return {auth:{getSession:function(){return Promise.resolve({data:{session:null},error:null});}};}};};"
+        body:"window.supabase={createClient:function(){return {auth:{getSession:function(){return Promise.resolve({data:{session:null},error:null});}}};}};"
       }));
       await page.goto(origin,{waitUntil:"load",timeout:30000});
       await page.waitForFunction(
