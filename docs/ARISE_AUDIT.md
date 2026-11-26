@@ -1,6 +1,6 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `1ecaf928f70c78943540d6e07b701d1d6aac309f` (2026-11-24).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `cb1bd8a38a8b796140dfa4d1f307e9e67ae501ec` (2026-11-26).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
