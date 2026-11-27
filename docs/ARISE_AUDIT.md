@@ -1,13 +1,13 @@
 # ARISE FINANCE — Current Implementation Gap Audit
 
-Basis: `docs/ARISE_SPEC.md` vs `main` at `1ecaf928f70c78943540d6e07b701d1d6aac309f` (2026-11-24).
+Basis: `docs/ARISE_SPEC.md` vs `main` at `cb1bd8a38a8b796140dfa4d1f307e9e67ae501ec` (2026-11-26).
 
 Legend: ✅ substantially present; 🟡 partial / requires hardening; ❌ absent.
 
 ## Executive summary
 ARISE is beyond foundational ledger/auth/sync work. `main` contains a ledger-backed financial core, account auth, isolated financial profiles, Supabase persistence, local-first mutation outboxes, explicit sync-conflict resolution, mixed-currency support, transaction-derived history/analytics, funded-goal lifecycle protection, completed-goal future-funds rerouting, explicit create/edit expense reconciliation, transaction-backed reserve lifecycle, quantitative consequence previews, onboarding templates, completed-goal analytics, stale/backdated FX disclosure, explicit essential-expense reserve runway inputs, recoverable finance-profile archiving, reserve transaction drill-down, accessible analytics chart data, actionable sync/bootstrap states and a production-equivalent standalone preview path.
 
-The highest-value remaining work is now operational beta verification, final shared-helper/CSS consolidation and cross-screen product polish. All primary legacy screen renderers — Topbar, Navigation, Home, Income, Goals, History, Analytics and Settings — are physically gone from `app-shell.html`; canonical screen ownership now lives outside the compatibility shell. The remaining compatibility surface consists of shared helpers and historical CSS/runtime scaffolding that should be removed only behind explicit ownership and regression gates. Vercel remains intentionally outside the active development loop until stable beta/production.
+The highest-value remaining work is now operational beta verification, final shared-helper/CSS consolidation and cross-screen product polish. The canonical screen implementations are owned by external runtime modules, but `app-shell.html` still contains a compatibility `render()` dispatcher that calls global `renderTopbar()`, `renderNav()` and the page render functions. Source-level removal of the dispatcher/wiring has therefore NOT been demonstrated. Runtime ownership and physical source removal must be tracked separately; the remaining compatibility surface includes this dispatcher plus shared helpers and historical CSS/runtime scaffolding, all removable only behind explicit ownership and regression gates. Vercel remains intentionally outside the active development loop until stable beta/production.
 
 ## Financial core
 - ✅ One effective financial calculation source of truth is used at runtime.
@@ -157,9 +157,9 @@ The highest-value remaining work is now operational beta verification, final sha
 - ✅ GitHub Actions cover syntax, financial regressions, loader/bootstrap, physical-cleanup guards, headless UI contracts and standalone Chromium viewport plus cross-screen primary-action smoke.
 - ✅ Browser runtime is fenced from direct legacy Supabase-table access.
 - ✅ Standalone preview is assembled from the canonical runtime manifest rather than a divergent loader.
-- ✅ Canonical screen ownership is external to the compatibility shell for Topbar, Navigation, Home, Income, Goals, History, Analytics and Settings.
-- ✅ Legacy `renderTopbar`, `NAV_ITEMS + renderNav`, `renderHome`, `renderIncome`, `renderGoals`, `renderHistory + historyMonthBlock`, `renderAnalytics` and `renderSettings` have all been physically removed from `app-shell.html`.
-- ✅ The primary-screen retirement registry is gone now that no retired primary screen renderer remains in the compatibility shell.
+- ✅ Canonical screen implementation modules are external to the compatibility shell for Topbar, Navigation, Home, Income, Goals, History, Analytics and Settings.
+- 🟡 `app-shell.html` still contains a legacy compatibility `render()` dispatcher and references to global `renderTopbar()`, `renderNav()` and the page render functions. The implementation bodies are not defined in this shell, but the dispatcher/wiring has not been physically removed; do not report full shell retirement until a source-level guard proves it.
+- 🟡 The primary-screen retirement registry and dispatcher relationship require a fresh ownership trace before further deletion. Runtime replacement alone is not evidence of physical source removal.
 - ✅ Product/category Settings decoration no longer wraps a legacy renderer and is composed explicitly through canonical `settings-ui.js` enhancers.
 - ✅ Shared navigation/profile-switch helpers live in `navigation-compat.js`.
 - ✅ Physical cleanup scripts are fail-closed and are executed by CI in read-only guard mode.
@@ -177,7 +177,7 @@ The highest-value remaining work is now operational beta verification, final sha
 3. Keep consequence previews quantitative only where the calculation is deterministic and useful.
 
 ### P2 — beta polish / consolidation
-1. Continue shrinking remaining shared compatibility helpers/CSS only after ownership is explicit and regression protected.
+1. Trace and retire the remaining `app-shell.html` compatibility `render()` dispatcher/wiring only after proving which globals are supplied by canonical modules; add a fail-closed source/runtime ownership guard before deletion. Then continue shrinking shared helpers/CSS behind regression gates.
 2. The topbar sync recovery matrix now runs across all six canonical screens through the production runtime manifest; complete the real-device review for screen layout, touch targets and consistent loading/error/offline/retry actions and copy.
 3. Finish real-device chart/touch interaction polish and final icon pass.
 4. Standalone mobile/desktop Chromium verification and selected cross-screen primary actions now run in CI using the canonical manifest-based preview; complete the separate physical-device visual/touch review and full dead-primary-action inventory.
