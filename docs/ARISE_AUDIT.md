@@ -152,7 +152,9 @@ The highest-value remaining work is now operational beta verification, final sha
 
 ## Architecture
 - ✅ Financial, product, account/auth, sync, currency, analytics and UI responsibilities are separated into modules.
-- ✅ `index.html` removes the legacy financial block before effective runtime execution, preventing a second financial truth.
+- ✅ `index.html` removes the legacy financial-engine region from the effective document before runtime initialization, preventing a second financial truth. The original financial-engine implementation still physically exists in `app-shell.html`; source presence and runtime execution are distinct and must not be conflated.
+- 🟡 `app-shell.html` also retains legacy financial helper/transaction implementations in its source. The loader currently strips the bounded `FINANCIAL ENGINE` region before the external canonical runtime is loaded. Do not delete or relocate this region until the loader boundary and all remaining global dependencies are proven by a dedicated source/runtime ownership test.
+- 🟡 The legacy UI renderer bodies remain in `app-shell.html` after the financial region. `index.html` does not currently strip this UI region; the compatibility dispatcher and renderer call graph remain a separate retirement task.
 - ✅ Runtime-integrity checks enforce the canonical financial core at startup.
 - ✅ GitHub Actions cover syntax, financial regressions, loader/bootstrap, physical-cleanup guards, headless UI contracts and standalone Chromium viewport plus cross-screen primary-action smoke.
 - ✅ Browser runtime is fenced from direct legacy Supabase-table access.
